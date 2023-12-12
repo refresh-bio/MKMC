@@ -1,4 +1,4 @@
-all: mkmc
+all: mkmc kmc_tools
 
 MKMC_MAIN_DIR = mkmc
 ZLIB_DIR = kmc/3rd_party/cloudflare
@@ -102,11 +102,19 @@ $(LIB_KMC):
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
+kmc_tools: $(OUT_BIN_DIR)/kmc_tools
+
+$(OUT_BIN_DIR)/kmc_tools:
+	(cd $(KMC_DIR); make -j kmc_tools); cp $(KMC_DIR)/bin/kmc_tools $@
+
 mkmc: $(OUT_BIN_DIR)/mkmc
 
 $(OUT_BIN_DIR)/mkmc: $(MKMC_MAIN_DIR)/mkmc.o $(LIB_KMC) $(LIB_ZLIB) 
 	-mkdir -p $(OUT_BIN_DIR)
 	$(CC) $(CLINK) -o $@ $^
+
+
+
 
 install: all
 	install bin/* /usr/local/bin
