@@ -4,7 +4,7 @@ git submodule update --init --recursive
 ```
 ewentualnie przy klonowaniu:
 ```
-git clone --recurse-submodules https://github.com/refresh-bio/MKMC-dev/
+git clone --recurse-submodules https://github.com/refresh-bio/mkmc-dev/
 ```
 
 Tutaj jest moje repo z dość starą i nawiną implementacją:
