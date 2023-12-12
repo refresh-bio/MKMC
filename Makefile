@@ -105,6 +105,7 @@ $(LIB_KMC):
 kmc_tools: $(OUT_BIN_DIR)/kmc_tools
 
 $(OUT_BIN_DIR)/kmc_tools:
+	mkdir -p $(OUT_BIN_DIR)
 	(cd $(KMC_DIR); make -j kmc_tools); cp $(KMC_DIR)/bin/kmc_tools $@
 
 mkmc: $(OUT_BIN_DIR)/mkmc
