@@ -71,16 +71,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>../../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>../../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>../../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>../../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -148,10 +148,10 @@
     <ClCompile Include="mkmc.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\kmc\3rd_party\cloudflare\build\zlib.vcxproj">
+    <ProjectReference Include="..\kmc\3rd_party\cloudflare\build\zlib.vcxproj">
       <Project>{ae29051e-e1d8-3f22-9ca9-64edd3e02ba3}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\kmc\kmc_core\kmc_core.vcxproj">
+    <ProjectReference Include="..\kmc\kmc_core\kmc_core.vcxproj">
       <Project>{8c8b90da-28b7-4d82-81f3-c0e7ce52d59f}</Project>
     </ProjectReference>
   </ItemGroup>
