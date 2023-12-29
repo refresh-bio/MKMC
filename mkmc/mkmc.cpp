@@ -1,71 +1,415 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <sstream>
+#include <iomanip>
 #include  "kmc_core/kmc_runner.h"
 #include  "kmc_api/kmc_file.h"
 #include  "kmc_api/kmer_api.h"
 
-void generate_test_file(const std::string& path)
-{
-	std::string seq = "AGCTACTACTGACTGACTTACTATGCTGATCGTACACACATGAC";
-	std::ofstream out(path, std::ios::binary);
-	if (!out)
-	{
-		std::cerr << "Error: cannot open file" << path << "\n";
-		exit(1);
-	}
-	out.write(">\n", 2);
-	out.write(seq.c_str(), seq.length());
-	out.write("\n", 1);
+using namespace std;
 
+struct MKMCParams
+{
+	std::vector<std::string> inputFiles;
+	std::vector<std::string> tmpFiles;
+	uint32_t nThreads = std::thread::hardware_concurrency();
+	uint32_t nKMCWorkers = 2;
+	uint32_t maxRamGB = 12;
+	std::string outputFile;
+};
+
+
+
+struct Params
+{
+	KMC::Stage1Params stage1Params;
+	KMC::Stage2Params stage2Params;
+	MKMCParams MKMCParams;
+};
+
+//----------------------------------------------------------------------------------
+// Show execution options of the software
+void usage()
+{
+	cout << "K-Mer Counter (KMC) ver. " << KMC::CfgConsts::kmc_ver << " (" << KMC::CfgConsts::kmc_date << ")\n"
+		<< "Usage:\n kmc [options] <input_file_name> <output_file_name> <working_directory>\n"
+		<< " kmc [options] <@input_file_names> <output_file_name> <working_directory>\n"
+		<< "Parameters:\n"
+		<< "  input_file_name - single file in specified (-f switch) format (gziped or not)\n"
+		<< "  @input_file_names - file name with list of input files in specified (-f switch) format (gziped or not)\n"
+		<< "Options:\n"
+		<< "  -v - verbose mode (shows all parameter settings); default: false\n"
+		<< "  -k<len> - k-mer length (k from " << KMC::CfgConsts::min_k << " to " << KMC::CfgConsts::max_k << "; default: 25)\n"
+		<< "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n"
+		<< "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n"
+		<< "  -hc - count homopolymer compressed k-mers (approximate and experimental)\n"
+		<< "  -p<par> - signature length (5, 6, 7, 8, 9, 10, 11); default: 9\n"
+		<< "  -f<a/q/m/bam/kmc> - input in FASTA format (-fa), FASTQ format (-fq), multi FASTA (-fm) or BAM (-fbam) or KMC(-fkmc); default: FASTQ\n"
+		<< "  -ci<value> - exclude k-mers occurring less than <value> times (default: 2)\n"
+		<< "  -cs<value> - maximal value of a counter (default: 255)\n"
+		<< "  -cx<value> - exclude k-mers occurring more of than <value> times (default: 1e9)\n"
+		<< "  -b - turn off transformation of k-mers into canonical form\n"
+		<< "  -r - turn on RAM-only mode \n"
+		<< "  -n<value> - number of bins \n"
+		<< "  -t<value> - total number of threads (default: no. of CPU cores)\n"
+		<< "  -sf<value> - number of FASTQ reading threads\n"
+		<< "  -sp<value> - number of splitting threads\n"
+		<< "  -sr<value> - number of threads for 2nd stage\n"
+		<< "  -j<file_name> - file name with execution summary in JSON format\n"
+		<< "  -w - without output\n"
+		<< "  -o<kmc/kff> - output in KMC of KFF format; default: KMC\n"
+		<< "  -hp - hide percentage progress (default: false)\n"
+		<< "  -e - only estimate histogram of k-mers occurrences instead of exact k-mer counting\n"
+		<< "  --opt-out-size - optimize output database size (may increase running time)\n"
+		<< "Example:\n"
+		<< "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
+		<< "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
 }
 
-int main(int argc, char**argv)
+//----------------------------------------------------------------------------------
+// Check if --help or --version was used
+bool help_or_version(int argc, char** argv)
 {
-    using namespace std::string_literals;
+	const string version = "--version";
+	const string help = "--help";
+	for (int i = 1; i < argc; ++i)
+	{
+		if (argv[i] == version || argv[i] == help)
+			return true;
+	}
+	return false;
+}
 
-    auto path = "test.fa"s;
-	generate_test_file(path);
-	int k = 20;
-    auto db_path = std::to_string(k) + "-mers";
-    try
-    {
-        KMC::Runner runner;
+bool CanCreateFile(const string& path)
+{
+	FILE* f = fopen(path.c_str(), "wb");
+	if (!f)
+		return false;
+	fclose(f);
+	remove(path.c_str());
+	return true;
+}
 
-        KMC::Stage1Params stage1Params;
-        stage1Params
-            .SetKmerLen(k)
-			.SetInputFileType(KMC::InputFileType::FASTA)
-            .SetInputFiles({ path });
+bool CanCreateFileInPath(const string& path)
+{
+	static const string name = "kmc_test.bin"; //Some random name
+	if (path.back() == '\\' || path.back() == '/')
+		return CanCreateFile(path + name);
+	else
+		return CanCreateFile(path + '/' + name);
+}
 
-        auto stage1Result = runner.RunStage1(stage1Params);
+void set_default_parameters(Params& params) {
+	KMC::Stage1Params& stage1Params = params.stage1Params;
+	KMC::Stage2Params& stage2Params = params.stage2Params;
+	MKMCParams& MKMCParams = params.MKMCParams;
 
-        KMC::Stage2Params stage2Params;
+	stage1Params.SetInputFileType(KMC::InputFileType::FASTA);
 
-        stage2Params
-			.SetCutoffMin(1)
-            .SetOutputFileName(db_path);
+	if (MKMCParams.nThreads < MKMCParams.nKMCWorkers)
+	{
+		stage1Params.SetNThreads(1);
+		stage2Params.SetNThreads(1);
+	}
+	else
+	{
+		stage1Params.SetNThreads(MKMCParams.nThreads / MKMCParams.nKMCWorkers);
+		stage2Params.SetNThreads(MKMCParams.nThreads / MKMCParams.nKMCWorkers);
+	}
 
-        auto stage2Result = runner.RunStage2(stage2Params);
+	if (MKMCParams.maxRamGB < 2 * MKMCParams.nKMCWorkers) {
+		stage1Params.SetMaxRamGB(2);
+		stage2Params.SetMaxRamGB(2);
+	}
+	else
+	{
+		stage1Params.SetMaxRamGB(MKMCParams.maxRamGB / MKMCParams.nKMCWorkers);
+		stage2Params.SetMaxRamGB(MKMCParams.maxRamGB / MKMCParams.nKMCWorkers);
+	}
 
-        //print some stats
-        std::cout << "total k-mers: " << stage2Result.nTotalKmers << "\n";
-        std::cout << "total unique k-mers: " << stage2Result.nUniqueKmers << "\n";
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-    }
+	stage2Params.SetCutoffMin(1);
 
-    CKMCFile kmc_file;
-    if(!kmc_file.OpenForListing(db_path))
-    {
-        std::cerr << "Error: cannot open kmc database: " << db_path << "\n";
-        return  EXIT_FAILURE;
-    }
- 
-    CKmerAPI kmer(k);
-    uint64 count;
-    while(kmc_file.ReadNextKmer(kmer, count))
-        std::cerr << kmer.to_string() << "\t" << count << "\n";
+	stage2Params.SetCutoffMax(static_cast<uint64_t>(4E9));
+
+	stage2Params.SetCounterMax(65535);
+
+	static KMC::NullPercentProgressObserver nullPercentProgressObserver;
+	static KMC::NullProgressObserver nullProgressObserver;
+	stage1Params.SetPercentProgressObserver(&nullPercentProgressObserver);
+	stage1Params.SetProgressObserver(&nullProgressObserver);
+}
+
+void fill_temporary_kmc_databases_names(Params& params)
+{
+	for (int tmp_database_id = 0; tmp_database_id < params.MKMCParams.inputFiles.size(); ++tmp_database_id)
+	{
+		ostringstream sstream;
+		sstream << params.stage1Params.GetTmpPath();
+		if (params.stage1Params.GetTmpPath().back() != '/' && params.stage1Params.GetTmpPath().back() != '\\')
+		{
+			sstream << "/";
+		}
+		sstream << setfill('0') << setw(5) << tmp_database_id;
+
+		params.MKMCParams.tmpFiles.push_back(sstream.str());
+	}
+}
+
+//----------------------------------------------------------------------------------
+// Parse the parameters
+bool parse_parameters(int argc, char* argv[], Params& params)
+{
+	KMC::Stage1Params& stage1Params = params.stage1Params;
+	KMC::Stage2Params& stage2Params = params.stage2Params;
+	MKMCParams& MKMCParams = params.MKMCParams;
+	int i;
+
+	bool was_sm = false;
+	bool was_r = false;
+
+	bool was_e = false;
+	bool was_opt_out_size = false;
+	if (argc < 4)
+		return false;
+
+	for (i = 1; i < argc; ++i)
+	{
+		if (argv[i][0] != '-')
+			break;
+		// Number of threads
+		if (strncmp(argv[i], "-t", 2) == 0)
+		{
+			MKMCParams.nThreads = atoi(&argv[i][2]);
+		}
+		// Number of parallel KMC runs
+		else if (strncmp(argv[i], "-wrk", 4) == 0)
+		{
+			MKMCParams.nKMCWorkers = atoi(&argv[i][4]);
+		}
+		// k-mer length
+		else if (strncmp(argv[i], "-k", 2) == 0)
+			stage1Params.SetKmerLen(atoi(&argv[i][2]));
+		// Memory limit
+		else if (strncmp(argv[i], "-m", 2) == 0)
+		{
+			MKMCParams.maxRamGB = atoi(&argv[i][2]);
+		}
+		// Minimum counter threshold
+		else if (strncmp(argv[i], "-ci", 3) == 0)
+			stage2Params.SetCutoffMin(atoi(&argv[i][3]));
+		// Maximum counter threshold
+		else if (strncmp(argv[i], "-cx", 3) == 0)
+			stage2Params.SetCutoffMax(atoll(&argv[i][3]));
+		// Maximal counter value
+		else if (strncmp(argv[i], "-cs", 3) == 0)
+			stage2Params.SetCounterMax(atoll(&argv[i][3]));
+		// Set p1
+		else if (strncmp(argv[i], "-p", 2) == 0)
+			stage1Params.SetSignatureLen(atoi(&argv[i][2]));
+		//output type
+		else if (strncmp(argv[i], "-o", 2) == 0)
+		{
+			if (strncmp(argv[i] + 2, "kff", 3) == 0)
+				stage2Params.SetOutputFileType(KMC::OutputFileType::KFF);
+			else if (strncmp(argv[i] + 2, "kmc", 3) == 0)
+				stage2Params.SetOutputFileType(KMC::OutputFileType::KMC);
+			else
+			{
+				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -okff or -okmc)\n";
+				exit(1);
+			}
+		}
+		// FASTA input files
+		else if (strncmp(argv[i], "-fa", 3) == 0)
+			stage1Params.SetInputFileType(KMC::InputFileType::FASTA);
+		// FASTQ input files
+		else if (strncmp(argv[i], "-fq", 3) == 0)
+			stage1Params.SetInputFileType(KMC::InputFileType::FASTQ);
+		else if (strncmp(argv[i], "-fm", 3) == 0)
+			stage1Params.SetInputFileType(KMC::InputFileType::MULTILINE_FASTA);
+		else if (strncmp(argv[i], "-fbam", 5) == 0)
+			stage1Params.SetInputFileType(KMC::InputFileType::BAM);
+		else if (strncmp(argv[i], "-fkmc", 5) == 0)
+			stage1Params.SetInputFileType(KMC::InputFileType::KMC);
+#ifdef DEVELOP_MODE
+		else if (strncmp(argv[i], "-vl", 3) == 0)
+			stage1Params.SetDevelopVerbose(true);
+#endif
+		else if (strncmp(argv[i], "-v", 2) == 0)
+		{
+			static KMC::CerrVerboseLogger logger;
+			stage1Params.SetVerboseLogger(&logger);
+		}
+		else if (strncmp(argv[i], "-sm", 3) == 0 && strlen(argv[i]) == 3)
+		{
+			was_sm = true;
+			stage2Params.SetStrictMemoryMode(true);
+		}
+		else if (strncmp(argv[i], "-hc", 3) == 0 && strlen(argv[i]) == 3)
+			stage1Params.SetHomopolymerCompressed(true);
+		else if (strncmp(argv[i], "-r", 2) == 0)
+		{
+			stage1Params.SetRamOnlyMode(true);
+			was_r = true;
+		}
+		else if (strncmp(argv[i], "-b", 2) == 0)
+			stage1Params.SetCanonicalKmers(false);
+		// Number of reading threads
+		else if (strncmp(argv[i], "-sf", 3) == 0)
+			stage1Params.SetNReaders(atoi(&argv[i][3]));
+		// Number of splitting threads
+		else if (strncmp(argv[i], "-sp", 3) == 0)
+			stage1Params.SetNSplitters(atoi(&argv[i][3]));
+		// Number of internal threads per 2nd stage
+		else if (strncmp(argv[i], "-sr", 3) == 0)
+			stage2Params.SetNThreads(atoi(&argv[i][3]));
+		else if (strncmp(argv[i], "-n", 2) == 0)
+			stage1Params.SetNBins(atoi(&argv[i][2]));
+		/*else if (strncmp(argv[i], "-j", 2) == 0)
+		{
+			cliParams.jsonSummaryFileName = &argv[i][2];
+			if (cliParams.jsonSummaryFileName == "")
+				cerr << "Warning: file name for json summary file missed (-j switch)\n";
+		}
+		*/
+		else if (strncmp(argv[i], "-e", 2) == 0)
+		{
+			was_e = true;
+			stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ONLY_ESTIMATE);
+		}
+		else if (strcmp(argv[i], "--opt-out-size") == 0)
+		{
+			was_opt_out_size = true;
+			if (stage1Params.GetEstimateHistogramCfg() != KMC::EstimateHistogramCfg::ONLY_ESTIMATE) //ONLY_ESTIMATE has priority over estimate and count
+				stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS);
+		}
+		else if (strncmp(argv[i], "-w", 2) == 0)
+			stage2Params.SetWithoutOutput(true);
+
+		if (strncmp(argv[i], "-smso", 5) == 0)
+			stage2Params.SetStrictMemoryNSortingThreadsPerSorters(atoi(&argv[i][5]));
+
+		if (strncmp(argv[i], "-smun", 5) == 0)
+			stage2Params.SetStrictMemoryNUncompactors(atoi(&argv[i][5]));
+		if (strncmp(argv[i], "-smme", 5) == 0)
+			stage2Params.SetStrictMemoryNMergers(atoi(&argv[i][5]));
+	}
+
+	if (argc - i < 3)
+		return false;
+
+	string input_file_name = string(argv[i++]);
+
+	MKMCParams.outputFile = argv[i++];
+
+	stage1Params.SetTmpPath(argv[i++]);
+
+	std::vector<std::string> input_file_names;
+	if (input_file_name[0] != '@')
+		input_file_names.push_back(input_file_name);
+	else
+	{
+		ifstream in(input_file_name.c_str() + 1);
+		if (!in.good())
+		{
+			cerr << "Error: No " << input_file_name.c_str() + 1 << " file\n";
+			return false;
+		}
+
+		string s;
+		while (getline(in, s))
+			if (s != "")
+				input_file_names.push_back(s);
+
+		in.close();
+		random_device rd;
+		mt19937 gen(rd());
+		shuffle(input_file_names.begin(), input_file_names.end(), gen);
+	}
+	MKMCParams.inputFiles.swap(input_file_names);
+
+	fill_temporary_kmc_databases_names(params);
+
+	//Validate and resolve conflicts in parameters
+	if (was_e && was_opt_out_size)
+	{
+		std::cerr << "Warning: --opt-out-size is ignored because -e was used\n";
+	}
+
+	if (was_sm && was_r)
+	{
+		cerr << "Error: -sm can not be used with -r\n";
+		return false;
+	}
+
+	//Check if output files may be created and if it is possible to create file in specified tmp location
+	if (!stage2Params.GetWithoutOutput())
+	{
+		string pre_file_name = stage2Params.GetOutputFileName() + ".kmc_pre";
+		string suff_file_name = stage2Params.GetOutputFileName() + ".kmc_suf";
+		if (!CanCreateFile(pre_file_name))
+		{
+			cerr << "Error: Cannot create file: " << pre_file_name << "\n";
+			return false;
+		}
+		if (!CanCreateFile(suff_file_name))
+		{
+			cerr << "Error: Cannot create file: " << suff_file_name << "\n";
+			return false;
+		}
+	}
+	if (!CanCreateFileInPath(stage1Params.GetTmpPath()))
+	{
+		cerr << "Error: Cannot create file in specified working directory: " << stage1Params.GetTmpPath() << "\n";
+		return false;
+	}
+	return true;
+}
+
+//----------------------------------------------------------------------------------
+// Main function
+int main(int argc, char** argv)
+{
+	using namespace std::string_literals;
+
+	if (argc == 1 || help_or_version(argc, argv))
+	{
+		usage();
+		return 0;
+	}
+
+	try
+	{
+		Params params;
+		set_default_parameters(params);
+		if (!parse_parameters(argc, argv, params))
+		{
+			usage();
+			return 0;
+		}
+
+		for (int file_id = 0; file_id < params.MKMCParams.inputFiles.size(); ++file_id)
+		{
+			KMC::Runner runner;
+			params.stage1Params.SetInputFiles({ params.MKMCParams.inputFiles[file_id] });
+			params.stage2Params.SetOutputFileName({ params.MKMCParams.tmpFiles[file_id] });
+
+			auto stage1Result = runner.RunStage1(params.stage1Params);
+
+			auto stage2Result = runner.RunStage2(params.stage2Params);
+
+			//print some stats
+			std::cout << "total k-mers: " << stage2Result.nTotalKmers << "\n";
+			std::cout << "total unique k-mers: " << stage2Result.nUniqueKmers << "\n";
+		}
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
 }
