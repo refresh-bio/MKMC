@@ -7,36 +7,18 @@
 #include <random>
 #include <sstream>
 #include <iomanip>
-#include  "kmc_core/kmc_runner.h"
-#include  "kmc_api/kmc_file.h"
-#include  "kmc_api/kmer_api.h"
-
-using namespace std;
-
-struct MKMCParams
-{
-	std::vector<std::string> inputFiles;
-	std::vector<std::string> tmpFiles;
-	uint32_t nThreads = std::thread::hardware_concurrency();
-	uint32_t nKMCWorkers = 2;
-	uint32_t maxRamGB = 12;
-	std::string outputFile;
-};
+#include "kmc_core/kmc_runner.h"
+#include "kmc_api/kmc_file.h"
+#include "kmc_api/kmer_api.h"
+#include "parameters.h"
 
 
-
-struct Params
-{
-	KMC::Stage1Params stage1Params;
-	KMC::Stage2Params stage2Params;
-	MKMCParams MKMCParams;
-};
 
 //----------------------------------------------------------------------------------
 // Show execution options of the software
 void usage()
 {
-	cout << "K-Mer Counter (KMC) ver. " << KMC::CfgConsts::kmc_ver << " (" << KMC::CfgConsts::kmc_date << ")\n"
+	std::cout << "K-Mer Counter (KMC) ver. " << KMC::CfgConsts::kmc_ver << " (" << KMC::CfgConsts::kmc_date << ")\n"
 		<< "Usage:\n kmc [options] <input_file_name> <output_file_name> <working_directory>\n"
 		<< " kmc [options] <@input_file_names> <output_file_name> <working_directory>\n"
 		<< "Parameters:\n"
@@ -75,8 +57,8 @@ void usage()
 // Check if --help or --version was used
 bool help_or_version(int argc, char** argv)
 {
-	const string version = "--version";
-	const string help = "--help";
+	const std::string version = "--version";
+	const std::string help = "--help";
 	for (int i = 1; i < argc; ++i)
 	{
 		if (argv[i] == version || argv[i] == help)
@@ -85,7 +67,7 @@ bool help_or_version(int argc, char** argv)
 	return false;
 }
 
-bool CanCreateFile(const string& path)
+bool CanCreateFile(const std::string& path)
 {
 	FILE* f = fopen(path.c_str(), "wb");
 	if (!f)
@@ -95,9 +77,9 @@ bool CanCreateFile(const string& path)
 	return true;
 }
 
-bool CanCreateFileInPath(const string& path)
+bool CanCreateFileInPath(const std::string& path)
 {
-	static const string name = "kmc_test.bin"; //Some random name
+	static const std::string name = "kmc_test.bin"; //Some random name
 	if (path.back() == '\\' || path.back() == '/')
 		return CanCreateFile(path + name);
 	else
@@ -105,31 +87,31 @@ bool CanCreateFileInPath(const string& path)
 }
 
 void set_default_parameters(Params& params) {
-	KMC::Stage1Params& stage1Params = params.stage1Params;
-	KMC::Stage2Params& stage2Params = params.stage2Params;
-	MKMCParams& MKMCParams = params.MKMCParams;
+	KMC::Stage1Params& stage1Params = params.stage1ParamsTemplate;
+	KMC::Stage2Params& stage2Params = params.stage2ParamsTemplate;
+	MKMCParams& mkmcParams = params.mkmcParams;
 
 	stage1Params.SetInputFileType(KMC::InputFileType::FASTA);
 
-	if (MKMCParams.nThreads < MKMCParams.nKMCWorkers)
+	if (mkmcParams.nThreads < mkmcParams.nKMCWorkers)
 	{
 		stage1Params.SetNThreads(1);
 		stage2Params.SetNThreads(1);
 	}
 	else
 	{
-		stage1Params.SetNThreads(MKMCParams.nThreads / MKMCParams.nKMCWorkers);
-		stage2Params.SetNThreads(MKMCParams.nThreads / MKMCParams.nKMCWorkers);
+		stage1Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
+		stage2Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
 	}
 
-	if (MKMCParams.maxRamGB < 2 * MKMCParams.nKMCWorkers) {
+	if (mkmcParams.maxRamGB < 2 * mkmcParams.nKMCWorkers) {
 		stage1Params.SetMaxRamGB(2);
 		stage2Params.SetMaxRamGB(2);
 	}
 	else
 	{
-		stage1Params.SetMaxRamGB(MKMCParams.maxRamGB / MKMCParams.nKMCWorkers);
-		stage2Params.SetMaxRamGB(MKMCParams.maxRamGB / MKMCParams.nKMCWorkers);
+		stage1Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
+		stage2Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 	}
 
 	stage2Params.SetCutoffMin(1);
@@ -146,17 +128,17 @@ void set_default_parameters(Params& params) {
 
 void fill_temporary_kmc_databases_names(Params& params)
 {
-	for (int tmp_database_id = 0; tmp_database_id < params.MKMCParams.inputFiles.size(); ++tmp_database_id)
+	for (uint32_t tmp_database_id = 0; tmp_database_id < params.mkmcParams.inputFiles.size(); ++tmp_database_id)
 	{
-		ostringstream sstream;
-		sstream << params.stage1Params.GetTmpPath();
-		if (params.stage1Params.GetTmpPath().back() != '/' && params.stage1Params.GetTmpPath().back() != '\\')
+		std::ostringstream sstream;
+		sstream << params.stage1ParamsTemplate.GetTmpPath();
+		if (params.stage1ParamsTemplate.GetTmpPath().back() != '/' && params.stage1ParamsTemplate.GetTmpPath().back() != '\\')
 		{
 			sstream << "/";
 		}
-		sstream << setfill('0') << setw(5) << tmp_database_id;
+		sstream << "kmc_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
 
-		params.MKMCParams.tmpFiles.push_back(sstream.str());
+		params.mkmcParams.tmpFiles.push_back(sstream.str());
 	}
 }
 
@@ -164,9 +146,9 @@ void fill_temporary_kmc_databases_names(Params& params)
 // Parse the parameters
 bool parse_parameters(int argc, char* argv[], Params& params)
 {
-	KMC::Stage1Params& stage1Params = params.stage1Params;
-	KMC::Stage2Params& stage2Params = params.stage2Params;
-	MKMCParams& MKMCParams = params.MKMCParams;
+	KMC::Stage1Params& stage1Params = params.stage1ParamsTemplate;
+	KMC::Stage2Params& stage2Params = params.stage2ParamsTemplate;
+	MKMCParams& mkmcParams = params.mkmcParams;
 	int i;
 
 	bool was_sm = false;
@@ -184,12 +166,12 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		// Number of threads
 		if (strncmp(argv[i], "-t", 2) == 0)
 		{
-			MKMCParams.nThreads = atoi(&argv[i][2]);
+			mkmcParams.nThreads = atoi(&argv[i][2]);
 		}
 		// Number of parallel KMC runs
 		else if (strncmp(argv[i], "-wrk", 4) == 0)
 		{
-			MKMCParams.nKMCWorkers = atoi(&argv[i][4]);
+			mkmcParams.nKMCWorkers = atoi(&argv[i][4]);
 		}
 		// k-mer length
 		else if (strncmp(argv[i], "-k", 2) == 0)
@@ -197,7 +179,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		// Memory limit
 		else if (strncmp(argv[i], "-m", 2) == 0)
 		{
-			MKMCParams.maxRamGB = atoi(&argv[i][2]);
+			mkmcParams.maxRamGB = atoi(&argv[i][2]);
 		}
 		// Minimum counter threshold
 		else if (strncmp(argv[i], "-ci", 3) == 0)
@@ -303,9 +285,9 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	if (argc - i < 3)
 		return false;
 
-	string input_file_name = string(argv[i++]);
+	std::string input_file_name = std::string(argv[i++]);
 
-	MKMCParams.outputFile = argv[i++];
+	mkmcParams.outputFile = argv[i++];
 
 	stage1Params.SetTmpPath(argv[i++]);
 
@@ -314,24 +296,24 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		input_file_names.push_back(input_file_name);
 	else
 	{
-		ifstream in(input_file_name.c_str() + 1);
+		std::ifstream in(input_file_name.c_str() + 1);
 		if (!in.good())
 		{
-			cerr << "Error: No " << input_file_name.c_str() + 1 << " file\n";
+			std::cerr << "Error: No " << input_file_name.c_str() + 1 << " file\n";
 			return false;
 		}
 
-		string s;
-		while (getline(in, s))
+		std::string s;
+		while (std::getline(in, s))
 			if (s != "")
 				input_file_names.push_back(s);
 
 		in.close();
-		random_device rd;
-		mt19937 gen(rd());
-		shuffle(input_file_names.begin(), input_file_names.end(), gen);
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::shuffle(input_file_names.begin(), input_file_names.end(), gen);
 	}
-	MKMCParams.inputFiles.swap(input_file_names);
+	mkmcParams.inputFiles.swap(input_file_names);
 
 	fill_temporary_kmc_databases_names(params);
 
@@ -343,29 +325,29 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 
 	if (was_sm && was_r)
 	{
-		cerr << "Error: -sm can not be used with -r\n";
+		std::cerr << "Error: -sm can not be used with -r\n";
 		return false;
 	}
 
 	//Check if output files may be created and if it is possible to create file in specified tmp location
 	if (!stage2Params.GetWithoutOutput())
 	{
-		string pre_file_name = stage2Params.GetOutputFileName() + ".kmc_pre";
-		string suff_file_name = stage2Params.GetOutputFileName() + ".kmc_suf";
+		std::string pre_file_name = stage2Params.GetOutputFileName() + ".kmc_pre";
+		std::string suff_file_name = stage2Params.GetOutputFileName() + ".kmc_suf";
 		if (!CanCreateFile(pre_file_name))
 		{
-			cerr << "Error: Cannot create file: " << pre_file_name << "\n";
+			std::cerr << "Error: Cannot create file: " << pre_file_name << "\n";
 			return false;
 		}
 		if (!CanCreateFile(suff_file_name))
 		{
-			cerr << "Error: Cannot create file: " << suff_file_name << "\n";
+			std::cerr << "Error: Cannot create file: " << suff_file_name << "\n";
 			return false;
 		}
 	}
 	if (!CanCreateFileInPath(stage1Params.GetTmpPath()))
 	{
-		cerr << "Error: Cannot create file in specified working directory: " << stage1Params.GetTmpPath() << "\n";
+		std::cerr << "Error: Cannot create file in specified working directory: " << stage1Params.GetTmpPath() << "\n";
 		return false;
 	}
 	return true;
@@ -393,15 +375,15 @@ int main(int argc, char** argv)
 			return 0;
 		}
 
-		for (int file_id = 0; file_id < params.MKMCParams.inputFiles.size(); ++file_id)
+		for (int file_id = 0; file_id < params.mkmcParams.inputFiles.size(); ++file_id)
 		{
 			KMC::Runner runner;
-			params.stage1Params.SetInputFiles({ params.MKMCParams.inputFiles[file_id] });
-			params.stage2Params.SetOutputFileName({ params.MKMCParams.tmpFiles[file_id] });
+			params.stage1ParamsTemplate.SetInputFiles({ params.mkmcParams.inputFiles[file_id] });
+			params.stage2ParamsTemplate.SetOutputFileName({ params.mkmcParams.tmpFiles[file_id] });
 
-			auto stage1Result = runner.RunStage1(params.stage1Params);
+			auto stage1Result = runner.RunStage1(params.stage1ParamsTemplate);
 
-			auto stage2Result = runner.RunStage2(params.stage2Params);
+			auto stage2Result = runner.RunStage2(params.stage2ParamsTemplate);
 
 			//print some stats
 			std::cout << "total k-mers: " << stage2Result.nTotalKmers << "\n";
