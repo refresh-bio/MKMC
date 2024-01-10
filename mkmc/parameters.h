@@ -21,4 +21,7 @@ struct Params
 	KMC::Stage1Params stage1ParamsTemplate;
 	KMC::Stage2Params stage2ParamsTemplate;
 	MKMCParams mkmcParams;
+
+	Params();
+	void setKMCParams();
 };

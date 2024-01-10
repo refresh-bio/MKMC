@@ -11,6 +11,7 @@
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"
 #include "parameters.h"
+#include "KMCRunner.h"
 
 
 
@@ -84,46 +85,6 @@ bool CanCreateFileInPath(const std::string& path)
 		return CanCreateFile(path + name);
 	else
 		return CanCreateFile(path + '/' + name);
-}
-
-void set_default_parameters(Params& params) {
-	KMC::Stage1Params& stage1Params = params.stage1ParamsTemplate;
-	KMC::Stage2Params& stage2Params = params.stage2ParamsTemplate;
-	MKMCParams& mkmcParams = params.mkmcParams;
-
-	stage1Params.SetInputFileType(KMC::InputFileType::FASTA);
-
-	if (mkmcParams.nThreads < mkmcParams.nKMCWorkers)
-	{
-		stage1Params.SetNThreads(1);
-		stage2Params.SetNThreads(1);
-	}
-	else
-	{
-		stage1Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
-		stage2Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
-	}
-
-	if (mkmcParams.maxRamGB < 2 * mkmcParams.nKMCWorkers) {
-		stage1Params.SetMaxRamGB(2);
-		stage2Params.SetMaxRamGB(2);
-	}
-	else
-	{
-		stage1Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
-		stage2Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
-	}
-
-	stage2Params.SetCutoffMin(1);
-
-	stage2Params.SetCutoffMax(static_cast<uint64_t>(4E9));
-
-	stage2Params.SetCounterMax(65535);
-
-	static KMC::NullPercentProgressObserver nullPercentProgressObserver;
-	static KMC::NullProgressObserver nullProgressObserver;
-	stage1Params.SetPercentProgressObserver(&nullPercentProgressObserver);
-	stage1Params.SetProgressObserver(&nullProgressObserver);
 }
 
 void fill_temporary_kmc_databases_names(Params& params)
@@ -357,8 +318,6 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 // Main function
 int main(int argc, char** argv)
 {
-	using namespace std::string_literals;
-
 	if (argc == 1 || help_or_version(argc, argv))
 	{
 		usage();
@@ -368,27 +327,15 @@ int main(int argc, char** argv)
 	try
 	{
 		Params params;
-		set_default_parameters(params);
 		if (!parse_parameters(argc, argv, params))
 		{
 			usage();
 			return 0;
 		}
+		params.setKMCParams();
 
-		for (int file_id = 0; file_id < params.mkmcParams.inputFiles.size(); ++file_id)
-		{
-			KMC::Runner runner;
-			params.stage1ParamsTemplate.SetInputFiles({ params.mkmcParams.inputFiles[file_id] });
-			params.stage2ParamsTemplate.SetOutputFileName({ params.mkmcParams.tmpFiles[file_id] });
-
-			auto stage1Result = runner.RunStage1(params.stage1ParamsTemplate);
-
-			auto stage2Result = runner.RunStage2(params.stage2ParamsTemplate);
-
-			//print some stats
-			std::cout << "total k-mers: " << stage2Result.nTotalKmers << "\n";
-			std::cout << "total unique k-mers: " << stage2Result.nUniqueKmers << "\n";
-		}
+		KMCRunner kmcRunner(params);
+		kmcRunner.runKMCParallel();
 	}
 	catch (const std::exception& e)
 	{

@@ -148,7 +148,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="KMCRunner.cpp" />
     <ClCompile Include="mkmc.cpp" />
+    <ClCompile Include="parameters.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\kmc\3rd_party\cloudflare\build\zlib.vcxproj">
@@ -160,6 +162,10 @@
     <ProjectReference Include="..\kmc\kmc_tools\kmc_tools.vcxproj">
       <Project>{f3b0cc94-9dd0-4642-891c-ea08bda50260}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="KMCRunner.h" />
+    <ClInclude Include="parameters.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
