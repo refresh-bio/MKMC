@@ -68,7 +68,7 @@ endif
 
 
 CFLAGS	= -fPIC -Wall -O3 $(PLATFORM_SPECIFIC_FLAGS) $(CPU_FLAGS) -std=c++17 -pthread -I $(ZLIB_DIR) -I $(KMC_DIR) -fpermissive
-CLINK	= -lm -std=c++17 -lpthread
+CLINK	= -lm -lpthread
 
 release: CLINK = -lm -std=c++17 $(STATIC_LFLAGS)
 release: CLINK = -lm -std=c++17 $(STATIC_LFLAGS)
@@ -97,7 +97,7 @@ $(LIB_ZLIB):
 	cd $(ZLIB_DIR); ./configure; make libz.a
 
 $(LIB_KMC):
-	cd $(KMC_DIR); make -j bin/libkmc_core.a
+	cd $(KMC_DIR); $(MAKE) bin/libkmc_core.a
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -106,15 +106,15 @@ kmc_tools: $(OUT_BIN_DIR)/kmc_tools
 
 $(OUT_BIN_DIR)/kmc_tools:
 	mkdir -p $(OUT_BIN_DIR)
-	(cd $(KMC_DIR); make -j kmc_tools); cp $(KMC_DIR)/bin/kmc_tools $@
+	(cd $(KMC_DIR); $(MAKE) kmc_tools); cp $(KMC_DIR)/bin/kmc_tools $@
 
 mkmc: $(OUT_BIN_DIR)/mkmc
 
-$(OUT_BIN_DIR)/mkmc: $(MKMC_MAIN_DIR)/mkmc.o $(LIB_KMC) $(LIB_ZLIB) 
-	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) $(CLINK) -o $@ $^
-
-
+$(OUT_BIN_DIR)/mkmc:
+	mkdir -p $(OUT_BIN_DIR)
+	cd $(KMC_DIR); $(MAKE) kmc
+	cd $(MKMC_MAIN_DIR) && $(MAKE) KMC_DIR=$(KMC_DIR) CC=$(CC) CLINK=$(CLINK)
+	-cp $(MKMC_MAIN_DIR)/mkmc $(OUT_BIN_DIR)
 
 
 install: all
@@ -123,7 +123,7 @@ install: all
 uninstall:
 	-rm /usr/local/bin/mkmc
 
-#TODO: clean kmc dir, and cloudflare zlib ?
 clean:
-	-rm $(MKMC_MAIN_DIR)/*.o
 	-rm -rf $(OUT_BIN_DIR)
+	cd $(MKMC_MAIN_DIR) && $(MAKE) clean
+	cd $(KMC_DIR) && $(MAKE) clean
