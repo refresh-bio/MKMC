@@ -37,13 +37,13 @@ void KMCRunner::runKMCParallel()
 
 bool TasksPool::getTask(std::string& inputFile, std::string& outputFile) {
 	std::unique_lock<std::mutex> lck(taskAvailableMutex);
-	assert(nextTask <= params.mkmcParams.inputFiles.size());
-	if (nextTask == params.mkmcParams.inputFiles.size())
+	assert(nextTask <= inputFiles.size());
+	if (nextTask == inputFiles.size())
 	{
 		return false;
 	}
-	inputFile = params.mkmcParams.inputFiles[nextTask];
-	outputFile = params.mkmcParams.tmpFiles[nextTask];
+	inputFile = inputFiles[nextTask];
+	outputFile = outputFiles[nextTask];
 	++nextTask;
 	return true;
 }

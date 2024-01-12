@@ -9,7 +9,8 @@
 struct MKMCParams
 {
 	std::vector<std::string> inputFiles;
-	std::vector<std::string> tmpFiles;
+	std::vector<std::string> kmcOutputFiles;
+	std::vector<std::string> toolsOutputFiles;
 	uint32_t nThreads = std::thread::hardware_concurrency();
 	uint32_t nKMCWorkers = 2;
 	uint32_t maxRamGB = 12;

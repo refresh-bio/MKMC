@@ -1,19 +1,22 @@
 #pragma once
 
 #include <mutex>
+#include <vector>
 #include "parameters.h"
 
 
 
 class TasksPool
 {
-	const Params& params;
+	const std::vector<std::string>& inputFiles;
+	const std::vector<std::string>& outputFiles;
 	uint32_t nextTask;
 	std::mutex taskAvailableMutex;
 
 public:
-	TasksPool(const Params& params) :
-		params(params),
+	TasksPool(const std::vector<std::string>& inputFiles, const std::vector<std::string>& outputFiles) :
+		inputFiles(inputFiles),
+		outputFiles(outputFiles),
 		nextTask(0)
 	{}
 
@@ -30,7 +33,7 @@ class KMCRunner
 public:
 	KMCRunner(const Params& params) :
 		params(params),
-		tasksPool(params)
+		tasksPool(params.mkmcParams.inputFiles, params.mkmcParams.kmcOutputFiles)
 	{}
 
 	void runKMCParallel();

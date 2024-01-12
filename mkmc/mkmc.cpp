@@ -12,6 +12,7 @@
 #include "kmc_api/kmer_api.h"
 #include "parameters.h"
 #include "KMCRunner.h"
+#include "KMCToolsRunner.h"
 
 
 
@@ -91,15 +92,19 @@ void fill_temporary_kmc_databases_names(Params& params)
 {
 	for (uint32_t tmp_database_id = 0; tmp_database_id < params.mkmcParams.inputFiles.size(); ++tmp_database_id)
 	{
-		std::ostringstream sstream;
-		sstream << params.stage1ParamsTemplate.GetTmpPath();
+		std::ostringstream sstreamKMC, sstreamTools;
+		sstreamKMC << params.stage1ParamsTemplate.GetTmpPath();
+		sstreamTools << params.stage1ParamsTemplate.GetTmpPath();
 		if (params.stage1ParamsTemplate.GetTmpPath().back() != '/' && params.stage1ParamsTemplate.GetTmpPath().back() != '\\')
 		{
-			sstream << "/";
+			sstreamKMC << "/";
+			sstreamTools << "/";
 		}
-		sstream << "kmc_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
+		sstreamKMC << "kmc_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
+		sstreamTools << "tools_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
 
-		params.mkmcParams.tmpFiles.push_back(sstream.str());
+		params.mkmcParams.kmcOutputFiles.push_back(sstreamKMC.str());
+		params.mkmcParams.toolsOutputFiles.push_back(sstreamTools.str());
 	}
 }
 
@@ -336,6 +341,9 @@ int main(int argc, char** argv)
 
 		KMCRunner kmcRunner(params);
 		kmcRunner.runKMCParallel();
+
+		KMCToolsRunner kmcToolsRunner(params);
+		kmcToolsRunner.runKMCToolsParallel();
 	}
 	catch (const std::exception& e)
 	{
