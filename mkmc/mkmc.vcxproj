@@ -150,6 +150,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Dump.cpp" />
     <ClCompile Include="KMCRunner.cpp" />
     <ClCompile Include="KMCToolsRunner.cpp" />
     <ClCompile Include="mkmc.cpp" />
@@ -167,6 +168,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Dump.h" />
     <ClInclude Include="KMCRunner.h" />
     <ClInclude Include="KMCToolsRunner.h" />
     <ClInclude Include="parameters.h" />

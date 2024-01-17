@@ -1,4 +1,3 @@
-#include "KMCToolsRunner.h"
 #include <cstring>
 #include <iostream>
 #if defined(WIN32) || defined(_WIN32)
@@ -13,6 +12,7 @@
 #include <algorithm>
 #include <sstream>
 #endif
+#include "KMCToolsRunner.h"
 
 
 

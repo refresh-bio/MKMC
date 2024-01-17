@@ -13,6 +13,7 @@
 #include "parameters.h"
 #include "KMCRunner.h"
 #include "KMCToolsRunner.h"
+#include "Dump.h"
 
 
 
@@ -246,6 +247,11 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			stage2Params.SetStrictMemoryNUncompactors(atoi(&argv[i][5]));
 		if (strncmp(argv[i], "-smme", 5) == 0)
 			stage2Params.SetStrictMemoryNMergers(atoi(&argv[i][5]));
+
+		if (strncmp(argv[i], "-dmp", 4) == 0)
+			mkmcParams.dumpStepSize = atoll(&argv[i][4]);
+		else if (strncmp(argv[i], "-hdd", 4) == 0 && strlen(argv[i]) == 4)
+			mkmcParams.dumpToFile = true;
 	}
 
 	if (argc - i < 3)
@@ -344,6 +350,16 @@ int main(int argc, char** argv)
 
 		KMCToolsRunner kmcToolsRunner(params);
 		kmcToolsRunner.runKMCToolsParallel();
+
+		Dump dump(params);
+		if (params.mkmcParams.dumpToFile)
+		{
+			dump.dumpToFile();
+		}
+		else
+		{
+			dump.dumpToStd();
+		}
 	}
 	catch (const std::exception& e)
 	{
