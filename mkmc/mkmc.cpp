@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <random>
 #include <sstream>
 #include <iomanip>
 #include "kmc_core/kmc_runner.h"
@@ -281,9 +280,6 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				input_file_names.push_back(s);
 
 		in.close();
-		std::random_device rd;
-		std::mt19937 gen(rd());
-		std::shuffle(input_file_names.begin(), input_file_names.end(), gen);
 	}
 	mkmcParams.inputFiles.swap(input_file_names);
 
@@ -345,19 +341,23 @@ int main(int argc, char** argv)
 		}
 		params.setKMCParams();
 
+		std::cout << "Starting k-mer counting...\n";
 		KMCRunner kmcRunner(params);
 		kmcRunner.runKMCParallel();
 
+		std::cout << "Starting converting k-mer databases...\n";
 		KMCToolsRunner kmcToolsRunner(params);
 		kmcToolsRunner.runKMCToolsParallel();
 
 		Dump dump(params);
 		if (params.mkmcParams.dumpToFile)
 		{
+			std::cout << "Starting dumping to file " << params.mkmcParams.dumpToFile << "...\n";
 			dump.dumpToFile();
 		}
 		else
 		{
+			std::cout << "Starting dumping to stdout...\n";
 			dump.dumpToStd();
 		}
 	}
