@@ -1,5 +1,6 @@
 #include <cstring>
 #include <iostream>
+#include <filesystem>
 #if defined(WIN32) || defined(_WIN32)
 #include <direct.h>
 #include <shlwapi.h>
@@ -176,7 +177,7 @@ bool KMCToolsRunner::runCommand(std::string command, const std::string& args, un
     if (bytesInserted >= 0) {
         fileNameBuffer[bytesInserted] = '\0';
         dirname(fileNameBuffer);
-        command = std::string(fileNameBuffer) + DIRECTORY_SEPARATOR + command;
+        command = std::string(fileNameBuffer) + std::filesystem::path::preferred_separator + command;
     }
 
     if (buffer == NULL) {
