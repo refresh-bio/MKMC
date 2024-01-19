@@ -1,4 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -352,7 +351,7 @@ int main(int argc, char** argv)
 		Dump dump(params);
 		if (params.mkmcParams.dumpToFile)
 		{
-			std::cout << "Starting dumping to file " << params.mkmcParams.dumpToFile << "...\n";
+			std::cout << "Starting dumping to file " << params.mkmcParams.outputFile << "...\n";
 			dump.dumpToFile();
 		}
 		else
