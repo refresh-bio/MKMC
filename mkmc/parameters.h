@@ -17,6 +17,7 @@ struct MKMCParams
 	std::string outputFile;
 	bool dumpToFile = false;
 	uint64_t dumpStepSize = static_cast<uint64_t>(1E9);
+	double minKmersPresenceThreshold = 0.0;
 };
 
 struct Params

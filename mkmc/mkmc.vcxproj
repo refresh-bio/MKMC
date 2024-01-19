@@ -151,6 +151,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Dump.cpp" />
+    <ClCompile Include="Filter.cpp" />
     <ClCompile Include="KMCRunner.cpp" />
     <ClCompile Include="KMCToolsRunner.cpp" />
     <ClCompile Include="mkmc.cpp" />
@@ -169,6 +170,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dump.h" />
+    <ClInclude Include="Filter.h" />
     <ClInclude Include="KMCRunner.h" />
     <ClInclude Include="KMCToolsRunner.h" />
     <ClInclude Include="parameters.h" />

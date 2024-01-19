@@ -250,6 +250,8 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			mkmcParams.dumpStepSize = atoll(&argv[i][4]);
 		else if (strncmp(argv[i], "-hdd", 4) == 0 && strlen(argv[i]) == 4)
 			mkmcParams.dumpToFile = true;
+		else if (strncmp(argv[i], "-thr", 4) == 0)
+			mkmcParams.minKmersPresenceThreshold = atof(&argv[i][4]);
 	}
 
 	if (argc - i < 3)

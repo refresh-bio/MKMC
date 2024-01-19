@@ -9,6 +9,7 @@
 #include "../kmc/kmc_api/kmer_api.h"
 #include "../kmc/kmc_api/kmc_file.h"
 #include "Dump.h"
+#include "Filter.h"
 
 
 
@@ -45,6 +46,8 @@ void Dump::dumpToStd()
 
     std::string str_kmer;
     uint64_t dumped_symbols = 0;
+    std::vector<size_t> kMersCounts(samples.size());
+    Filter filter(params);
     while (true)
     {
         std::size_t min_id = std::numeric_limits<size_t>::max();
@@ -62,12 +65,9 @@ void Dump::dumpToStd()
         auto min_kmer = samples[min_id].First();
         min_kmer.to_string(str_kmer);
 
-        std::cout << str_kmer; 
-        dumped_symbols += str_kmer.length();
-
-        std::ostringstream sstream;
-        for (auto& sample : samples)
+        for (size_t itSample = 0; itSample < samples.size(); ++itSample)
         {
+            KMCFileWrapper& sample = samples[itSample];
             size_t count;
             if (sample.Finished() || !(sample.First() == min_kmer))
                 count = 0;
@@ -77,17 +77,29 @@ void Dump::dumpToStd()
                 sample.Next();
             }
 
-            sstream << "\t" << count;
+            kMersCounts[itSample] = count;
         }
 
-        std::cout << sstream.str();
-        std::cout << "\n";
-        dumped_symbols += sstream.str().length() + 1;
-
-        if (dumped_symbols >= params.mkmcParams.dumpStepSize)
+        if (filter.keepKMer(kMersCounts))
         {
-            std::system("pause");
-            dumped_symbols = 0;
+            std::cout << str_kmer;
+            dumped_symbols += str_kmer.length();
+
+            std::ostringstream sstream;
+            for (size_t count : kMersCounts)
+            {
+                sstream << "\t" << count;
+            }
+
+            std::cout << sstream.str();
+            std::cout << "\n";
+            dumped_symbols += sstream.str().length() + 1;
+
+            if (dumped_symbols >= params.mkmcParams.dumpStepSize)
+            {
+                std::system("pause");
+                dumped_symbols = 0;
+            }
         }
     }
 }
@@ -105,6 +117,8 @@ void Dump::dumpToFile()
     openDatabases(samples);
 
     std::string str_kmer;
+    std::vector<size_t> kMersCounts(samples.size());
+    Filter filter(params);
     while (true)
     {
         std::size_t min_id = std::numeric_limits<size_t>::max();
@@ -122,10 +136,9 @@ void Dump::dumpToFile()
         auto min_kmer = samples[min_id].First();
         min_kmer.to_string(str_kmer);
 
-        output_file << str_kmer;
-
-        for (auto& sample : samples)
+        for (size_t itSample = 0; itSample < samples.size(); ++itSample)
         {
+            KMCFileWrapper& sample = samples[itSample];
             size_t count;
             if (sample.Finished() || !(sample.First() == min_kmer))
                 count = 0;
@@ -135,10 +148,21 @@ void Dump::dumpToFile()
                 sample.Next();
             }
 
-            output_file << "\t" << count;
+            kMersCounts[itSample] = count;
         }
 
-        output_file << "\n";
+        if (filter.keepKMer(kMersCounts))
+        {
+            output_file << str_kmer;
+
+            std::ostringstream sstream;
+            for (size_t count : kMersCounts)
+            {
+                output_file << "\t" << count;
+            }
+
+            output_file << "\n";
+        }
     }
 }
 
