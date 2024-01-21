@@ -8,6 +8,7 @@
 #include <sstream>
 #include "../kmc/kmc_api/kmer_api.h"
 #include "../kmc/kmc_api/kmc_file.h"
+#include "../kmc/kmc_dump/nc_utils.h"
 #include "Dump.h"
 #include "Filter.h"
 
@@ -44,7 +45,8 @@ void Dump::dumpToStd()
     std::vector<KMCFileWrapper> samples;
     openDatabases(samples);
 
-    std::string str_kmer;
+    uint32_t k = params.stage1ParamsTemplate.GetKmerLen();
+    std::unique_ptr<char[]> str_kmer_buff = std::make_unique<char[]>(samples.size() * (params.mkmcParams.count_symbols + 1) + k + 1);
     uint64_t dumped_symbols = 0;
     std::vector<size_t> kMersCounts(samples.size());
     Filter filter(params);
@@ -63,7 +65,7 @@ void Dump::dumpToStd()
             break;
 
         auto min_kmer = samples[min_id].First();
-        min_kmer.to_string(str_kmer);
+        min_kmer.to_string(str_kmer_buff.get());
 
         for (size_t itSample = 0; itSample < samples.size(); ++itSample)
         {
@@ -82,18 +84,20 @@ void Dump::dumpToStd()
 
         if (filter.keepKMer(kMersCounts))
         {
-            std::cout << str_kmer;
-            dumped_symbols += str_kmer.length();
+            dumped_symbols += k;
 
-            std::ostringstream sstream;
+            uint32_t pos = k;
             for (size_t count : kMersCounts)
             {
-                sstream << "\t" << count;
+                str_kmer_buff[pos++] = '\t';
+                uint32_t shift = CNumericConversions::Int2PChar(count, (uchar*)str_kmer_buff.get() + pos);
+                pos += shift;
             }
 
-            std::cout << sstream.str();
-            std::cout << "\n";
-            dumped_symbols += sstream.str().length() + 1;
+            str_kmer_buff[pos] = '\n';
+            str_kmer_buff[pos + 1] = '\0';
+            std::cout << str_kmer_buff.get();
+            dumped_symbols += pos;
 
             if (dumped_symbols >= params.mkmcParams.dumpStepSize)
             {
@@ -116,7 +120,8 @@ void Dump::dumpToFile()
     std::vector<KMCFileWrapper> samples;
     openDatabases(samples);
 
-    std::string str_kmer;
+    uint32_t k = params.stage1ParamsTemplate.GetKmerLen();
+    std::unique_ptr<char[]> str_kmer_buff = std::make_unique<char[]>(samples.size() * (params.mkmcParams.count_symbols + 1) + k + 1);
     std::vector<size_t> kMersCounts(samples.size());
     Filter filter(params);
     while (true)
@@ -134,7 +139,7 @@ void Dump::dumpToFile()
             break;
 
         auto min_kmer = samples[min_id].First();
-        min_kmer.to_string(str_kmer);
+        min_kmer.to_string(str_kmer_buff.get());
 
         for (size_t itSample = 0; itSample < samples.size(); ++itSample)
         {
@@ -153,15 +158,17 @@ void Dump::dumpToFile()
 
         if (filter.keepKMer(kMersCounts))
         {
-            output_file << str_kmer;
-
-            std::ostringstream sstream;
+            uint32_t pos = k;
             for (size_t count : kMersCounts)
             {
-                output_file << "\t" << count;
+                str_kmer_buff[pos++] = '\t';
+                uint32_t shift = CNumericConversions::Int2PChar(count, (uchar*)str_kmer_buff.get() + pos);
+                pos += shift;
             }
 
-            output_file << "\n";
+            str_kmer_buff[pos] = '\n';
+            str_kmer_buff[pos + 1] = '\0';
+            output_file << str_kmer_buff.get();
         }
     }
 }

@@ -33,6 +33,7 @@
     <ClCompile Include="Filter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\kmc\kmc_dump\nc_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KMCRunner.h">
