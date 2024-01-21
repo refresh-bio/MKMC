@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <thread>
+#include <cstdint>
 #include "kmc_core/kmc_runner.h"
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"

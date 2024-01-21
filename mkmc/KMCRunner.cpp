@@ -1,5 +1,6 @@
 #include <thread>
 #include <vector>
+#include <cstdint>
 #include "KMCRunner.h"
 
 

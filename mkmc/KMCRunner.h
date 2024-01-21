@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <vector>
+#include <cstdint>
 #include "parameters.h"
 
 

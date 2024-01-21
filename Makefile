@@ -112,7 +112,7 @@ mkmc: $(OUT_BIN_DIR)/mkmc
 
 $(OUT_BIN_DIR)/mkmc:
 	mkdir -p $(OUT_BIN_DIR)
-	cd $(KMC_DIR); $(MAKE) kmc
+	cd $(KMC_DIR); $(MAKE) kmc kmc_dump
 	cd $(MKMC_MAIN_DIR) && $(MAKE) KMC_DIR=$(KMC_DIR) CC=$(CC) CLINK=$(CLINK)
 	-cp $(MKMC_MAIN_DIR)/mkmc $(OUT_BIN_DIR)
 
