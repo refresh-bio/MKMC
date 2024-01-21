@@ -9,7 +9,7 @@ OBJS = $(SRCS:.cpp=.o)
 all: mkmc
 
 mkmc: $(OBJS)
-		$(CC) $(CLINK) $(OBJS) $(KMC_DIR_IN)/kmc_api/*.o $(KMC_DIR_IN)/kmc_core/*.o $(LIBS) -o $@
+		$(CC) $(CLINK) $(OBJS) $(KMC_DIR_IN)/kmc_api/*.o $(KMC_DIR_IN)/kmc_core/*.o $(KMC_DIR_IN)/kmc_dump/nc_utils.o $(LIBS) -o $@
 
 $(OBJS): %.o : %.cpp
 		$(CC) $(CFLAGS) -c $< -o $@

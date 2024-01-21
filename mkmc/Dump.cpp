@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <cinttypes>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <sstream>

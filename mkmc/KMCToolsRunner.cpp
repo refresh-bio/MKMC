@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iostream>
 #include <filesystem>
+#include <cstdint>
 #if defined(WIN32) || defined(_WIN32)
 #include <direct.h>
 #include <shlwapi.h>
