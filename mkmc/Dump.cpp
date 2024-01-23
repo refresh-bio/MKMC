@@ -6,6 +6,7 @@
 #include <limits>
 #include <memory>
 #include <sstream>
+#include <algorithm>
 #include "../kmc/kmc_api/kmer_api.h"
 #include "../kmc/kmc_api/kmc_file.h"
 #include "../kmc/kmc_dump/nc_utils.h"
@@ -108,6 +109,8 @@ void Dump::dumpToStd()
     }
 }
 
+//#define POP_HEAP
+
 void Dump::dumpToFile()
 {
     std::ofstream output_file(params.mkmcParams.outputFile);
@@ -124,19 +127,49 @@ void Dump::dumpToFile()
     std::unique_ptr<char[]> str_kmer_buff = std::make_unique<char[]>(samples.size() * (params.mkmcParams.count_symbols + 1) + k + 1);
     std::vector<size_t> kMersCounts(samples.size());
     Filter filter(params);
+
+    class HeapComp {
+        std::vector<KMCFileWrapper>& samples;
+    public:
+        HeapComp(std::vector<KMCFileWrapper>& samples) : samples(samples) {}
+
+        bool operator()(size_t a, size_t b)
+        {
+            // aFinished && !bFinished -> true
+            // bFinished && !aFinished -> false
+            // aFinished && bFinished -> false
+
+            if (samples[a].Finished())
+            {
+                return !samples[b].Finished();
+            }
+            if (samples[b].Finished())
+            {
+                return false;
+            }
+            return samples[b].First() < samples[a].First();
+        }
+    };
+    std::vector<size_t> kmersHeap(samples.size());
+    for (std::size_t i = 0; i < samples.size(); ++i)
+    {
+        kmersHeap[i] = i;
+    }
+
+    std::make_heap(kmersHeap.begin(), kmersHeap.end(), HeapComp(samples));
+
+
     while (true)
     {
-        std::size_t min_id = std::numeric_limits<size_t>::max();
-        for (std::size_t i = 0; i < samples.size(); ++i)
-        {
-            if (!samples[i].Finished())
-            {
-                if (min_id == std::numeric_limits<size_t>::max() || samples[i].First() < samples[min_id].First())
-                    min_id = i;
-            }
-        }
-        if (min_id == std::numeric_limits<size_t>::max()) // no more k-mers
+#ifdef POP_HEAP
+        if (kmersHeap.empty())
             break;
+#endif
+        size_t min_id = kmersHeap.front();
+#ifndef POP_HEAP
+        if (samples[min_id].Finished())
+            break;
+#endif
 
         auto min_kmer = samples[min_id].First();
         min_kmer.to_string(str_kmer_buff.get());
@@ -155,6 +188,12 @@ void Dump::dumpToFile()
 
             kMersCounts[itSample] = count;
         }
+
+        std::make_heap(kmersHeap.begin(), kmersHeap.end(), HeapComp(samples));
+#ifdef POP_HEAP
+        if (samples[kmersHeap.back()].Finished())
+            kmersHeap.pop_back();
+#endif
 
         if (filter.keepKMer(kMersCounts))
         {
