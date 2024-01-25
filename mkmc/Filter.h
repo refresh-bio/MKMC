@@ -15,5 +15,5 @@ public:
 		params(params)
 	{}
 
-	bool keepKMer(std::vector<size_t> kMersCounts);
+	bool keepKMer(const std::vector<size_t>& kMersCounts);
 };
