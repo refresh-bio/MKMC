@@ -124,6 +124,13 @@ void Dump::dumpToFile()
     std::vector<KMCFileWrapper> samples;
     openDatabases(samples);
 
+    output_file << "k-mer\t";
+    for (const std::string& db : params.mkmcParams.inputFiles)
+    {
+        output_file << db << '\t';
+    }
+    output_file << '\n';
+
     uint32_t k = params.stage1ParamsTemplate.GetKmerLen();
     std::unique_ptr<char[]> str_kmer_buff = std::make_unique<char[]>(samples.size() * (params.mkmcParams.count_symbols + 1) + k + 1);
     std::vector<size_t> kMersCounts(samples.size());
