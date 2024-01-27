@@ -7,6 +7,7 @@
 #include <memory>
 #include <sstream>
 #include <algorithm>
+#include <numeric>
 #include "../kmc/kmc_api/kmer_api.h"
 #include "../kmc/kmc_api/kmc_file.h"
 #include "../kmc/kmc_dump/nc_utils.h"
@@ -151,20 +152,11 @@ void Dump::dumpToFile()
         }
     };
     std::vector<size_t> kmersHeap(samples.size());
-    for (std::size_t i = 0; i < samples.size(); ++i)
-    {
-        kmersHeap[i] = i;
-    }
-
+    std::iota(kmersHeap.begin(), kmersHeap.end(), 0);
     std::make_heap(kmersHeap.begin(), kmersHeap.end(), HeapComp(samples));
-
 
     while (true)
     {
-#ifdef POP_HEAP
-        if (kmersHeap.empty())
-            break;
-#endif
         size_t min_id = kmersHeap.front();
 #ifndef POP_HEAP
         if (samples[min_id].Finished())
@@ -213,7 +205,7 @@ void Dump::dumpToFile()
             for (size_t count : kMersCounts)
             {
                 str_kmer_buff[pos++] = '\t';
-                uint32_t shift = CNumericConversions::Int2PChar(count, (uchar*)str_kmer_buff.get() + pos);
+                uint32_t shift = CNumericConversions::Int2PChar(count, reinterpret_cast<uchar*>(str_kmer_buff.get()) + pos);
                 pos += shift;
             }
 
