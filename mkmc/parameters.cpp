@@ -36,4 +36,6 @@ void Params::setKMCParams()
 		stage1ParamsTemplate.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 		stage2ParamsTemplate.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 	}
+
+	stage1ParamsTemplate.SetRamOnlyMode(true);
 }
