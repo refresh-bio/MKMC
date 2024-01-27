@@ -251,7 +251,15 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		else if (strncmp(argv[i], "-hdd", 4) == 0 && strlen(argv[i]) == 4)
 			mkmcParams.dumpToFile = true;
 		else if (strncmp(argv[i], "-thr", 4) == 0)
-			mkmcParams.minKmersPresenceThreshold = atof(&argv[i][4]);
+		{
+			double threshold = atof(&argv[i][4]);
+			if (threshold < 0.0 || threshold > 1.0)
+			{
+				std::cerr << "Error: Filtering threshold -thr should be from a range [0, 1]\n";
+				return false;
+			}
+			mkmcParams.minKmersPresenceThreshold = threshold;
+		}
 	}
 
 	if (argc - i < 3)
