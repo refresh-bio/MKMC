@@ -12,6 +12,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdio>
+#include <string>
 #include "parameters.h"
 #include "KMCRunner.h"
 
@@ -26,13 +27,13 @@
 class KMCToolsRunner {
     const Params& params;
 
-    TasksPool tasksPool;
-    void operator()();
+    void operator()(TasksPool& tasksPool);
+
+    bool checkToolsRequired(const std::string& kmcOutputFile);
 
 public:
     KMCToolsRunner(const Params& params) :
-        params(params),
-        tasksPool(params.mkmcParams.kmcOutputFiles, params.mkmcParams.toolsOutputFiles)
+        params(params)
     {}
 
     void runKMCToolsParallel();

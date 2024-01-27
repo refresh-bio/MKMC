@@ -2,7 +2,9 @@
 #include <iostream>
 #include <filesystem>
 #include <cstdint>
+#include <algorithm>
 #if defined(WIN32) || defined(_WIN32)
+#define NOMINMAX
 #include <direct.h>
 #include <shlwapi.h>
 #else
@@ -18,7 +20,7 @@
 
 
 
-void KMCToolsRunner::operator()()
+void KMCToolsRunner::operator()(TasksPool& tasksPool)
 {
     std::string inputFile, outputFile;
     while (tasksPool.getTask(inputFile, outputFile))
@@ -40,12 +42,44 @@ void KMCToolsRunner::operator()()
     }
 }
 
+bool KMCToolsRunner::checkToolsRequired(const std::string& kmcOutputFile)
+{
+    CKMCFile file;
+    if (file.OpenForListing(kmcOutputFile))
+    {
+        return file.IsKMC2();
+    }
+    else
+    {
+        std::cerr << "ERROR: cannot open temporary file " << kmcOutputFile << std::endl;
+        return false;
+    }
+}
+
 void KMCToolsRunner::runKMCToolsParallel()
 {
-    std::vector<std::thread> threads(params.mkmcParams.nKMCWorkers);
-    for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nKMCWorkers; ++i_thred)
+    std::vector<std::string> inputFiles, outputFiles;
+    for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i)
     {
-        threads[i_thred] = std::thread([this] { (*this)(); });
+        const std::string& kmcOutputFile = params.mkmcParams.kmcOutputFiles[i];
+        const std::string& toolsOutputFile = params.mkmcParams.toolsOutputFiles[i];
+        if (checkToolsRequired(kmcOutputFile))
+        {
+            inputFiles.push_back(kmcOutputFile);
+            outputFiles.push_back(toolsOutputFile);
+        }
+        else
+        {
+            std::filesystem::rename(kmcOutputFile + ".kmc_pre", toolsOutputFile + ".kmc_pre");
+            std::filesystem::rename(kmcOutputFile + ".kmc_suf", toolsOutputFile + ".kmc_suf");
+        }
+    }
+    TasksPool tasksPool(inputFiles, outputFiles);
+
+    std::vector<std::thread> threads(std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()));
+    for (uint32_t i_thred = 0; i_thred < std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()); ++i_thred)
+    {
+        threads[i_thred] = std::thread([this, &tasksPool] { (*this)(tasksPool); });
     }
 
     for (std::thread& thread : threads)
