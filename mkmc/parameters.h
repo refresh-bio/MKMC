@@ -13,13 +13,15 @@ struct MKMCParams
 	std::vector<std::string> kmcOutputFiles;
 	std::vector<std::string> toolsOutputFiles;
 	uint32_t nThreads = std::thread::hardware_concurrency();
-	uint32_t nKMCWorkers = 2;
+	uint32_t nKMCWorkers = 8;
 	uint32_t maxRamGB = 12;
 	std::string outputFile;
 	bool dumpToFile = true;
 	uint64_t dumpStepSize = static_cast<uint64_t>(1E9);
 	double minKmersPresenceThreshold = 0.0;
 	const uint32_t count_symbols = 5;
+
+	bool nKMCWorkersUserSet = false;
 };
 
 struct Params

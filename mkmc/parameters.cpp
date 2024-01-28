@@ -1,4 +1,5 @@
 #include "parameters.h"
+#include <iostream>
 
 Params::Params()
 {
@@ -16,16 +17,17 @@ Params::Params()
 
 void Params::setKMCParams()
 {
-	if (mkmcParams.nThreads < mkmcParams.nKMCWorkers)
+	if (mkmcParams.nKMCWorkers > mkmcParams.nThreads - 1)
 	{
-		stage1ParamsTemplate.SetNThreads(1);
-		stage2ParamsTemplate.SetNThreads(1);
+		mkmcParams.nKMCWorkers = mkmcParams.nThreads - 1;
+		if (mkmcParams.nKMCWorkersUserSet)
+		{
+			std::cerr << "Warning: number of workers is too huge, reduced to " << mkmcParams.nKMCWorkers << std::endl;
+		}
 	}
-	else
-	{
-		stage1ParamsTemplate.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
-		stage2ParamsTemplate.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
-	}
+
+	stage1ParamsTemplate.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
+	stage2ParamsTemplate.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
 
 	if (mkmcParams.maxRamGB < 2 * mkmcParams.nKMCWorkers) {
 		stage1ParamsTemplate.SetMaxRamGB(2);

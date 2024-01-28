@@ -137,6 +137,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		else if (strncmp(argv[i], "-wrk", 4) == 0)
 		{
 			mkmcParams.nKMCWorkers = atoi(&argv[i][4]);
+			mkmcParams.nKMCWorkersUserSet = true;
 		}
 		// k-mer length
 		else if (strncmp(argv[i], "-k", 2) == 0)
