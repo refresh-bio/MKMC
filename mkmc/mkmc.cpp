@@ -12,6 +12,7 @@
 #include "KMCRunner.h"
 #include "KMCToolsRunner.h"
 #include "Dump.h"
+#include "time.hpp"
 
 
 
@@ -351,25 +352,43 @@ int main(int argc, char** argv)
 		}
 		params.setKMCParams();
 
+		Timer kmc_timer, tools_timer, dump_timer;
+
 		std::cout << "Starting k-mer counting...\n";
 		KMCRunner kmcRunner(params);
+		kmc_timer.startTimer();
 		kmcRunner.runKMCParallel();
+		kmc_timer.stopTimer();
 
 		std::cout << "Starting converting k-mer databases...\n";
 		KMCToolsRunner kmcToolsRunner(params);
+		tools_timer.startTimer();
 		kmcToolsRunner.runKMCToolsParallel();
+		tools_timer.stopTimer();
 
 		Dump dump(params);
 		if (params.mkmcParams.dumpToFile)
 		{
 			std::cout << "Starting dumping to file " << params.mkmcParams.outputFile << "...\n";
+			dump_timer.startTimer();
 			dump.dumpToFile();
+			dump_timer.stopTimer();
 		}
 		else
 		{
 			std::cout << "Starting dumping to stdout...\n";
 			dump.dumpToStd();
 		}
+
+		std::cout << "KMC: \n";
+		std::cout << "\tStart: " << kmc_timer.getStartTime() << "\n";
+		std::cout << "\tEnd:   " << kmc_timer.getStopTime() << "\n";
+		std::cout << "KMC tools: \n";
+		std::cout << "\tStart: " << tools_timer.getStartTime() << "\n";
+		std::cout << "\tEnd:   " << tools_timer.getStopTime() << "\n";
+		std::cout << "Dump: \n";
+		std::cout << "\tStart: " << dump_timer.getStartTime() << "\n";
+		std::cout << "\tEnd:   " << dump_timer.getStopTime() << "\n";
 	}
 	catch (const std::exception& e)
 	{
