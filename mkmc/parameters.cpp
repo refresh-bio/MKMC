@@ -17,27 +17,29 @@ Params::Params()
 
 void Params::setKMCParams()
 {
+	bool mKMCWorkersReduced = false;
 	if (mkmcParams.nKMCWorkers > mkmcParams.nThreads - 1)
 	{
 		mkmcParams.nKMCWorkers = mkmcParams.nThreads - 1;
-		if (mkmcParams.nKMCWorkersUserSet)
-		{
-			std::cerr << "Warning: number of workers is too huge, reduced to " << mkmcParams.nKMCWorkers << std::endl;
-		}
+		mKMCWorkersReduced = true;
 	}
 
 	stage1ParamsTemplate.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
 	stage2ParamsTemplate.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
 
-	if (mkmcParams.maxRamGB < 2 * mkmcParams.nKMCWorkers) {
-		stage1ParamsTemplate.SetMaxRamGB(2);
-		stage2ParamsTemplate.SetMaxRamGB(2);
-	}
-	else
+	if (mkmcParams.nKMCWorkers * 2 > mkmcParams.maxRamGB)
 	{
-		stage1ParamsTemplate.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
-		stage2ParamsTemplate.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
+		mkmcParams.nKMCWorkers = mkmcParams.maxRamGB / 2;
+		mKMCWorkersReduced = true;
 	}
+
+	if (mkmcParams.nKMCWorkersUserSet && mKMCWorkersReduced)
+	{
+		std::cerr << "Warning: number of workers is too huge, reduced to " << mkmcParams.nKMCWorkers << std::endl;
+	}
+
+	stage1ParamsTemplate.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
+	stage2ParamsTemplate.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 
 	stage1ParamsTemplate.SetRamOnlyMode(true);
 }

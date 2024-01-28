@@ -129,7 +129,17 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		if (argv[i][0] != '-')
 			break;
 		// Number of threads
-		if (strncmp(argv[i], "-t", 2) == 0)
+		if (strncmp(argv[i], "-thr", 4) == 0) // must be before -t
+		{
+			double threshold = atof(&argv[i][4]);
+			if (threshold < 0.0 || threshold > 1.0)
+			{
+				std::cerr << "Error: Filtering threshold -thr should be from a range [0, 1]\n";
+				return false;
+			}
+			mkmcParams.minKmersPresenceThreshold = threshold;
+		}
+		else if (strncmp(argv[i], "-t", 2) == 0)
 		{
 			mkmcParams.nThreads = atoi(&argv[i][2]);
 		}
@@ -251,16 +261,6 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			mkmcParams.dumpStepSize = atoll(&argv[i][4]);
 		else if (strncmp(argv[i], "-hdd", 4) == 0 && strlen(argv[i]) == 4)
 			mkmcParams.dumpToFile = true;
-		else if (strncmp(argv[i], "-thr", 4) == 0)
-		{
-			double threshold = atof(&argv[i][4]);
-			if (threshold < 0.0 || threshold > 1.0)
-			{
-				std::cerr << "Error: Filtering threshold -thr should be from a range [0, 1]\n";
-				return false;
-			}
-			mkmcParams.minKmersPresenceThreshold = threshold;
-		}
 	}
 
 	if (argc - i < 3)
