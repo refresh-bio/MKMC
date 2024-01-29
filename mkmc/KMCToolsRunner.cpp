@@ -29,7 +29,7 @@ void KMCToolsRunner::operator()(TasksPool& tasksPool)
 
         std::ostringstream sstream;
 
-        sstream << "-t" << params.stage1ParamsTemplate.GetNThreads();
+        sstream << "-t" << params.mkmcParams.nThreads;
         sstream << " -hp";
 
         sstream << " transform " << inputFile;
@@ -52,6 +52,7 @@ bool KMCToolsRunner::checkToolsRequired(const std::string& kmcOutputFile)
     else
     {
         std::cerr << "ERROR: cannot open temporary file " << kmcOutputFile << std::endl;
+        std::exit(1);
         return false;
     }
 }
@@ -76,16 +77,18 @@ void KMCToolsRunner::runKMCToolsParallel()
     }
     TasksPool tasksPool(inputFiles, outputFiles);
 
-    std::vector<std::thread> threads(std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()));
-    for (uint32_t i_thred = 0; i_thred < std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()); ++i_thred)
-    {
-        threads[i_thred] = std::thread([this, &tasksPool] { (*this)(tasksPool); });
-    }
+    (*this)(tasksPool);
 
-    for (std::thread& thread : threads)
-    {
-        thread.join();
-    }
+    //std::vector<std::thread> threads(std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()));
+    //for (uint32_t i_thred = 0; i_thred < std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()); ++i_thred)
+    //{
+    //    threads[i_thred] = std::thread([this, &tasksPool] { (*this)(tasksPool); });
+    //}
+
+    //for (std::thread& thread : threads)
+    //{
+    //    thread.join();
+    //}
 }
 
 #if defined(WIN32) || defined(_WIN32) //Windows
