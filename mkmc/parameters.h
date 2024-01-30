@@ -14,7 +14,7 @@ struct MKMCParams
 	std::vector<std::string> toolsOutputFiles;
 	uint32_t nThreads = std::thread::hardware_concurrency();
 	uint32_t nKMCWorkers = 8;
-	uint32_t maxRamGB = 12;
+	uint32_t maxRamGB = 16;
 	std::string outputFile;
 	bool dumpToFile = true;
 	uint64_t dumpStepSize = static_cast<uint64_t>(1E9);
