@@ -85,5 +85,5 @@ if system == 'windows':
         tar.add("x64\Release\kmc_tools.exe", arcname="kmc_tools.exe")
 else:
     run_cmd("make clean")
-    run_cmd("make -j")
+    run_cmd("make -j release")
     run_cmd(f"cd bin; tar -c * | pigz > ../mkmc-{ver}.{system}.{hardware}.tar.gz; cd ..;")
