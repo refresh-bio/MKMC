@@ -73,8 +73,7 @@ ver = get_ver()
 
 print(f"building\n\tVersion: {ver}\n\tOperating system: {system}\n\tHardware: {hardware}")
 
-run_cmd("git submodule init")
-run_cmd("git submodule update")
+run_cmd("git submodule update --init --recursive")
 
 if system == 'windows':
     init_vsvars()
