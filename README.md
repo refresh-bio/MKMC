@@ -1,6 +1,7 @@
 # MKMC (multi-KMC)
+> [!warning]  
+**!!! Currently, this repository contains work in progress and should probably not be used in production !!!**
 
-**!!! Currently, this repository contains work in progress and should probably not be used in production!!!**
 
 MKMC is software utilizing KMC to count k-mers in each of the predefined input samples.
 Then it combines multiple KMC databases into one single text file (currently, but probably will change in the future, i.e., more files, binary format).
