@@ -27,9 +27,8 @@ def get_ver():
     with open("mkmc/Version.h") as f:
         for line in f.readlines():
             line = line.strip()
-            print(line)
             if "MKMC_VER" in line:
-                return line.split("MKMC_VER")[-1].strip()
+                return line.split("MKMC_VER")[-1].strip().split("\"")[1]
     print("Error: cannot read MKMC_VER")
     sys.exit(1)
 
@@ -79,9 +78,7 @@ run_cmd("git submodule update")
 
 if system == 'windows':
     init_vsvars()
-    #run_cmd("MSBuild.exe kmc.sln /property:Configuration=Release /property:Platform=x64")
-    run_cmd("devenv kmc.sln /Build \"Release|x64\"")
-    #run_cmd("devenv kmc.sln /Rebuild \"Release|x64\"")
+    run_cmd("devenv mkmc.sln /Build \"Release|x64\"")
 
     with tarfile.open(f"mkmc-{ver}.{system}.{hardware}.tar.gz", "w:gz") as tar:
         #tar.add(source_dir, arcname=os.path.basename(source_dir))
