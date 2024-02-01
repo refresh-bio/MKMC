@@ -25,6 +25,7 @@ As `[other_parameters]` you can also pass optional parameters:
 
  - `-fq` - if you would like to process FASTQ files (by default mkmc exptects FASTAs); mixing files types is not supported
  - `-wrk<X>` - in a case of a memory requirements reduction need (at the expense of a computation time) pass <X> smaller than 8, e.g. -wrk4
+ - `-t<X>` - number of threads (default: no. of logic CPU cores)
 
 #### Simple example
 Lets assume following FASTQ files:
