@@ -6,6 +6,8 @@ MKMC is software utylizing KMC to count k-mers in each of predefined input sampl
 Then it combines multiple KMC databases into one single text file (currently, but probably will change in the future, i.e. more files, binary format).
 This file is a matrix with k-mers as rows and samples as columns. Values are counts of k-mers in samples.
 
+The easiest way to get the program is to download the most recent version from the [**release page**](https://github.com/refresh-bio/MKMC/releases).
+
 To run MKMC on Linux (`mkmc` and `kmc_tools` have to be in the same directory) type:
 ```
 ./mkmc -k20 -thr0.5 [other_parameters] @<input_files> <output_file> <temp_dir>
