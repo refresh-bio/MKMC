@@ -1,5 +1,7 @@
 all: mkmc kmc_tools
 
+dummy := $(shell git submodule update --init --recursive)
+
 MKMC_MAIN_DIR = mkmc
 ZLIB_DIR = kmc/3rd_party/cloudflare
 KMC_DIR = kmc
