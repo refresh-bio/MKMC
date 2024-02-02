@@ -25,32 +25,32 @@
 #endif
 
 class KMCToolsRunner {
-    const Params& params;
+	const Params& params;
 
-    void operator()(TasksPool& tasksPool);
+	void operator()(TasksPool& tasksPool);
 
-    bool checkToolsRequired(const std::string& kmcOutputFile);
+	bool checkToolsRequired(const std::string& kmcOutputFile);
 
 public:
-    KMCToolsRunner(const Params& params) :
-        params(params)
-    {}
+	KMCToolsRunner(const Params& params) :
+		params(params)
+	{}
 
-    void runKMCToolsParallel();
+	void runKMCToolsParallel();
 
 #if defined(WIN32) || defined(_WIN32) // Windows
 
 private:
-    // buffer - output for child process' stdout and stderr, if NULL, the result is sent to stdout
-    bool runCommand(std::string command, const std::string& args, unsigned long& processResult, char* buffer = NULL, const int bufferSize = 0);
+	// buffer - output for child process' stdout and stderr, if NULL, the result is sent to stdout
+	bool runCommand(std::string command, const std::string& args, unsigned long& processResult, char* buffer = NULL, const int bufferSize = 0);
 
-    bool createPipe(HANDLE& pipeReadHandle, HANDLE& pipeWriteHandle);
-    void destroyPipe(HANDLE& pipeReadHandle, HANDLE& pipeWriteHandle);
+	bool createPipe(HANDLE& pipeReadHandle, HANDLE& pipeWriteHandle);
+	void destroyPipe(HANDLE& pipeReadHandle, HANDLE& pipeWriteHandle);
 
 #else // Linux
 
 private:
-    // buffer - output for child process' stdout and stderr, if NULL, the result is sent to stdout
-    bool runCommand(std::string command, const std::string& args, unsigned long& processResult, char* buffer = NULL, const int bufferSize = 0);
+	// buffer - output for child process' stdout and stderr, if NULL, the result is sent to stdout
+	bool runCommand(std::string command, const std::string& args, unsigned long& processResult, char* buffer = NULL, const int bufferSize = 0);
 #endif
 };
