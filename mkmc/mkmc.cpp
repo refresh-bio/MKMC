@@ -135,7 +135,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			double threshold = atof(&argv[i][4]);
 			if (threshold < 0.0 || threshold > 1.0)
 			{
-				std::cerr << "Error: Filtering threshold -thr should be from a range [0, 1]\n";
+				std::cerr << "Error: Filtering threshold -thr should be from a range [0, 1]\n\n";
 				return false;
 			}
 			mkmcParams.minKmersPresenceThreshold = threshold;
@@ -179,7 +179,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				stage2Params.SetOutputFileType(KMC::OutputFileType::KMC);
 			else
 			{
-				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -okff or -okmc)\n";
+				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -okff or -okmc)\n\n";
 				exit(1);
 			}
 		}
@@ -275,22 +275,32 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 
 	std::vector<std::string> input_file_names;
 	if (input_file_name[0] != '@')
-		input_file_names.push_back(input_file_name);
+	{
+		return false;
+	}
 	else
 	{
 		std::ifstream in(input_file_name.c_str() + 1);
 		if (!in.good())
 		{
-			std::cerr << "Error: No " << input_file_name.c_str() + 1 << " file\n";
+			std::cerr << "Error: No " << input_file_name.c_str() + 1 << " file\n\n";
 			return false;
 		}
 
 		std::string s;
 		while (std::getline(in, s))
+		{
 			if (s != "")
+			{
+				std::ifstream in_reads(s);
+				if (!in_reads.is_open())
+				{
+					std::cerr << "Error: No " << s << " file\n\n";
+					return false;
+				}
 				input_file_names.push_back(s);
-
-		in.close();
+			}
+		}
 	}
 	mkmcParams.inputFiles.swap(input_file_names);
 
@@ -299,28 +309,20 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	//Validate and resolve conflicts in parameters
 	if (was_e && was_opt_out_size)
 	{
-		std::cerr << "Warning: --opt-out-size is ignored because -e was used\n";
+		std::cerr << "Warning: --opt-out-size is ignored because -e was used\n\n";
 	}
 
 	if (was_sm && was_r)
 	{
-		std::cerr << "Error: -sm can not be used with -r\n";
+		std::cerr << "Error: -sm can not be used with -r\n\n";
 		return false;
 	}
 
 	//Check if output files may be created and if it is possible to create file in specified tmp location
-	if (!stage2Params.GetWithoutOutput())
 	{
-		std::string pre_file_name = stage2Params.GetOutputFileName() + ".kmc_pre";
-		std::string suff_file_name = stage2Params.GetOutputFileName() + ".kmc_suf";
-		if (!CanCreateFile(pre_file_name))
+		if (!CanCreateFile(mkmcParams.outputFile))
 		{
-			std::cerr << "Error: Cannot create file: " << pre_file_name << "\n";
-			return false;
-		}
-		if (!CanCreateFile(suff_file_name))
-		{
-			std::cerr << "Error: Cannot create file: " << suff_file_name << "\n";
+			std::cerr << "Error: Cannot create file: " << mkmcParams.outputFile << "\n";
 			return false;
 		}
 	}
