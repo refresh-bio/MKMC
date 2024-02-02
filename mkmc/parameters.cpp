@@ -3,7 +3,7 @@
 
 Params::Params()
 {
-	stage1ParamsTemplate.SetInputFileType(KMC::InputFileType::FASTA);
+	stage1ParamsTemplate.SetInputFileType(KMC::InputFileType::FASTQ);
 
 	stage2ParamsTemplate.SetCutoffMin(1);
 	stage2ParamsTemplate.SetCutoffMax(static_cast<uint64_t>(4E9));
