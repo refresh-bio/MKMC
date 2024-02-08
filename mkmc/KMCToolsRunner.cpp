@@ -16,6 +16,9 @@
 #include <algorithm>
 #include <sstream>
 #endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 #include "KMCToolsRunner.h"
 
 
@@ -216,6 +219,18 @@ bool KMCToolsRunner::runCommand(std::string command, const std::string& args, un
     const int fileNameBufferSize = 261;
     char linkName[linkNameBufferSize];
     char fileNameBuffer[fileNameBufferSize];
+
+#ifdef __APPLE__
+    uint32_t size = fileNameBufferSize;
+    //basing on https://stackoverflow.com/questions/22675457/what-is-the-equivalent-of-proc-self-exe-on-macintosh-os-x-mavericks
+    if (_NSGetExecutablePath(fileNameBuffer, &size) != 0) {
+        // Buffer size is too small.
+        return false;
+    }
+    std::cerr << "fileNameBuffer: " << fileNameBuffer << "\n";
+    std::filesystem::path exePath = std::filesystem::path(fileNameBuffer);
+    command = exePath.parent_path() / command;
+#else
     sprintf(linkName, "/proc/%d/exe", getpid());
     int bytesInserted = readlink(linkName, fileNameBuffer, fileNameBufferSize - 1);
     if (bytesInserted >= 0) {
@@ -223,6 +238,7 @@ bool KMCToolsRunner::runCommand(std::string command, const std::string& args, un
         dirname(fileNameBuffer);
         command = std::string(fileNameBuffer) + std::filesystem::path::preferred_separator + command;
     }
+#endif
 
     if (buffer == NULL) {
         int pid = fork();
