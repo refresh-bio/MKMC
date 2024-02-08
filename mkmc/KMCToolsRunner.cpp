@@ -227,7 +227,6 @@ bool KMCToolsRunner::runCommand(std::string command, const std::string& args, un
         // Buffer size is too small.
         return false;
     }
-    std::cerr << "fileNameBuffer: " << fileNameBuffer << "\n";
     std::filesystem::path exePath = std::filesystem::path(fileNameBuffer);
     command = exePath.parent_path() / command;
 #else
