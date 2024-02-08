@@ -85,7 +85,6 @@ ifeq ($(UNAME_S),Linux)
 	CLINK+=-fabi-version=6
 endif
 
-
 LIB_ZLIB=$(ZLIB_DIR)/libz.a
 LIB_KMC=$(KMC_DIR)/bin/libkmc_core.a
 
@@ -106,16 +105,16 @@ $(LIB_KMC):
 
 kmc_tools: $(OUT_BIN_DIR)/kmc_tools
 
-$(OUT_BIN_DIR)/kmc_tools:
+$(OUT_BIN_DIR)/kmc_tools: $(LIB_ZLIB)
 	mkdir -p $(OUT_BIN_DIR)
-	(cd $(KMC_DIR); $(MAKE) kmc_tools); cp $(KMC_DIR)/bin/kmc_tools $@
+	(cd $(KMC_DIR); $(MAKE) $(MAKEFLAGS) kmc_tools); cp $(KMC_DIR)/bin/kmc_tools $@
 
 mkmc: $(OUT_BIN_DIR)/mkmc
 
-$(OUT_BIN_DIR)/mkmc:
+$(OUT_BIN_DIR)/mkmc: $(LIB_ZLIB)
 	mkdir -p $(OUT_BIN_DIR)
-	cd $(KMC_DIR); $(MAKE) kmc kmc_dump
-	cd $(MKMC_MAIN_DIR) && $(MAKE) KMC_DIR=$(KMC_DIR) CC=$(CC) CLINK="$(CLINK)"
+	cd $(KMC_DIR); $(MAKE) $(MAKEFLAGS) kmc kmc_dump
+	cd $(MKMC_MAIN_DIR) && $(MAKE) $(MAKEFLAGS) KMC_DIR=$(KMC_DIR) CC=$(CC) CLINK="$(CLINK)"
 	-cp $(MKMC_MAIN_DIR)/mkmc $(OUT_BIN_DIR)
 
 
