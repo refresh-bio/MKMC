@@ -124,6 +124,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	KMC::Stage1Params& stage1Params = params.stage1ParamsTemplate;
 	KMC::Stage2Params& stage2Params = params.stage2ParamsTemplate;
 	MKMCParams& mkmcParams = params.mkmcParams;
+	FilterParams& filterParams = params.filterParams;
 	int i;
 
 	bool was_sm = false;
@@ -138,17 +139,23 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	{
 		if (argv[i][0] != '-')
 			break;
-		// Number of threads
-		if (strncmp(argv[i], "-thr", 4) == 0) // must be before -t
+		// Filtering ratio
+		if (strncmp(argv[i], "-thr_rat", 8) == 0) // must be before -t
 		{
-			double threshold = atof(&argv[i][4]);
+			double threshold = atof(&argv[i][8]);
 			if (threshold < 0.0 || threshold > 1.0)
 			{
 				std::cerr << "Error: Filtering threshold -thr should be from a range [0, 1]\n\n";
 				return false;
 			}
-			mkmcParams.minKmersPresenceThreshold = threshold;
+			filterParams.minKmersAboveThresholdRatio = threshold;
 		}
+		// Filtering threshold
+		else if (strncmp(argv[i], "-thr", 4) == 0)
+		{
+			filterParams.minCountThreshold = atoi(&argv[i][4]);
+		}
+		// Number of threads
 		else if (strncmp(argv[i], "-t", 2) == 0)
 		{
 			mkmcParams.nThreads = atoi(&argv[i][2]);

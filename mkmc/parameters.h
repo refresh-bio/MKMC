@@ -21,10 +21,15 @@ struct MKMCParams
 	std::string outputFile;
 	bool dumpToFile = true;
 	uint64_t dumpStepSize = static_cast<uint64_t>(1E9);
-	double minKmersPresenceThreshold = 0.0;
 	const uint32_t count_symbols = 5;
 
 	bool nKMCWorkersUserSet = false;
+};
+
+struct FilterParams
+{
+	double minKmersAboveThresholdRatio = 0.0;
+	uint32_t minCountThreshold = 1;
 };
 
 struct Params
@@ -32,6 +37,7 @@ struct Params
 	KMC::Stage1Params stage1ParamsTemplate;
 	KMC::Stage2Params stage2ParamsTemplate;
 	MKMCParams mkmcParams;
+	FilterParams filterParams;
 
 	Params();
 	void setKMCParams();
