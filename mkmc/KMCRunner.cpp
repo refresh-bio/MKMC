@@ -1,19 +1,26 @@
 #include <thread>
 #include <vector>
 #include <cstdint>
+#include <filesystem>
+#include <limits>
 #include "KMCRunner.h"
 
 
 
 void KMCRunner::operator()()
 {
-	std::string inputFile, outputFile;
-	while (tasksPool.getTask(inputFile, outputFile))
+	uint32_t task = std::numeric_limits<uint32_t>::max();
+	while (tasksPool.getTask(task))
 	{
+		std::string inputFile = params.mkmcParams.inputFiles[task];
+		std::string outputFile = params.mkmcParams.kmcOutputFiles[task];
+		std::string tmpDir = params.mkmcParams.kmcTmpDirs[task];
+
 		KMC::Runner runner;
 
 		KMC::Stage1Params stage1Params = params.stage1ParamsTemplate;
 		stage1Params.SetInputFiles({ inputFile });
+		stage1Params.SetTmpPath(tmpDir);
 		auto stage1Result = runner.RunStage1(stage1Params);
 
 		KMC::Stage2Params stage2Params = params.stage2ParamsTemplate;
@@ -24,6 +31,9 @@ void KMCRunner::operator()()
 
 void KMCRunner::runKMCParallel()
 {
+	for (const auto& dirPath : params.mkmcParams.kmcTmpDirs)
+		std::filesystem::create_directory(std::filesystem::path(dirPath));
+
 	std::vector<std::thread> threads(params.mkmcParams.nKMCWorkers);
 	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nKMCWorkers; ++i_thred)
 	{
@@ -34,17 +44,18 @@ void KMCRunner::runKMCParallel()
 	{
 		thread.join();
 	}
+
+	for (const auto& dirPath : params.mkmcParams.kmcTmpDirs)
+		std::filesystem::remove(std::filesystem::path(dirPath));
 }
 
-bool TasksPool::getTask(std::string& inputFile, std::string& outputFile) {
+bool TasksPool::getTask(uint32_t& task) {
 	std::unique_lock<std::mutex> lck(taskAvailableMutex);
-	assert(nextTask <= inputFiles.size());
-	if (nextTask == inputFiles.size())
+	assert(nextTask <= nTasks);
+	if (nextTask == nTasks)
 	{
 		return false;
 	}
-	inputFile = inputFiles[nextTask];
-	outputFile = outputFiles[nextTask];
-	++nextTask;
+	task = nextTask++;
 	return true;
 }

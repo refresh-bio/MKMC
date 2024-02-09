@@ -40,7 +40,7 @@ void usage()
 //		<< "  -cs<value> - maximal value of a counter (default: 255)\n"
 //		<< "  -cx<value> - exclude k-mers occurring more of than <value> times (default: 1e9)\n"
 		<< "  -b - turn off transformation of k-mers into canonical form\n"
-//		<< "  -r - turn on RAM-only mode \n"
+		<< "  -r - turn on KMC RAM-only mode \n"
 //		<< "  -n<value> - number of bins \n"
 		<< "  -t<value> - total number of threads (default: no. of CPU cores)\n"
 //		<< "  -sf<value> - number of FASTQ reading threads\n"
@@ -93,21 +93,27 @@ bool CanCreateFileInPath(const std::string& path)
 
 void fill_temporary_kmc_databases_names(Params& params)
 {
-	for (uint32_t tmp_database_id = 0; tmp_database_id < params.mkmcParams.inputFiles.size(); ++tmp_database_id)
+	MKMCParams& mkmcParams = params.mkmcParams;
+
+	for (uint32_t tmp_database_id = 0; tmp_database_id < mkmcParams.inputFiles.size(); ++tmp_database_id)
 	{
-		std::ostringstream sstreamKMC, sstreamTools;
-		sstreamKMC << params.stage1ParamsTemplate.GetTmpPath();
-		sstreamTools << params.stage1ParamsTemplate.GetTmpPath();
-		if (params.stage1ParamsTemplate.GetTmpPath().back() != '/' && params.stage1ParamsTemplate.GetTmpPath().back() != '\\')
+		std::ostringstream sstreamKMCDir, sstreamKMC, sstreamTools;
+		sstreamKMCDir << mkmcParams.tmpPath;
+		sstreamKMC << mkmcParams.tmpPath;
+		sstreamTools << mkmcParams.tmpPath;
+		if (mkmcParams.tmpPath.back() != '/' && mkmcParams.tmpPath.back() != '\\')
 		{
+			sstreamKMCDir << "/";
 			sstreamKMC << "/";
 			sstreamTools << "/";
 		}
+		sstreamKMCDir << "kmc_tmp_" << std::setfill('0') << std::setw(5) << tmp_database_id;
 		sstreamKMC << "kmc_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
 		sstreamTools << "tools_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
 
-		params.mkmcParams.kmcOutputFiles.push_back(sstreamKMC.str());
-		params.mkmcParams.toolsOutputFiles.push_back(sstreamTools.str());
+		mkmcParams.kmcTmpDirs.push_back(sstreamKMCDir.str());
+		mkmcParams.kmcOutputFiles.push_back(sstreamKMC.str());
+		mkmcParams.toolsOutputFiles.push_back(sstreamTools.str());
 	}
 }
 
@@ -274,7 +280,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 
 	mkmcParams.outputFile = argv[i++];
 
-	stage1Params.SetTmpPath(argv[i++]);
+	mkmcParams.tmpPath = argv[i++];
 
 	std::vector<std::string> input_file_names;
 	if (input_file_name[0] != '@')

@@ -3,25 +3,24 @@
 #include <mutex>
 #include <vector>
 #include <cstdint>
+#include <algorithm>
 #include "parameters.h"
 
 
 
 class TasksPool
 {
-	const std::vector<std::string>& inputFiles;
-	const std::vector<std::string>& outputFiles;
+	uint32_t nTasks;
 	uint32_t nextTask;
 	std::mutex taskAvailableMutex;
 
 public:
-	TasksPool(const std::vector<std::string>& inputFiles, const std::vector<std::string>& outputFiles) :
-		inputFiles(inputFiles),
-		outputFiles(outputFiles),
+	TasksPool(const uint32_t nTasks) :
+		nTasks(nTasks),
 		nextTask(0)
 	{}
 
-	bool getTask(std::string& inputFile, std::string& outputFile);
+	bool getTask(uint32_t& task);
 };
 
 class KMCRunner
@@ -34,7 +33,7 @@ class KMCRunner
 public:
 	KMCRunner(const Params& params) :
 		params(params),
-		tasksPool(params.mkmcParams.inputFiles, params.mkmcParams.kmcOutputFiles)
+		tasksPool(static_cast<uint32_t>(params.mkmcParams.inputFiles.size()))
 	{}
 
 	void runKMCParallel();

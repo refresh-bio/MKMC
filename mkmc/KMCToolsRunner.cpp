@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <cstdint>
 #include <algorithm>
+#include <limits>
 #if defined(WIN32) || defined(_WIN32)
 #define NOMINMAX
 #include <direct.h>
@@ -20,11 +21,14 @@
 
 
 
-void KMCToolsRunner::operator()(TasksPool& tasksPool)
+void KMCToolsRunner::operator()(TasksPool& tasksPool, const std::vector<std::string>& inputFiles, const std::vector<std::string>& outputFiles)
 {
-	std::string inputFile, outputFile;
-	while (tasksPool.getTask(inputFile, outputFile))
+	uint32_t task = std::numeric_limits<uint32_t>::max();
+	while (tasksPool.getTask(task))
 	{
+		std::string inputFile = inputFiles[task];
+		std::string outputFile = outputFiles[task];
+
 		KMC::Runner runner;
 
 		std::ostringstream sstream;
@@ -81,9 +85,9 @@ void KMCToolsRunner::runKMCToolsParallel()
 			std::filesystem::rename(kmcOutputFile + ".kmc_suf", toolsOutputFile + ".kmc_suf");
 		}
 	}
-	TasksPool tasksPool(inputFiles, outputFiles);
+	TasksPool tasksPool(static_cast<uint32_t>(inputFiles.size()));
 
-	(*this)(tasksPool);
+	(*this)(tasksPool, inputFiles, outputFiles);
 
 	//std::vector<std::thread> threads(std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()));
 	//for (uint32_t i_thred = 0; i_thred < std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()); ++i_thred)

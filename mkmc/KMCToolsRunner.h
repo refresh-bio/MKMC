@@ -27,7 +27,7 @@
 class KMCToolsRunner {
 	const Params& params;
 
-	void operator()(TasksPool& tasksPool);
+	void operator()(TasksPool& tasksPool, const std::vector<std::string>& inputFiles, const std::vector<std::string>& outputFiles);
 
 	bool checkToolsRequired(const std::string& kmcOutputFile);
 
