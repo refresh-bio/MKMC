@@ -31,8 +31,9 @@ void KMCRunner::operator()()
 
 void KMCRunner::runKMCParallel()
 {
-	for (const auto& dirPath : params.mkmcParams.kmcTmpDirs)
-		std::filesystem::create_directory(std::filesystem::path(dirPath));
+	if (!params.stage1ParamsTemplate.GetRamOnlyMode())
+		for (const auto& dirPath : params.mkmcParams.kmcTmpDirs)
+			std::filesystem::create_directory(std::filesystem::path(dirPath));
 
 	std::vector<std::thread> threads(params.mkmcParams.nKMCWorkers);
 	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nKMCWorkers; ++i_thred)
@@ -45,8 +46,9 @@ void KMCRunner::runKMCParallel()
 		thread.join();
 	}
 
-	for (const auto& dirPath : params.mkmcParams.kmcTmpDirs)
-		std::filesystem::remove(std::filesystem::path(dirPath));
+	if (!params.stage1ParamsTemplate.GetRamOnlyMode())
+		for (const auto& dirPath : params.mkmcParams.kmcTmpDirs)
+			std::filesystem::remove(std::filesystem::path(dirPath));
 }
 
 bool TasksPool::getTask(uint32_t& task) {
