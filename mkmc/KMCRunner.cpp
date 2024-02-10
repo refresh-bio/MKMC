@@ -50,14 +50,3 @@ void KMCRunner::runKMCParallel()
 		for (const auto& dirPath : params.mkmcParams.kmcTmpDirs)
 			std::filesystem::remove(std::filesystem::path(dirPath));
 }
-
-bool TasksPool::getTask(uint32_t& task) {
-	std::unique_lock<std::mutex> lck(taskAvailableMutex);
-	assert(nextTask <= nTasks);
-	if (nextTask == nTasks)
-	{
-		return false;
-	}
-	task = nextTask++;
-	return true;
-}

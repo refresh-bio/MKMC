@@ -158,6 +158,7 @@
     <ClCompile Include="KMCToolsRunner.cpp" />
     <ClCompile Include="mkmc.cpp" />
     <ClCompile Include="parameters.cpp" />
+    <ClCompile Include="TasksPool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\kmc\3rd_party\cloudflare\build\zlib.vcxproj">
@@ -177,6 +178,7 @@
     <ClInclude Include="KMCRunner.h" />
     <ClInclude Include="KMCToolsRunner.h" />
     <ClInclude Include="parameters.h" />
+    <ClInclude Include="TasksPool.h" />
     <ClInclude Include="time.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -14,7 +14,7 @@
 #include <cstdio>
 #include <string>
 #include "parameters.h"
-#include "KMCRunner.h"
+#include "TasksPool.h"
 
 
 
