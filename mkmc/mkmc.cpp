@@ -12,6 +12,7 @@
 #include "KMCRunner.h"
 #include "KMCToolsRunner.h"
 #include "Dump.h"
+#include "Finish.h"
 #include "Version.h"
 #include "time.hpp"
 
@@ -154,6 +155,10 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		else if (strncmp(argv[i], "-thr", 4) == 0)
 		{
 			filterParams.minCountThreshold = atoi(&argv[i][4]);
+		}
+		else if (strcmp(argv[i], "-keep") == 0)
+		{
+			mkmcParams.keepTmpFiles = true;
 		}
 		// Number of threads
 		else if (strncmp(argv[i], "-t", 2) == 0)
@@ -397,6 +402,9 @@ int main(int argc, char** argv)
 			std::cout << "Starting dumping to stdout...\n";
 			dump.dumpToStd();
 		}
+
+		Finish finish(params);
+		finish.finishProcessing();
 
 		std::cout << "KMC: \n";
 		std::cout << "\tStart: " << kmc_timer.getStartTime() << "\n";

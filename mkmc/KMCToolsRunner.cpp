@@ -43,6 +43,12 @@ void KMCToolsRunner::operator()(TasksPool& tasksPool, const std::vector<std::str
 		if (!runCommand(KMC_TOOLS_EXECUTABLE_NAME, sstream.str(), result) || result != 0) {
 			std::cerr << "ERROR: cannot run kmc_tools." << std::endl;
 		}
+		else
+			if (!params.mkmcParams.keepTmpFiles)
+			{
+				std::filesystem::remove(inputFile + ".kmc_pre");
+				std::filesystem::remove(inputFile + ".kmc_suf");
+			}
 	}
 }
 

@@ -24,6 +24,8 @@ struct MKMCParams
 	const uint32_t count_symbols = 5;
 
 	bool nKMCWorkersUserSet = false;
+
+	bool keepTmpFiles = false;
 };
 
 struct FilterParams
