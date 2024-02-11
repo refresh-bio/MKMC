@@ -158,6 +158,7 @@
     <ClCompile Include="KMCToolsRunner.cpp" />
     <ClCompile Include="mkmc.cpp" />
     <ClCompile Include="parameters.cpp" />
+    <ClCompile Include="Start.cpp" />
     <ClCompile Include="TasksPool.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -178,6 +179,7 @@
     <ClInclude Include="KMCRunner.h" />
     <ClInclude Include="KMCToolsRunner.h" />
     <ClInclude Include="parameters.h" />
+    <ClInclude Include="Start.h" />
     <ClInclude Include="TasksPool.h" />
     <ClInclude Include="time.hpp" />
   </ItemGroup>

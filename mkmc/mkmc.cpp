@@ -13,6 +13,7 @@
 #include "KMCToolsRunner.h"
 #include "Dump.h"
 #include "Finish.h"
+#include "Start.h"
 #include "Version.h"
 #include "time.hpp"
 
@@ -71,25 +72,6 @@ bool help_or_version(int argc, char** argv)
 			return true;
 	}
 	return false;
-}
-
-bool CanCreateFile(const std::string& path)
-{
-	FILE* f = fopen(path.c_str(), "wb");
-	if (!f)
-		return false;
-	fclose(f);
-	remove(path.c_str());
-	return true;
-}
-
-bool CanCreateFileInPath(const std::string& path)
-{
-	static const std::string name = "kmc_test.bin"; //Some random name
-	if (path.back() == '\\' || path.back() == '/')
-		return CanCreateFile(path + name);
-	else
-		return CanCreateFile(path + '/' + name);
 }
 
 void fill_temporary_kmc_databases_names(Params& params)
@@ -339,19 +321,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		return false;
 	}
 
-	//Check if output files may be created and if it is possible to create file in specified tmp location
-	{
-		if (!CanCreateFile(mkmcParams.outputFile))
-		{
-			std::cerr << "Error: Cannot create file: " << mkmcParams.outputFile << "\n";
-			return false;
-		}
-	}
-	if (!CanCreateFileInPath(stage1Params.GetTmpPath()))
-	{
-		std::cerr << "Error: Cannot create file in specified working directory: " << stage1Params.GetTmpPath() << "\n";
-		return false;
-	}
+
 	return true;
 }
 
@@ -376,6 +346,9 @@ int main(int argc, char** argv)
 		params.setKMCParams();
 
 		Timer kmc_timer, tools_timer, dump_timer;
+
+		Start start(params);
+		start.verifyFiles();
 
 		std::cout << "Starting k-mer counting...\n";
 		KMCRunner kmcRunner(params);

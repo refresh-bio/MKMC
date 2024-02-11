@@ -34,12 +34,18 @@ struct FilterParams
 	uint32_t minCountThreshold = 1;
 };
 
+struct MutableParams
+{
+	bool tmpDirCreated = false;
+};
+
 struct Params
 {
 	KMC::Stage1Params stage1ParamsTemplate;
 	KMC::Stage2Params stage2ParamsTemplate;
 	MKMCParams mkmcParams;
 	FilterParams filterParams;
+	mutable MutableParams mutableParams;
 
 	Params();
 	void setKMCParams();
