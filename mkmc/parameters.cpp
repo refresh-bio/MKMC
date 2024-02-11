@@ -3,7 +3,8 @@
 
 Params::Params()
 {
-	stage1ParamsTemplate.SetInputFileType(KMC::InputFileType::FASTA);
+	stage1ParamsTemplate.SetInputFileType(KMC::InputFileType::FASTQ);
+	stage1ParamsTemplate.SetNBins(64);
 
 	stage2ParamsTemplate.SetCutoffMin(1);
 	stage2ParamsTemplate.SetCutoffMax(static_cast<uint64_t>(4E9));
@@ -40,6 +41,4 @@ void Params::setKMCParams()
 
 	stage1ParamsTemplate.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 	stage2ParamsTemplate.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
-
-	stage1ParamsTemplate.SetRamOnlyMode(true);
 }
