@@ -250,7 +250,18 @@ KMCFileWrapper::KMCFileWrapper(const std::string& path)
 
 inline void KMCFileWrapper::Next()
 {
-	if (!kmc_file->ReadNextKmer(cur, cur_count))
+	auto read_cnt = [this] {
+#ifdef __APPLE__
+	uint64 cnt;
+	bool res = kmc_file->ReadNextKmer(cur, cnt);
+	cur_count = cnt;
+	return res;
+#else
+		return kmc_file->ReadNextKmer(cur, cur_count);
+#endif
+	};
+
+	if (!read_cnt())
 	{
 		// for the last one k-mer (cur_kmer_no == tot_kmers), it is legal to call Next, but ReadNextKmer will fail
 		if (cur_kmer_no != tot_kmers)
