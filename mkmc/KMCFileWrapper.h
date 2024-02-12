@@ -47,3 +47,30 @@ public:
 			kmc_file->Close();
 	}
 };
+
+
+
+inline void KMCFileWrapper::Next()
+{
+	auto read_cnt = [this] {
+#ifdef __APPLE__
+		uint64 cnt;
+		bool res = kmc_file->ReadNextKmer(cur, cnt);
+		cur_count = cnt;
+		return res;
+#else
+		return kmc_file->ReadNextKmer(cur, cur_count);
+#endif
+	};
+
+	if (!read_cnt())
+	{
+		// for the last one k-mer (cur_kmer_no == tot_kmers), it is legal to call Next, but ReadNextKmer will fail
+		if (cur_kmer_no != tot_kmers)
+		{
+			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")\n";
+			exit(1);
+		}
+	}
+	++cur_kmer_no;
+}
