@@ -16,6 +16,7 @@
 #include "Start.h"
 #include "Version.h"
 #include "time.hpp"
+#include "FileGenerators.h"
 
 
 
@@ -57,6 +58,7 @@ void usage()
 //		<< "Example:\n"
 //		<< "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
 //		<< "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n"
+		<< "  -of<a,matrix> - output in FASTA format (-ofa), matrix (-ofmatrix); default: matrix\n"
 		;
 }
 
@@ -176,13 +178,13 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		//output type
 		else if (strncmp(argv[i], "-o", 2) == 0)
 		{
-			if (strncmp(argv[i] + 2, "kff", 3) == 0)
-				stage2Params.SetOutputFileType(KMC::OutputFileType::KFF);
-			else if (strncmp(argv[i] + 2, "kmc", 3) == 0)
-				stage2Params.SetOutputFileType(KMC::OutputFileType::KMC);
+			if (strncmp(argv[i] + 2, "fa", 2) == 0)
+				mkmcParams.outputFileType = OutputFileType::FASTA;
+			else if (strncmp(argv[i] + 2, "matrix", 6) == 0)
+				mkmcParams.outputFileType = OutputFileType::Matrix;
 			else
 			{
-				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -okff or -okmc)\n\n";
+				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -ofa or -omatrix)\n\n";
 				exit(1);
 			}
 		}
@@ -366,9 +368,19 @@ int main(int argc, char** argv)
 		if (params.mkmcParams.dumpToFile)
 		{
 			std::cout << "Starting dumping to file " << params.mkmcParams.outputFile << "...\n";
-			dump_timer.startTimer();
-			dump.dumpToFile();
-			dump_timer.stopTimer();
+			if (params.mkmcParams.outputFileType == OutputFileType::Matrix)
+			{
+				dump_timer.startTimer();
+				dump.dumpToFile<MatrixFileGenerator>();
+				dump_timer.stopTimer();
+			}
+			else if (params.mkmcParams.outputFileType == OutputFileType::FASTA)
+			{
+				dump_timer.startTimer();
+				dump.dumpToFile<FASTAFileGenerator>();
+				dump_timer.stopTimer();
+			}
+			
 		}
 		else
 		{

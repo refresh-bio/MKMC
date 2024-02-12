@@ -7,6 +7,10 @@
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"
 
+
+
+enum class OutputFileType {FASTA, Matrix};
+
 struct MKMCParams
 {
 	std::string tmpPath;
@@ -14,6 +18,7 @@ struct MKMCParams
 	std::vector<std::string> kmcOutputFiles;
 	std::vector<std::string> kmcTmpDirs;
 	std::vector<std::string> toolsOutputFiles;
+	OutputFileType outputFileType = OutputFileType::Matrix;
 
 	uint32_t nThreads = std::thread::hardware_concurrency();
 	uint32_t nKMCWorkers = 8;
