@@ -8,8 +8,10 @@
 
 class KMCFileWrapper
 {
+public:
 	using kmer_t = CKmerAPI;
 
+private:
 	std::unique_ptr<CKMCFile> kmc_file;
 	size_t tot_kmers;
 	size_t cur_kmer_no{};

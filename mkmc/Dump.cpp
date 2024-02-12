@@ -8,11 +8,11 @@
 #include <sstream>
 #include <algorithm>
 #include <numeric>
-#include "../kmc/kmc_api/kmer_api.h"
 #include "../kmc/kmc_api/kmc_file.h"
 #include "../kmc/kmc_dump/nc_utils.h"
 #include "Dump.h"
 #include "Filter.h"
+#include "FileGenerators.h"
 
 
 
@@ -124,15 +124,9 @@ void Dump::dumpToFile()
 	std::vector<KMCFileWrapper> samples;
 	openDatabases(samples);
 
-	output_file << "k-mer\t";
-	for (const std::string& db : params.mkmcParams.inputFiles)
-	{
-		output_file << db << '\t';
-	}
-	output_file << '\n';
-
 	uint32_t k = params.stage1ParamsTemplate.GetKmerLen();
-	std::unique_ptr<char[]> str_kmer_buff = std::make_unique<char[]>(samples.size() * (params.mkmcParams.count_symbols + 1) + k + 1);
+	MatrixFileGenerator fileGenerator(output_file, params.mkmcParams.inputFiles, params.mkmcParams.count_symbols, k);
+
 	std::vector<size_t> kMersCounts(samples.size());
 	Filter filter(params);
 
@@ -173,7 +167,6 @@ void Dump::dumpToFile()
 		std::fill(kMersCounts.begin(), kMersCounts.end(), 0);
 
 		auto min_kmer = samples[min_id].First();
-		min_kmer.to_string(str_kmer_buff.get());
 
 		kMersCounts[min_id] = samples[min_id].FirstCount();
 		samples[min_id].Next();
@@ -208,17 +201,7 @@ void Dump::dumpToFile()
 
 		if (filter.keepKMer(kMersCounts))
 		{
-			uint32_t pos = k;
-			for (size_t count : kMersCounts)
-			{
-				str_kmer_buff[pos++] = '\t';
-				uint32_t shift = CNumericConversions::Int2PChar(count, reinterpret_cast<uchar*>(str_kmer_buff.get()) + pos);
-				pos += shift;
-			}
-
-			str_kmer_buff[pos] = '\n';
-			str_kmer_buff[pos + 1] = '\0';
-			output_file << str_kmer_buff.get();
+			fileGenerator.writeKmer(min_kmer, kMersCounts);
 		}
 	}
 }
