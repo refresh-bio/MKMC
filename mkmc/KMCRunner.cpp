@@ -18,22 +18,23 @@ void KMCRunner::operator()()
 
 		KMC::Runner runner;
 
-		KMC::Stage1Params stage1Params = params.stage1ParamsTemplate;
+		// Fill missing, per counting, KMC parameters
+		KMC::Stage1Params stage1Params = params.stage1Params;
 		stage1Params.SetInputFiles({ inputFile });
 		stage1Params.SetTmpPath(tmpDir);
-		auto stage1Result = runner.RunStage1(stage1Params);
+		runner.RunStage1(stage1Params);
 
-		KMC::Stage2Params stage2Params = params.stage2ParamsTemplate;
+		KMC::Stage2Params stage2Params = params.stage2Params;
 		stage2Params.SetOutputFileName(outputFile);
-		auto stage2Result = runner.RunStage2(stage2Params);
+		runner.RunStage2(stage2Params);
 	}
 }
 
 void KMCRunner::runKMCParallel()
 {
-	if (!params.stage1ParamsTemplate.GetRamOnlyMode())
+	if (!params.stage1Params.GetRamOnlyMode())
 		for (const auto& dirPath : params.mkmcParams.kmcTmpDirs)
-			std::filesystem::create_directory(std::filesystem::path(dirPath));
+			std::filesystem::create_directory(dirPath);
 
 	std::vector<std::thread> threads(params.mkmcParams.nKMCWorkers);
 	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nKMCWorkers; ++i_thred)
@@ -46,7 +47,7 @@ void KMCRunner::runKMCParallel()
 		thread.join();
 	}
 
-	if (!params.stage1ParamsTemplate.GetRamOnlyMode())
+	if (!params.stage1Params.GetRamOnlyMode())
 		for (const auto& dirPath : params.mkmcParams.kmcTmpDirs)
-			std::filesystem::remove(std::filesystem::path(dirPath));
+			std::filesystem::remove(dirPath);
 }

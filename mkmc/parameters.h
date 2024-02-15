@@ -46,8 +46,8 @@ struct MutableParams
 
 struct Params
 {
-	KMC::Stage1Params stage1ParamsTemplate;
-	KMC::Stage2Params stage2ParamsTemplate;
+	KMC::Stage1Params stage1Params;
+	KMC::Stage2Params stage2Params;
 	MKMCParams mkmcParams;
 	FilterParams filterParams;
 	mutable MutableParams mutableParams;

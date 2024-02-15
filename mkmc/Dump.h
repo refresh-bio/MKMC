@@ -35,8 +35,8 @@ public:
 template<typename GENRATOR_T>
 void Dump::dumpToFile()
 {
-	std::ofstream output_file(params.mkmcParams.outputFile);
-	if (!output_file.is_open())
+	std::ofstream outputFile(params.mkmcParams.outputFile);
+	if (!outputFile.is_open())
 	{
 		std::cerr << "Error: cannot create output file " << params.mkmcParams.outputFile << "\n";
 		exit(1);
@@ -45,8 +45,8 @@ void Dump::dumpToFile()
 	std::vector<KMCFileWrapper> samples;
 	openDatabases(samples);
 
-	uint32_t k = params.stage1ParamsTemplate.GetKmerLen();
-	GENRATOR_T fileGenerator(output_file, params.mkmcParams.inputFiles, params.mkmcParams.count_symbols, k);
+	uint32_t k = params.stage1Params.GetKmerLen();
+	GENRATOR_T fileGenerator(outputFile, params.mkmcParams.inputFiles, params.mkmcParams.count_symbols, k);
 
 	std::vector<size_t> kMersCounts(samples.size());
 	Filter filter(params);
@@ -79,18 +79,18 @@ void Dump::dumpToFile()
 
 	while (true)
 	{
-		size_t min_id = kmersHeap.front();
+		size_t minId = kmersHeap.front();
 #ifndef POP_HEAP
-		if (samples[min_id].Finished())
+		if (samples[minId].Finished())
 			break;
 #endif
 
 		std::fill(kMersCounts.begin(), kMersCounts.end(), 0);
 
-		auto min_kmer = samples[min_id].First();
+		auto minKmer = samples[minId].First();
 
-		kMersCounts[min_id] = samples[min_id].FirstCount();
-		samples[min_id].Next();
+		kMersCounts[minId] = samples[minId].FirstCount();
+		samples[minId].Next();
 
 		while (true)
 		{
@@ -109,20 +109,20 @@ void Dump::dumpToFile()
 			std::push_heap(kmersHeap.begin(), kmersHeap.end(), HeapComp(samples));
 #endif
 
-			size_t cur_id = kmersHeap.front();
-			KMCFileWrapper& cur_kmer = samples[cur_id];
-			if (cur_kmer.Finished() || !(cur_kmer.First() == min_kmer))
+			size_t curId = kmersHeap.front();
+			KMCFileWrapper& curKmer = samples[curId];
+			if (curKmer.Finished() || !(curKmer.First() == minKmer))
 			{
 				break;
 			}
 
-			kMersCounts[cur_id] = cur_kmer.FirstCount();
-			samples[cur_id].Next();
+			kMersCounts[curId] = curKmer.FirstCount();
+			samples[curId].Next();
 }
 
 		if (filter.keepKMer(kMersCounts))
 		{
-			fileGenerator.writeKmer(min_kmer, kMersCounts);
+			fileGenerator.writeKmer(minKmer, kMersCounts);
 		}
 	}
 }

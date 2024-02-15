@@ -52,9 +52,9 @@ void Start::verifyFiles()
 		exit(1);
 	}
 
-	if (!canCreateFileInPath(params.stage1ParamsTemplate.GetTmpPath()))
+	if (!canCreateFileInPath(params.stage1Params.GetTmpPath()))
 	{
-		std::cerr << "Error: Cannot create file in specified working directory: " << params.stage1ParamsTemplate.GetTmpPath() << "." << std::endl;
+		std::cerr << "Error: Cannot create file in specified working directory: " << params.stage1Params.GetTmpPath() << "." << std::endl;
 		if (params.mutableParams.tmpDirCreated)
 			std::filesystem::remove(params.mkmcParams.tmpPath);
 		exit(1);

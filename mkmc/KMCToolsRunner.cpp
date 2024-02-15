@@ -85,7 +85,7 @@ void KMCToolsRunner::runKMCToolsParallel()
 		else
 		{
 #ifdef DEVELOP_MODE
-			if (params.stage1ParamsTemplate.GetDevelopVerbose())
+			if (params.stage1Params.GetDevelopVerbose())
 			{
 				std::cout << "INFO: KMC file " << kmcOutputFile << " does not need to be sorted, renaming to " << toolsOutputFile << std::endl;
 			}

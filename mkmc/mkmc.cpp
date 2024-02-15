@@ -109,8 +109,8 @@ void fill_temporary_kmc_databases_names(Params& params)
 // Parse the parameters
 bool parse_parameters(int argc, char* argv[], Params& params)
 {
-	KMC::Stage1Params& stage1Params = params.stage1ParamsTemplate;
-	KMC::Stage2Params& stage2Params = params.stage2ParamsTemplate;
+	KMC::Stage1Params& stage1Params = params.stage1Params;
+	KMC::Stage2Params& stage2Params = params.stage2Params;
 	MKMCParams& mkmcParams = params.mkmcParams;
 	FilterParams& filterParams = params.filterParams;
 	int i;

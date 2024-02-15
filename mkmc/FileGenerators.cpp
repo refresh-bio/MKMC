@@ -5,9 +5,9 @@
 
 
 MatrixFileGenerator::MatrixFileGenerator(std::ostream& file, const std::vector<std::string>& inputFiles, uint32_t countSymbols, uint32_t k) :
+	str_kmer_buff(std::make_unique<char[]>(inputFiles.size() * (countSymbols + 1) + k + 1)),
 	file(file),
-	k(k),
-	str_kmer_buff(std::make_unique<char[]>(inputFiles.size()* (countSymbols + 1) + k + 1))
+	k(k)
 {
 	file << "k-mer\t";
 	for (const std::string& db : inputFiles)
@@ -36,9 +36,9 @@ uint32_t MatrixFileGenerator::writeKmer(KMCFileWrapper::kmer_t& kmer, const std:
 }
 
 FASTAFileGenerator::FASTAFileGenerator(std::ostream& file, const std::vector<std::string>& inputFiles, uint32_t countSymbols, uint32_t k) :
+	str_kmer_buff(std::make_unique<char[]>(k + 1)),
 	file(file),
-	k(k),
-	str_kmer_buff(std::make_unique<char[]>(k + 1))
+	k(k)
 {
 }
 
