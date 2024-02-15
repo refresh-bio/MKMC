@@ -36,7 +36,7 @@ void Params::setKMCParams()
 
 	if (mkmcParams.nKMCWorkersUserSet && mKMCWorkersReduced)
 	{
-		std::cerr << "Warning: number of workers is too huge, reduced to " << mkmcParams.nKMCWorkers << std::endl;
+		std::cerr << "Warning: number of workers is too huge, reduced to " << mkmcParams.nKMCWorkers << "." << std::endl;
 	}
 
 	stage1Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);

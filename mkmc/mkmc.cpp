@@ -61,7 +61,8 @@ void usage()
 //		<< "Example:\n"
 //		<< "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
 //		<< "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n"
-		<< "  -of<a,matrix> - output in FASTA format (-ofa), matrix (-ofmatrix); default: matrix\n"
+		<< "  -of<a,matrix> - output in FASTA format (-ofa), matrix (-ofmatrix); default: matrix"
+		<< std::endl;
 		;
 }
 
@@ -133,7 +134,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			double threshold = atof(&argv[i][8]);
 			if (threshold < 0.0 || threshold > 1.0)
 			{
-				std::cerr << "Error: Filtering threshold -thr should be from a range [0, 1]\n\n";
+				std::cerr << "Error: Filtering threshold -thr should be from a range [0, 1].\n" << std::endl;
 				return false;
 			}
 			filterParams.minKmersAboveThresholdRatio = threshold;
@@ -187,7 +188,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				mkmcParams.outputFileType = OutputFileType::Matrix;
 			else
 			{
-				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -ofa or -omatrix)\n\n";
+				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -ofa or -omatrix)\n" << std::endl;
 				exit(1);
 			}
 		}
@@ -291,7 +292,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		std::ifstream in(input_file_name.c_str() + 1);
 		if (!in.good())
 		{
-			std::cerr << "Error: No " << input_file_name.c_str() + 1 << " file\n\n";
+			std::cerr << "Error: No " << input_file_name.c_str() + 1 << " file\n" << std::endl;
 			return false;
 		}
 
@@ -303,7 +304,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				std::ifstream in_reads(s);
 				if (!in_reads.is_open())
 				{
-					std::cerr << "Error: No " << s << " file\n\n";
+					std::cerr << "Error: No " << s << " file\n" << std::endl;
 					return false;
 				}
 				input_file_names.push_back(s);
@@ -317,12 +318,12 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	//Validate and resolve conflicts in parameters
 	if (was_e && was_opt_out_size)
 	{
-		std::cerr << "Warning: --opt-out-size is ignored because -e was used\n\n";
+		std::cerr << "Warning: --opt-out-size is ignored because -e was used\n" << std::endl;
 	}
 
 	if (was_sm && was_r)
 	{
-		std::cerr << "Error: -sm can not be used with -r\n\n";
+		std::cerr << "Error: -sm can not be used with -r\n" << std::endl;
 		return false;
 	}
 
@@ -355,13 +356,13 @@ int main(int argc, char** argv)
 		Start start(params);
 		start.verifyFiles();
 
-		std::cout << "Starting k-mer counting...\n";
+		std::cout << "Starting k-mer counting..." << std::endl;
 		KMCRunner kmcRunner(params);
 		kmc_timer.startTimer();
 		kmcRunner.runKMCParallel();
 		kmc_timer.stopTimer();
 
-		std::cout << "Starting converting k-mer databases...\n";
+		std::cout << "Starting k-mer databases converting..." << std::endl;
 		KMCToolsRunner kmcToolsRunner(params);
 		tools_timer.startTimer();
 		kmcToolsRunner.runKMCToolsParallel();
@@ -370,7 +371,7 @@ int main(int argc, char** argv)
 		Dump dump(params);
 		if (params.mkmcParams.dumpToFile)
 		{
-			std::cout << "Starting dumping to file " << params.mkmcParams.outputFile << "...\n";
+			std::cout << "Starting dumping to file " << params.mkmcParams.outputFile << "..." << std::endl;
 			if (params.mkmcParams.outputFileType == OutputFileType::Matrix)
 			{
 				dump_timer.startTimer();
@@ -387,7 +388,7 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			std::cout << "Starting dumping to stdout...\n";
+			std::cout << "Starting dumping to stdout..." << std::endl;
 			dump.dumpToStd();
 		}
 
@@ -406,6 +407,6 @@ int main(int argc, char** argv)
 	}
 	catch (const std::exception& e)
 	{
-		std::cerr << e.what() << '\n';
+		std::cerr << e.what() << std::endl;
 	}
 }

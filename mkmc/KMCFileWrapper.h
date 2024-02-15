@@ -68,7 +68,7 @@ inline void KMCFileWrapper::Next()
 		// for the last one k-mer (cur_kmer_no == tot_kmers), it is legal to call Next, but ReadNextKmer will fail
 		if (cur_kmer_no != tot_kmers)
 		{
-			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")\n";
+			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")." << std::endl;
 			exit(1);
 		}
 	}

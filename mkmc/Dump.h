@@ -38,7 +38,7 @@ void Dump::dumpToFile()
 	std::ofstream outputFile(params.mkmcParams.outputFile);
 	if (!outputFile.is_open())
 	{
-		std::cerr << "Error: cannot create output file " << params.mkmcParams.outputFile << "\n";
+		std::cerr << "Error: cannot create output file " << params.mkmcParams.outputFile << "." << std::endl;
 		exit(1);
 	}
 

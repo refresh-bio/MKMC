@@ -44,7 +44,7 @@ void KMCToolsRunner::operator()(TasksPool& tasksPool, const std::vector<std::str
 
 		unsigned long result;
 		if (!runCommand(KMC_TOOLS_EXECUTABLE_NAME, sstream.str(), result) || result != 0) {
-			std::cerr << "ERROR: cannot run kmc_tools." << std::endl;
+			std::cerr << "Error: cannot run kmc_tools." << std::endl;
 		}
 		else
 			if (!params.mkmcParams.keepTmpFiles)
@@ -64,7 +64,7 @@ bool KMCToolsRunner::checkToolsRequired(const std::string& kmcOutputFile)
 	}
 	else
 	{
-		std::cerr << "ERROR: cannot open temporary file " << kmcOutputFile << std::endl;
+		std::cerr << "Error: cannot open temporary file " << kmcOutputFile << "." << std::endl;
 		std::exit(1);
 		return false;
 	}

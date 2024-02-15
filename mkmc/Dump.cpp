@@ -37,7 +37,7 @@ void Dump::openDatabases(std::vector<KMCFileWrapper>& samples)
 
 	if (!allKAreSame(samples))
 	{
-		std::cerr << "Error: each database should have the same k\n";
+		std::cerr << "Error: each database should have the same k." << std::endl;
 		exit(1);
 	}
 }

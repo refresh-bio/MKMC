@@ -7,13 +7,12 @@ KMCFileWrapper::KMCFileWrapper(const std::string& path)
 	kmc_file = std::make_unique<CKMCFile>();
 	if (!kmc_file->OpenForListing(path))
 	{
-		std::cerr << "Error: cannot open kmc database " << path << "\n";
+		std::cerr << "Error: cannot open kmc database " << path << "." << std::endl;
 		exit(1);
 	}
 	if (kmc_file->IsKMC2() == true)
 	{
-		std::cerr << "Error: kmc database not sorted: " << path << "\n";
-		std::cerr << "Hint: KMC database may be sorted with kmc_tools transform <input> sort <output>\n";
+		std::cerr << "Error: kmc database not sorted: " << path << "." << std::endl;
 		exit(1);
 	}
 	CKMCFileInfo kmc_file_info;
