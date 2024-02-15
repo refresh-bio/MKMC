@@ -152,11 +152,16 @@
   <ItemGroup>
     <ClCompile Include="..\kmc\kmc_dump\nc_utils.cpp" />
     <ClCompile Include="Dump.cpp" />
+    <ClCompile Include="FileGenerators.cpp" />
     <ClCompile Include="Filter.cpp" />
+    <ClCompile Include="Finish.cpp" />
+    <ClCompile Include="KMCFileWrapper.cpp" />
     <ClCompile Include="KMCRunner.cpp" />
     <ClCompile Include="KMCToolsRunner.cpp" />
     <ClCompile Include="mkmc.cpp" />
     <ClCompile Include="parameters.cpp" />
+    <ClCompile Include="Start.cpp" />
+    <ClCompile Include="TasksPool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\kmc\3rd_party\cloudflare\build\zlib.vcxproj">
@@ -171,10 +176,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dump.h" />
+    <ClInclude Include="FileGenerators.h" />
     <ClInclude Include="Filter.h" />
+    <ClInclude Include="Finish.h" />
+    <ClInclude Include="KMCFileWrapper.h" />
     <ClInclude Include="KMCRunner.h" />
     <ClInclude Include="KMCToolsRunner.h" />
     <ClInclude Include="parameters.h" />
+    <ClInclude Include="Start.h" />
+    <ClInclude Include="TasksPool.h" />
     <ClInclude Include="time.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

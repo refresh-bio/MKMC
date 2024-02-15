@@ -3,16 +3,17 @@
 
 Params::Params()
 {
-	stage1ParamsTemplate.SetInputFileType(KMC::InputFileType::FASTA);
+	stage1Params.SetInputFileType(KMC::InputFileType::FASTQ);
+	stage1Params.SetNBins(64);
 
-	stage2ParamsTemplate.SetCutoffMin(1);
-	stage2ParamsTemplate.SetCutoffMax(static_cast<uint64_t>(4E9));
-	stage2ParamsTemplate.SetCounterMax(65535);
+	stage2Params.SetCutoffMin(1);
+	stage2Params.SetCutoffMax(static_cast<uint64_t>(4E9));
+	stage2Params.SetCounterMax(65535);
 
 	static KMC::NullPercentProgressObserver nullPercentProgressObserver;
 	static KMC::NullProgressObserver nullProgressObserver;
-	stage1ParamsTemplate.SetPercentProgressObserver(&nullPercentProgressObserver);
-	stage1ParamsTemplate.SetProgressObserver(&nullProgressObserver);
+	stage1Params.SetPercentProgressObserver(&nullPercentProgressObserver);
+	stage1Params.SetProgressObserver(&nullProgressObserver);
 }
 
 void Params::setKMCParams()
@@ -24,8 +25,8 @@ void Params::setKMCParams()
 		mKMCWorkersReduced = true;
 	}
 
-	stage1ParamsTemplate.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
-	stage2ParamsTemplate.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
+	stage1Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
+	stage2Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
 
 	if (mkmcParams.nKMCWorkers * 2 > mkmcParams.maxRamGB)
 	{
@@ -35,11 +36,9 @@ void Params::setKMCParams()
 
 	if (mkmcParams.nKMCWorkersUserSet && mKMCWorkersReduced)
 	{
-		std::cerr << "Warning: number of workers is too huge, reduced to " << mkmcParams.nKMCWorkers << std::endl;
+		std::cerr << "Warning: number of workers is too huge, reduced to " << mkmcParams.nKMCWorkers << "." << std::endl;
 	}
 
-	stage1ParamsTemplate.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
-	stage2ParamsTemplate.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
-
-	stage1ParamsTemplate.SetRamOnlyMode(true);
+	stage1Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
+	stage2Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 }
