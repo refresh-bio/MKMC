@@ -9,6 +9,7 @@
 #include "../kmc/kmc_api/kmc_file.h"
 #include "KMCFileWrapper.h"
 #include "FileGenerators.h"
+#include "Logger.h"
 
 
 
@@ -44,6 +45,12 @@ void Dump::dumpToFile()
 
 	std::vector<KMCFileWrapper> samples;
 	openDatabases(samples);
+
+	size_t tot_all_kmers{};
+	for (const auto& db : samples) {
+		tot_all_kmers += db.GetTotKmers();
+	}
+	PercentProgress progress(tot_all_kmers, params.mkmcParams.verbosity_level > 0);
 
 	uint32_t k = params.stage1Params.GetKmerLen();
 	GENRATOR_T fileGenerator(outputFile, params.mkmcParams.inputFiles, params.mkmcParams.count_symbols, k);
@@ -91,6 +98,7 @@ void Dump::dumpToFile()
 
 		kMersCounts[minId] = samples[minId].FirstCount();
 		samples[minId].Next();
+		progress.NotifyProgress(1);
 
 		while (true)
 		{
@@ -118,6 +126,7 @@ void Dump::dumpToFile()
 
 			kMersCounts[curId] = curKmer.FirstCount();
 			samples[curId].Next();
+			progress.NotifyProgress(1);
 }
 
 		if (filter.keepKMer(kMersCounts))

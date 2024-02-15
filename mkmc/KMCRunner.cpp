@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <limits>
 #include "KMCRunner.h"
+#include "Logger.h"
 
 
 
@@ -16,6 +17,7 @@ void KMCRunner::operator()()
 		std::string outputFile = params.mkmcParams.kmcOutputFiles[task];
 		std::string tmpDir = params.mkmcParams.kmcTmpDirs[task];
 
+		Logger::Inst().Log("Start k-mer counting for " + inputFile);
 		KMC::Runner runner;
 
 		// Fill missing, per counting, KMC parameters
@@ -27,6 +29,7 @@ void KMCRunner::operator()()
 		KMC::Stage2Params stage2Params = params.stage2Params;
 		stage2Params.SetOutputFileName(outputFile);
 		runner.RunStage2(stage2Params);
+		Logger::Inst().Log("k-mer counting for " + inputFile + " done.");
 	}
 }
 

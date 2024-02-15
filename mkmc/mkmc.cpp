@@ -17,7 +17,7 @@
 #include "Version.h"
 #include "time.hpp"
 #include "FileGenerators.h"
-
+#include "Logger.h"
 
 
 //----------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ void usage()
 //		<< "  input_file_name - single file in specified (-f switch) format (gziped or not)\n"
 		<< "  @input_file_names - file name with list of input files in specified (-f switch) format (gziped or not)\n"
 		<< "Options:\n"
-//		<< "  -v - verbose mode (shows all parameter settings); default: false\n"
+		<< "  -v - verbose mode (shows all parameter settings); default: false\n"
 		<< "  -k<len> - k-mer length (k from " << KMC::CfgConsts::min_k << " to " << KMC::CfgConsts::max_k << "; default: 25)\n"
 		<< "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 16\n"
 //		<< "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n"
@@ -210,8 +210,9 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 #endif
 		else if (strncmp(argv[i], "-v", 2) == 0)
 		{
-			static KMC::CerrVerboseLogger logger;
-			stage1Params.SetVerboseLogger(&logger);
+			//static KMC::CerrVerboseLogger logger;
+			//stage1Params.SetVerboseLogger(&logger);
+			mkmcParams.verbosity_level++;
 		}
 		else if (strncmp(argv[i], "-sm", 3) == 0 && strlen(argv[i]) == 3)
 		{
@@ -349,6 +350,9 @@ int main(int argc, char** argv)
 			usage();
 			return 0;
 		}
+		if (params.mkmcParams.verbosity_level > 0)
+			Logger::Inst().Enable();
+
 		params.setKMCParams();
 
 		Timer kmc_timer, tools_timer, dump_timer;
