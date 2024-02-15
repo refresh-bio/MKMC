@@ -22,12 +22,12 @@ It will generate a matrix of 20-mers from the input files.
  - `<output_file>` is a file where the matrix of k-mers counts will be dumped
  - `<temp_dir>` is a directory where temporary files will be stored
  - `-thr_rat<X>` where `<X>` is a number of <0,1>, and
- - `-thr<Y>` where `<Y> `is natural number, is the fraction <X> of the input files a k-mer should be present at least <Y> times in to be dumped into <output_file>; e.g. -thr_rat0.5 and -thr2 mean, that k-mers appearing at least twice in at least a half of the input files will be dumped. We recommend to be careful while specifying <X> parameter, small values (e.g. 0) cause obtaining an enormous output file
+ - `-thr<Y>` where `<Y>` is natural number, is the fraction `<X>` of the input files a k-mer should be present at least `<Y>` times in to be dumped into <output_file>; e.g. -thr_rat0.5 and -thr2 mean, that k-mers appearing at least twice in at least a half of the input files will be dumped. We recommend to be careful while specifying `<X>` parameter, small values (e.g. 0) cause obtaining an enormous output file
 
 As `[other_parameters]` you can also pass optional parameters:
 
- - `-ci<X>` - exclude counting k-mers occurring less than <X> times (if k-mer occurs less than <value> times in a file, it gets counter 0, but for this file only)
- - `-cx<X>` - exclude counting k-mers occurring more than <X> times (if k-mer occurs more than <value> times in a file, it gets counter 0, but for this file only)
+ - `-ci<X>` - exclude counting k-mers occurring less than `<X>` times (if k-mer occurs less than <value> times in a file, it gets counter 0, but for this file only)
+ - `-cx<X>` - exclude counting k-mers occurring more than `<X>` times (if k-mer occurs more than <value> times in a file, it gets counter 0, but for this file only)
  - `-fq` - if you would like to process FASTQ files (by default mkmc exptects FASTAs); mixing files types is not supported
  - `-ofa`/`-omatrix` - write output as a FASTA file or as a matrix (default)
  - `-r` - RAM only mode for k-mer counting
