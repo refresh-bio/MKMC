@@ -12,7 +12,7 @@ The easiest way to get the program is to download the most recent version from t
 
 To run MKMC on Linux (`mkmc` and `kmc_tools` have to be in the same directory), type:
 ```
-./mkmc -k20 -thr0.5 [other_parameters] @<input_files> <output_file> <temp_dir>
+./mkmc -k20 -thr_rat0.5 [other_parameters] @<input_files> <output_file> <temp_dir>
 ```
 It will generate a matrix of 20-mers from the input files.
 
@@ -21,8 +21,8 @@ It will generate a matrix of 20-mers from the input files.
  - `<input_files>` is a text file with a list of FASTQ/FASTA files (one in each line)
  - `<output_file>` is a file where the matrix of k-mers counts will be dumped
  - `<temp_dir>` is a directory where temporary files will be stored
- - `-thr_rat<X>` where <X> is a number of <0,1>, and
- - `-thr<Y>` where <Y> is natural number, is the fraction <X> of the input files a k-mer should be present at least <Y> times in to be dumped into <output_file>; e.g. -thr_rat0.5 and -thr2 mean, that k-mers appearing at least twice in at least a half of the input files will be dumped. We recommend to be careful while specifying <X> parameter, small values (e.g. 0) cause obtaining an enormous output file
+ - `-thr_rat<X>` where `<X>` is a number of <0,1>, and
+ - `-thr<Y>` where `<Y> `is natural number, is the fraction <X> of the input files a k-mer should be present at least <Y> times in to be dumped into <output_file>; e.g. -thr_rat0.5 and -thr2 mean, that k-mers appearing at least twice in at least a half of the input files will be dumped. We recommend to be careful while specifying <X> parameter, small values (e.g. 0) cause obtaining an enormous output file
 
 As `[other_parameters]` you can also pass optional parameters:
 
@@ -79,7 +79,7 @@ And file `files.txt` containng:
 To have k-mers that were present in each input sample one may use:
 ```
 mkdir -p tmp
-./mkmc -k25 -fq -thr1 @files.txt present-in-all.txt tmp
+./mkmc -k25 -fq -thr_rat1 @files.txt present-in-all.txt tmp
 ```
 The output (`present-in-all.txt`) is then:
 ```
@@ -90,7 +90,7 @@ ACGTACGTGGGTTAAAACCCAGGGG	1	1	1
 To have k-mers that were present in at least half of the samples one may use the following:
 ```
 mkdir -p tmp
-./mkmc -k25 -fq -thr0.5 @files.txt present-in-at-least-half-files.txt tmp
+./mkmc -k25 -fq -thr_rat0.5 @files.txt present-in-at-least-half-files.txt tmp
 ```
 The output (`present-in-at-least-half-files.txt`) is then:
 ```
@@ -104,7 +104,7 @@ TAAAACACACAAACAGATAAACAGA	1	1	0
 To have k-mers that were present in any of the samples one may use the following:
 ```
 mkdir -p tmp
-./mkmc -k25 -fq -thr0 @files.txt present-in-any.txt tmp
+./mkmc -k25 -fq -thr_rat0 @files.txt present-in-any.txt tmp
 ```
 The output (`present-in-any.txt`) is then:
 ```
