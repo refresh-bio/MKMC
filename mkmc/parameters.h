@@ -31,6 +31,8 @@ struct MKMCParams
 	bool nKMCWorkersUserSet = false;
 
 	bool keepTmpFiles = false;
+
+	int verbosity_level = 0;
 };
 
 struct FilterParams

@@ -40,6 +40,10 @@ public:
 	{
 		return cur_count;
 	}
+	size_t GetTotKmers() const
+	{
+		return tot_kmers;
+	}
 	void Next();
 	~KMCFileWrapper() noexcept
 	{

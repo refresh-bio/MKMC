@@ -21,6 +21,7 @@
 #include <mach-o/dyld.h>
 #endif
 #include "KMCToolsRunner.h"
+#include "Logger.h"
 
 
 
@@ -31,6 +32,8 @@ void KMCToolsRunner::operator()(TasksPool& tasksPool, const std::vector<std::str
 	{
 		std::string inputFile = inputFiles[task];
 		std::string outputFile = outputFiles[task];
+
+		Logger::Inst().Log("Start sorting k-mers for " + inputFile);
 
 		KMC::Runner runner;
 
@@ -52,6 +55,8 @@ void KMCToolsRunner::operator()(TasksPool& tasksPool, const std::vector<std::str
 				std::filesystem::remove(inputFile + ".kmc_pre");
 				std::filesystem::remove(inputFile + ".kmc_suf");
 			}
+
+		Logger::Inst().Log("Sorting k-mers for " + inputFile + " done.");
 	}
 }
 
