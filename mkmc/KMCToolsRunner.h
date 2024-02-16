@@ -18,6 +18,10 @@
 
 
 
+#define RUN_SINGLE_TOOLS
+
+
+
 #if defined(WIN32) || defined(_WIN32) // Windows
 #define KMC_TOOLS_EXECUTABLE_NAME "kmc_tools.exe"
 #else // Linux

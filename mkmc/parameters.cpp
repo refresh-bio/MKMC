@@ -27,6 +27,7 @@ void Params::setKMCParams()
 
 	stage1Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
 	stage2Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
+	kmcToolsParams.nThreads = mkmcParams.nThreads / mkmcParams.nKMCWorkers;
 
 	if (mkmcParams.nKMCWorkers * 2 > mkmcParams.maxRamGB)
 	{

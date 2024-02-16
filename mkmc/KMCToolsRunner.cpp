@@ -39,7 +39,11 @@ void KMCToolsRunner::operator()(TasksPool& tasksPool, const std::vector<std::str
 
 		std::ostringstream sstream;
 
+#ifdef RUN_SINGLE_TOOLS
 		sstream << "-t" << params.mkmcParams.nThreads;
+#else
+		sstream << "-t" << params.kmcToolsParams.nThreads;
+#endif
 		sstream << " -hp";
 
 		sstream << " transform " << inputFile;
@@ -101,18 +105,20 @@ void KMCToolsRunner::runKMCToolsParallel()
 	}
 	TasksPool tasksPool(static_cast<uint32_t>(inputFiles.size()));
 
+#ifdef RUN_SINGLE_TOOLS
 	(*this)(tasksPool, inputFiles, outputFiles);
+#else
+	std::vector<std::thread> threads(std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()));
+	for (uint32_t i_thred = 0; i_thred < std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()); ++i_thred)
+	{
+		threads[i_thred] = std::thread([this, &tasksPool] { (*this)(tasksPool); });
+	}
 
-	//std::vector<std::thread> threads(std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()));
-	//for (uint32_t i_thred = 0; i_thred < std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()); ++i_thred)
-	//{
-	//    threads[i_thred] = std::thread([this, &tasksPool] { (*this)(tasksPool); });
-	//}
-
-	//for (std::thread& thread : threads)
-	//{
-	//    thread.join();
-	//}
+	for (std::thread& thread : threads)
+	{
+		thread.join();
+	}
+#endif
 }
 
 #if defined(WIN32) || defined(_WIN32) //Windows

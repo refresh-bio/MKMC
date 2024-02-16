@@ -35,6 +35,11 @@ struct MKMCParams
 	int verbosity_level = 0;
 };
 
+struct KMCToolsParams
+{
+	uint32_t nThreads = 1;
+};
+
 struct FilterParams
 {
 	double minKmersAboveThresholdRatio = 0.0;
@@ -48,11 +53,14 @@ struct MutableParams
 
 struct Params
 {
+	MKMCParams mkmcParams;
+	mutable MutableParams mutableParams;
+
 	KMC::Stage1Params stage1Params;
 	KMC::Stage2Params stage2Params;
-	MKMCParams mkmcParams;
+	KMCToolsParams kmcToolsParams;
+
 	FilterParams filterParams;
-	mutable MutableParams mutableParams;
 
 	Params();
 	void setKMCParams();
