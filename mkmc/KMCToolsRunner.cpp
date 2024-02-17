@@ -25,13 +25,13 @@
 
 
 
-void KMCToolsRunner::operator()(TasksPool& tasksPool, const std::vector<std::string>& inputFiles, const std::vector<std::string>& outputFiles)
+void KMCToolsRunner::operator()()
 {
-	uint32_t task = std::numeric_limits<uint32_t>::max();
-	while (tasksPool.getTask(task))
+	TaskData taskData;
+	while (tasksPool.getTask(taskData))
 	{
-		std::string inputFile = inputFiles[task];
-		std::string outputFile = outputFiles[task];
+		std::string inputFile = taskData.inputFile;
+		std::string outputFile = taskData.outputFile;
 
 		Logger::Inst().Log("Start sorting k-mers for " + inputFile);
 
@@ -81,15 +81,13 @@ bool KMCToolsRunner::checkToolsRequired(const std::string& kmcOutputFile)
 
 void KMCToolsRunner::runKMCToolsParallel()
 {
-	std::vector<std::string> inputFiles, outputFiles;
 	for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i)
 	{
 		const std::string& kmcOutputFile = params.mkmcParams.kmcOutputFiles[i];
 		const std::string& toolsOutputFile = params.mkmcParams.toolsOutputFiles[i];
 		if (checkToolsRequired(kmcOutputFile))
 		{
-			inputFiles.push_back(kmcOutputFile);
-			outputFiles.push_back(toolsOutputFile);
+			tasksData.push_back(TaskData{ kmcOutputFile, toolsOutputFile });
 		}
 		else
 		{
@@ -103,15 +101,14 @@ void KMCToolsRunner::runKMCToolsParallel()
 			std::filesystem::rename(kmcOutputFile + ".kmc_suf", toolsOutputFile + ".kmc_suf");
 		}
 	}
-	TasksPool tasksPool(static_cast<uint32_t>(inputFiles.size()));
 
 #ifdef RUN_SINGLE_TOOLS
-	(*this)(tasksPool, inputFiles, outputFiles);
+	(*this)();
 #else
-	std::vector<std::thread> threads(std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()));
-	for (uint32_t i_thred = 0; i_thred < std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), inputFiles.size()); ++i_thred)
+	std::vector<std::thread> threads(std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), tasksData.size()));
+	for (uint32_t i_thred = 0; i_thred < std::min(static_cast<size_t>(params.mkmcParams.nKMCWorkers), tasksData.size()); ++i_thred)
 	{
-		threads[i_thred] = std::thread([this, &tasksPool] { (*this)(tasksPool); });
+		threads[i_thred] = std::thread([this] { (*this)(); });
 	}
 
 	for (std::thread& thread : threads)

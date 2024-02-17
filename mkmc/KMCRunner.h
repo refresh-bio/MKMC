@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdint>
 #include <algorithm>
+#include <string>
 #include "parameters.h"
 #include "TasksPool.h"
 
@@ -11,16 +12,31 @@
 
 class KMCRunner
 {
+	struct TaskData
+	{
+		std::string inputFile;
+		std::string outputFile;
+		std::string tmpDir;
+	};
+	std::vector<TaskData> tasksData;
+
 	const Params& params;
 
-	TasksPool tasksPool;
+	TasksPool<TaskData> tasksPool;
 	void operator()();
 
 public:
 	KMCRunner(const Params& params) :
 		params(params),
-		tasksPool(static_cast<uint32_t>(params.mkmcParams.inputFiles.size()))
-	{}
+		tasksPool(tasksData)
+	{
+		const MKMCParams& mkmcParams = params.mkmcParams;
+		tasksData.reserve(mkmcParams.inputFiles.size());
+		for (uint32_t i = 0; i < mkmcParams.inputFiles.size(); ++i)
+		{
+			tasksData.push_back(TaskData{ mkmcParams.inputFiles[i], mkmcParams.kmcOutputFiles[i], mkmcParams.kmcTmpDirs[i]});
+		}
+	}
 
 	void runKMCParallel();
 };

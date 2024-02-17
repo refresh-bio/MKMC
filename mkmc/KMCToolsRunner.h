@@ -29,15 +29,24 @@
 #endif
 
 class KMCToolsRunner {
+	struct TaskData
+	{
+		std::string inputFile;
+		std::string outputFile;
+	};
+	std::vector<TaskData> tasksData;
+
 	const Params& params;
 
-	void operator()(TasksPool& tasksPool, const std::vector<std::string>& inputFiles, const std::vector<std::string>& outputFiles);
+	TasksPool<TaskData> tasksPool;
+	void operator()();
 
 	bool checkToolsRequired(const std::string& kmcOutputFile);
 
 public:
 	KMCToolsRunner(const Params& params) :
-		params(params)
+		params(params),
+		tasksPool(tasksData)
 	{}
 
 	void runKMCToolsParallel();
