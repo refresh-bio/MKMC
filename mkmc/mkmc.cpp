@@ -17,6 +17,7 @@
 #include "Version.h"
 #include "time.hpp"
 #include "FileGenerators.h"
+#include "TasksFiller.h"
 #include "Logger.h"
 
 
@@ -84,7 +85,7 @@ void fill_temporary_kmc_databases_names(Params& params)
 {
 	MKMCParams& mkmcParams = params.mkmcParams;
 
-	for (uint32_t tmp_database_id = 0; tmp_database_id < mkmcParams.inputFiles.size(); ++tmp_database_id)
+	for (uint32_t tmp_database_id = 0; tmp_database_id < mkmcParams.inputFilesPerSample.size(); ++tmp_database_id)
 	{
 		std::ostringstream sstreamKMCDir, sstreamKMC, sstreamTools;
 		sstreamKMCDir << mkmcParams.tmpPath;
@@ -290,29 +291,10 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	}
 	else
 	{
-		std::ifstream in(input_file_name.c_str() + 1);
-		if (!in.good())
-		{
-			std::cerr << "Error: No " << input_file_name.c_str() + 1 << " file\n" << std::endl;
+		TasksFiller tasksFiller(mkmcParams, input_file_name);
+		if (!tasksFiller.readSamples(params.mkmcParams.samples, params.mkmcParams.inputFilesPerSample))
 			return false;
-		}
-
-		std::string s;
-		while (std::getline(in, s))
-		{
-			if (s != "")
-			{
-				std::ifstream in_reads(s);
-				if (!in_reads.is_open())
-				{
-					std::cerr << "Error: No " << s << " file\n" << std::endl;
-					return false;
-				}
-				input_file_names.push_back(s);
-			}
-		}
 	}
-	mkmcParams.inputFiles.swap(input_file_names);
 
 	fill_temporary_kmc_databases_names(params);
 

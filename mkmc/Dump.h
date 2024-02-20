@@ -53,7 +53,7 @@ void Dump::dumpToFile()
 	PercentProgress progress(tot_all_kmers, params.mkmcParams.verbosity_level > 0);
 
 	uint32_t k = params.stage1Params.GetKmerLen();
-	GENRATOR_T fileGenerator(outputFile, params.mkmcParams.inputFiles, params.mkmcParams.count_symbols, k);
+	GENRATOR_T fileGenerator(outputFile, params.mkmcParams.samples, params.mkmcParams.count_symbols, k);
 
 	std::vector<size_t> kMersCounts(samples.size());
 	Filter filter(params);

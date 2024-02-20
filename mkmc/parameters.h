@@ -14,7 +14,8 @@ enum class OutputFileType {FASTA, Matrix};
 struct MKMCParams
 {
 	std::string tmpPath;
-	std::vector<std::string> inputFiles;
+	std::vector<std::string> samples;
+	std::vector<std::vector<std::string>> inputFilesPerSample;
 	std::vector<std::string> kmcOutputFiles;
 	std::vector<std::string> kmcTmpDirs;
 	std::vector<std::string> toolsOutputFiles;

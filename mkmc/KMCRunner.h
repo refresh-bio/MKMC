@@ -14,7 +14,7 @@ class KMCRunner
 {
 	struct TaskData
 	{
-		std::string inputFile;
+		std::vector<std::string> inputFiles;
 		std::string outputFile;
 		std::string tmpDir;
 	};
@@ -31,10 +31,10 @@ public:
 		tasksPool(tasksData)
 	{
 		const MKMCParams& mkmcParams = params.mkmcParams;
-		tasksData.reserve(mkmcParams.inputFiles.size());
-		for (uint32_t i = 0; i < mkmcParams.inputFiles.size(); ++i)
+		tasksData.reserve(mkmcParams.inputFilesPerSample.size());
+		for (uint32_t i = 0; i < mkmcParams.inputFilesPerSample.size(); ++i)
 		{
-			tasksData.push_back(TaskData{ mkmcParams.inputFiles[i], mkmcParams.kmcOutputFiles[i], mkmcParams.kmcTmpDirs[i]});
+			tasksData.push_back(TaskData{ mkmcParams.inputFilesPerSample[i], mkmcParams.kmcOutputFiles[i], mkmcParams.kmcTmpDirs[i]});
 		}
 	}
 

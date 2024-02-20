@@ -13,19 +13,23 @@ void KMCRunner::operator()()
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
 	{
-		Logger::Inst().Log("Start k-mer counting for " + taskData.inputFile);
+		std::string inputFiles;
+		for (const auto& inputFile : taskData.inputFiles)
+			inputFiles += " " + inputFile;
+
+		Logger::Inst().Log("Start k-mer counting for" + inputFiles);
 		KMC::Runner runner;
 
 		// Fill missing, per counting, KMC parameters
 		KMC::Stage1Params stage1Params = params.stage1Params;
-		stage1Params.SetInputFiles({ taskData.inputFile });
+		stage1Params.SetInputFiles(taskData.inputFiles);
 		stage1Params.SetTmpPath(taskData.tmpDir);
 		runner.RunStage1(stage1Params);
 
 		KMC::Stage2Params stage2Params = params.stage2Params;
 		stage2Params.SetOutputFileName(taskData.outputFile);
 		runner.RunStage2(stage2Params);
-		Logger::Inst().Log("k-mer counting for " + taskData.inputFile + " done.");
+		Logger::Inst().Log("k-mer counting for" + inputFiles + " done.");
 	}
 }
 
