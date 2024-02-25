@@ -110,7 +110,6 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	bool was_m = false;
 	bool was_r = false;
 
-	bool was_e = false;
 	if (argc < 4)
 		return false;
 
@@ -275,8 +274,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 
 	if (was_m && was_r)
 	{
-		std::cerr << "Warning: when -r parameter is given, limit specified with -m may be exceeded.\n" << std::endl;
-		return false;
+		std::cerr << "Warning: when -r parameter is given, limit specified with -m may be exceeded." << std::endl;
 	}
 
 	std::string input_file_name = std::string(argv[i++]);
@@ -330,13 +328,13 @@ int main(int argc, char** argv)
 		Start start(params);
 		start.verifyFiles();
 
-		std::cout << "Starting k-mer counting..." << std::endl;
+		std::cerr << "Starting k-mer counting..." << std::endl;
 		KMCRunner kmcRunner(params);
 		kmc_timer.startTimer();
 		kmcRunner.runKMCParallel();
 		kmc_timer.stopTimer();
 
-		std::cout << "\nStarting k-mer databases converting..." << std::endl;
+		std::cerr << "\nStarting k-mer databases converting..." << std::endl;
 		KMCToolsRunner kmcToolsRunner(params);
 		tools_timer.startTimer();
 		kmcToolsRunner.runKMCToolsParallel();
@@ -345,7 +343,7 @@ int main(int argc, char** argv)
 		Dump dump(params);
 		if (params.mkmcParams.dumpToFile)
 		{
-			std::cout << "\nStarting dumping to file " << params.mkmcParams.outputFile << "..." << std::endl;
+			std::cerr << "\nStarting dumping to file " << params.mkmcParams.outputFile << "..." << std::endl;
 			if (params.mkmcParams.outputFileType == OutputFileType::Matrix)
 			{
 				dump_timer.startTimer();
@@ -362,22 +360,22 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			std::cout << "\nStarting dumping to stdout..." << std::endl;
+			std::cerr << "\nStarting dumping to stdout..." << std::endl;
 			dump.dumpToStd();
 		}
 
 		Finish finish(params);
 		finish.finishProcessing();
 
-		std::cout << "\nKMC: \n";
-		std::cout << "\tStart: " << kmc_timer.getStartTime() << "\n";
-		std::cout << "\tEnd:   " << kmc_timer.getStopTime() << "\n";
-		std::cout << "KMC tools: \n";
-		std::cout << "\tStart: " << tools_timer.getStartTime() << "\n";
-		std::cout << "\tEnd:   " << tools_timer.getStopTime() << "\n";
-		std::cout << "Dump: \n";
-		std::cout << "\tStart: " << dump_timer.getStartTime() << "\n";
-		std::cout << "\tEnd:   " << dump_timer.getStopTime() << "\n";
+		std::cerr << "\nKMC: \n";
+		std::cerr << "\tStart: " << kmc_timer.getStartTime() << "\n";
+		std::cerr << "\tEnd:   " << kmc_timer.getStopTime() << "\n";
+		std::cerr << "KMC tools: \n";
+		std::cerr << "\tStart: " << tools_timer.getStartTime() << "\n";
+		std::cerr << "\tEnd:   " << tools_timer.getStopTime() << "\n";
+		std::cerr << "Dump: \n";
+		std::cerr << "\tStart: " << dump_timer.getStartTime() << "\n";
+		std::cerr << "\tEnd:   " << dump_timer.getStopTime() << "\n";
 	}
 	catch (const std::exception& e)
 	{
