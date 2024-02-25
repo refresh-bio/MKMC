@@ -27,7 +27,7 @@ struct MKMCParams
 	std::string outputFile;
 	bool dumpToFile = true;
 	uint64_t dumpStepSize = static_cast<uint64_t>(1E9);
-	const uint32_t count_symbols = 5;
+	const uint32_t count_symbols = 10; // for 4G
 
 	bool nKMCWorkersUserSet = false;
 
