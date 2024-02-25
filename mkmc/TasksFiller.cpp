@@ -20,7 +20,7 @@ bool TasksFiller::parseLine(const std::string& line, uint32_t lineNo)
 	if (!lineStream) // sample name = file name
 	{
 		if (mkmcParams.verbosity_level > 0)
-			std::cerr << "Warning: input file line " << lineNo << " contains just one word, it will be treated both as sample and file name." << std::endl;
+			std::cerr << "Warning: input file line " << lineNo << " contains just one word, it will be treated both as a sample and a file name." << std::endl;
 
 		if (!canOpenFile(sampleName, lineNo))
 			return false;
