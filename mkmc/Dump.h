@@ -8,6 +8,7 @@
 #include "parameters.h"
 #include "../kmc/kmc_api/kmc_file.h"
 #include "KMCFileWrapper.h"
+#include "HeapMerge.h"
 #include "FileGenerators.h"
 #include "Logger.h"
 
@@ -32,7 +33,6 @@ public:
 
 
 
-//#define POP_HEAP
 template<typename GENRATOR_T>
 void Dump::dumpToFile()
 {
@@ -58,80 +58,67 @@ void Dump::dumpToFile()
 	std::vector<size_t> kMersCounts(samples.size());
 	Filter filter(params);
 
+
+	auto do_with_elem_if_exists_init = [&](size_t id, const auto& modifyHeapCallback) -> bool
+	{
+		modifyHeapCallback(id);
+		return !samples[id].Finished();
+	};
+	auto do_with_elem_if_exists = [&](size_t id, const auto& modifyHeapCallback) -> bool
+	{
+		assert(!samples[id].Finished());
+
+		samples[id].Next();
+		progress.NotifyProgress(1);
+
+		modifyHeapCallback(id);
+		return !samples[id].Finished();
+	};
+
 	class HeapComp {
-		std::vector<KMCFileWrapper>& samples;
+		const std::vector<KMCFileWrapper>& samples;
 	public:
 		HeapComp(std::vector<KMCFileWrapper>& samples) : samples(samples) {}
 
-		bool operator()(size_t a, size_t b)
+		bool operator()(const size_t a, const size_t b) const
 		{
-			// aFinished && !bFinished -> true
-			// bFinished && !aFinished -> false
-			// aFinished && bFinished -> false
-
-			if (samples[a].Finished())
-			{
-				return !samples[b].Finished();
-			}
-			if (samples[b].Finished())
-			{
-				return false;
-			}
 			return samples[b].First() < samples[a].First();
 		}
 	};
-	std::vector<size_t> kmersHeap(samples.size());
-	std::iota(kmersHeap.begin(), kmersHeap.end(), 0);
-	std::make_heap(kmersHeap.begin(), kmersHeap.end(), HeapComp(samples));
 
-	while (true)
-	{
-		size_t minId = kmersHeap.front();
-#ifndef POP_HEAP
-		if (samples[minId].Finished())
-			break;
-#endif
+	BinaryHeapMergeStreams<size_t, HeapComp> heap(samples.size(), do_with_elem_if_exists_init, HeapComp(samples));
 
-		std::fill(kMersCounts.begin(), kMersCounts.end(), 0);
+	KMCFileWrapper::kmer_t minKmer;
 
-		auto minKmer = samples[minId].First();
-
-		kMersCounts[minId] = samples[minId].FirstCount();
-		samples[minId].Next();
-		progress.NotifyProgress(1);
-
-		while (true)
+	heap.ProcessElem(do_with_elem_if_exists, [&](size_t elem, size_t id)
 		{
-			std::pop_heap(kmersHeap.begin(), kmersHeap.end(), HeapComp(samples));
+			minKmer = samples[elem].First();
 
-#ifdef POP_HEAP
-			if (samples[kmersHeap.back()].Finished())
+			std::fill(kMersCounts.begin(), kMersCounts.end(), 0);
+			kMersCounts[id] = samples[elem].FirstCount();
+		});
+
+	while (!heap.Empty()) {
+		heap.ProcessElem(do_with_elem_if_exists, [&](size_t elem, size_t id)
 			{
-				kmersHeap.pop_back();
-				if (kmersHeap.empty())
-					break;
+				const KMCFileWrapper::kmer_t& curKmer = samples[elem].First();
+				if (!(curKmer == minKmer))
+				{
+					if (filter.keepKMer(kMersCounts))
+					{
+						fileGenerator.writeKmer(minKmer, kMersCounts);
+					}
+
+					minKmer = curKmer;
+
+					std::fill(kMersCounts.begin(), kMersCounts.end(), 0);
+				}
+				kMersCounts[id] = samples[elem].FirstCount();
+			});
 	}
-			else
-				std::push_heap(kmersHeap.begin(), kmersHeap.end(), HeapComp(samples));
-#else
-			std::push_heap(kmersHeap.begin(), kmersHeap.end(), HeapComp(samples));
-#endif
 
-			size_t curId = kmersHeap.front();
-			KMCFileWrapper& curKmer = samples[curId];
-			if (curKmer.Finished() || !(curKmer.First() == minKmer))
-			{
-				break;
-			}
-
-			kMersCounts[curId] = curKmer.FirstCount();
-			samples[curId].Next();
-			progress.NotifyProgress(1);
-}
-
-		if (filter.keepKMer(kMersCounts))
-		{
-			fileGenerator.writeKmer(minKmer, kMersCounts);
-		}
+	if (filter.keepKMer(kMersCounts))
+	{
+		fileGenerator.writeKmer(minKmer, kMersCounts);
 	}
 }

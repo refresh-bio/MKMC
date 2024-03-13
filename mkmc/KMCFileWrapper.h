@@ -28,7 +28,7 @@ public:
 	{
 		return k;
 	}
-	bool Finished()
+	bool Finished() const
 	{
 		return cur_kmer_no > tot_kmers;
 	}

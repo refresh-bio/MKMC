@@ -180,6 +180,7 @@
     <ClInclude Include="FileGenerators.h" />
     <ClInclude Include="Filter.h" />
     <ClInclude Include="Finish.h" />
+    <ClInclude Include="HeapMerge.h" />
     <ClInclude Include="KMCFileWrapper.h" />
     <ClInclude Include="KMCRunner.h" />
     <ClInclude Include="KMCToolsRunner.h" />

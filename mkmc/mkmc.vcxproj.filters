@@ -90,5 +90,8 @@
     <ClInclude Include="TasksFiller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="HeapMerge.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
