@@ -71,8 +71,11 @@ void Dump::dumpToFile()
 		samples[id].Next();
 		progress.NotifyProgress(1);
 
+		if (samples[id].Finished())
+			return false;
+
 		modifyHeapCallback(id);
-		return !samples[id].Finished();
+		return true;
 	};
 
 	class HeapComp {
