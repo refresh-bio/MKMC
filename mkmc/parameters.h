@@ -25,7 +25,6 @@ struct MKMCParams
 	uint32_t nKMCWorkers = 8;
 	uint32_t maxRamGB = 16;
 	std::string outputFile;
-	bool dumpToFile = true;
 	uint64_t dumpStepSize = static_cast<uint64_t>(1E9);
 	bool splitDumpOutput = false;
 	const uint32_t count_symbols = 10; // for 4G

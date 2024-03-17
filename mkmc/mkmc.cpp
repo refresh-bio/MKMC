@@ -341,27 +341,18 @@ int main(int argc, char** argv)
 		tools_timer.stopTimer();
 
 		Dump dump(params);
-		if (params.mkmcParams.dumpToFile)
+		std::cerr << "\nStarting dumping to file " << params.mkmcParams.outputFile << "..." << std::endl;
+		if (params.mkmcParams.outputFileType == OutputFileType::Matrix)
 		{
-			std::cerr << "\nStarting dumping to file " << params.mkmcParams.outputFile << "..." << std::endl;
-			if (params.mkmcParams.outputFileType == OutputFileType::Matrix)
-			{
-				dump_timer.startTimer();
-				dump.dumpToFile<MatrixFileGenerator>();
-				dump_timer.stopTimer();
-			}
-			else if (params.mkmcParams.outputFileType == OutputFileType::FASTA)
-			{
-				dump_timer.startTimer();
-				dump.dumpToFile<FASTAFileGenerator>();
-				dump_timer.stopTimer();
-			}
-			
+			dump_timer.startTimer();
+			dump.dumpToFileParallel<MatrixFileGenerator>();
+			dump_timer.stopTimer();
 		}
-		else
+		else if (params.mkmcParams.outputFileType == OutputFileType::FASTA)
 		{
-			std::cerr << "\nStarting dumping to stdout..." << std::endl;
-			dump.dumpToStd();
+			dump_timer.startTimer();
+			dump.dumpToFileParallel<FASTAFileGenerator>();
+			dump_timer.stopTimer();
 		}
 
 		Finish finish(params);

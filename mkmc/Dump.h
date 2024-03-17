@@ -26,7 +26,6 @@ public:
 		params(params)
 	{}
 
-	void dumpToStd();
 	template<typename GENRATOR_T>
 	void dumpToFile();
 };
