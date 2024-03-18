@@ -169,7 +169,7 @@ void Dump::dumpToFileParallel()
 	}
 
 	std::vector<std::thread> threads(params.stage1Params.GetNThreads());
-	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nKMCWorkers; ++i_thred)
+	for (uint32_t i_thred = 0; i_thred < params.stage1Params.GetNThreads(); ++i_thred)
 	{
 		threads[i_thred] = std::thread([this] { (*this).operator()<GENRATOR_T>(); });
 	}
