@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cmath>
+#include <filesystem>
 #include "kmc_core/kmc_runner.h"
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"
@@ -283,9 +284,10 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	std::string input_file_name = std::string(argv[i++]);
 
 	mkmcParams.outputFilesTemplate = argv[i++];
-	mkmcParams.mapStatsFileName = "mapping_" + mkmcParams.outputFilesTemplate;
 
 	mkmcParams.tmpPath = argv[i++];
+
+	mkmcParams.mapStatsFileName = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + std::filesystem::path(mkmcParams.outputFilesTemplate).filename().string() + "_mapping";
 
 	std::vector<std::string> input_file_names;
 	if (input_file_name[0] != '@')
