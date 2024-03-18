@@ -5,11 +5,13 @@
 #include <fstream>
 #include <iostream>
 #include <numeric>
+#include <algorithm>
 #include "parameters.h"
 #include "../kmc/kmc_api/kmc_file.h"
 #include "KMCFileWrapper.h"
 #include "HeapMerge.h"
 #include "FileGenerators.h"
+#include "TasksPool.h"
 #include "Logger.h"
 
 
@@ -18,32 +20,52 @@ class Dump
 {
 	const Params& params;
 
+	struct TaskData
+	{
+		uint32_t binId;
+		TaskData() :
+			binId(static_cast<uint32_t>(-1))
+		{}
+		TaskData(uint32_t binId) :
+			binId(binId)
+		{}
+	};
+	std::vector<TaskData> tasksData;
+
 	bool allKAreSame(const std::vector<KMCFileWrapper>& samples);
-	void openDatabases(std::vector<KMCFileWrapper>& samples);
+	void openDatabases(std::vector<KMCFileWrapper>& samples, uint32_t binId);
+
+	template<typename GENRATOR_T>
+	void dumpToFile(std::string fileName, uint32_t fileId);
 
 public:
 	Dump(const Params& params) :
-		params(params)
+		params(params), tasksPool(tasksData)
 	{}
 
 	template<typename GENRATOR_T>
-	void dumpToFile();
+	void dumpToFileParallel();
+
+	TasksPool<TaskData> tasksPool;
+
+	template<typename GENRATOR_T>
+	void operator()();
 };
 
 
 
 template<typename GENRATOR_T>
-void Dump::dumpToFile()
+void Dump::dumpToFile(std::string fileName, uint32_t binId)
 {
-	std::ofstream outputFile(params.mkmcParams.outputFile);
+	std::ofstream outputFile(fileName);
 	if (!outputFile.is_open())
 	{
-		std::cerr << "Error: cannot create output file " << params.mkmcParams.outputFile << "." << std::endl;
+		std::cerr << "Error: cannot create output file " << params.mkmcParams.outputFilesTemplate << "." << std::endl;
 		exit(1);
 	}
 
 	std::vector<KMCFileWrapper> samples;
-	openDatabases(samples);
+	openDatabases(samples, binId);
 
 	size_t tot_all_kmers{};
 	for (const auto& db : samples) {
@@ -88,7 +110,17 @@ void Dump::dumpToFile()
 		}
 	};
 
-	BinaryHeapMergeStreams<size_t, HeapComp> heap(samples.size(), do_with_elem_if_exists_init, HeapComp(samples));
+	std::vector<size_t> streams_to_merge;
+	for (size_t i = 0; i < samples.size(); ++i)
+	{
+		if (!samples[i].Finished())
+			streams_to_merge.push_back(i);
+	}
+
+	BinaryHeapMergeStreams<size_t, HeapComp> heap(streams_to_merge, do_with_elem_if_exists_init, HeapComp(samples));
+
+	if (heap.Empty())
+		return;
 
 	KMCFileWrapper::kmer_t minKmer;
 
@@ -122,5 +154,38 @@ void Dump::dumpToFile()
 	if (filter.keepKMer(kMersCounts))
 	{
 		fileGenerator.writeKmer(minKmer, kMersCounts);
+	}
+}
+
+
+
+template<typename GENRATOR_T>
+void Dump::dumpToFileParallel()
+{
+	tasksData.reserve(params.stage1Params.GetNBins());
+	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
+	{
+		tasksData.push_back(TaskData{ i });
+	}
+
+	std::vector<std::thread> threads(params.stage1Params.GetNThreads());
+	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nKMCWorkers; ++i_thred)
+	{
+		threads[i_thred] = std::thread([this] { (*this).operator()<GENRATOR_T>(); });
+	}
+
+	for (std::thread& thread : threads)
+	{
+		thread.join();
+	}
+}
+
+template<typename GENRATOR_T>
+void Dump::operator()()
+{
+	TaskData taskData;
+	while (tasksPool.getTask(taskData))
+	{
+		dumpToFile<GENRATOR_T>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId);
 	}
 }

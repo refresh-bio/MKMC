@@ -27,12 +27,11 @@ bool Dump::allKAreSame(const std::vector<KMCFileWrapper>& samples)
 	return true;
 }
 
-void Dump::openDatabases(std::vector<KMCFileWrapper>& samples)
+void Dump::openDatabases(std::vector<KMCFileWrapper>& samples, uint32_t binId)
 {
-	
-	for (const std::string& fileName : params.mkmcParams.toolsOutputFiles)
+	for (const std::string& fileName : params.mkmcParams.kmcOutputFiles)
 	{
-		samples.emplace_back(fileName);
+		samples.emplace_back(fileName, params.mkmcParams.mapStatsFileName, binId);
 	}
 
 	if (!allKAreSame(samples))

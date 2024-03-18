@@ -18,16 +18,20 @@ struct MKMCParams
 	std::vector<std::vector<std::string>> inputFilesPerSample;
 	std::vector<std::string> kmcOutputFiles;
 	std::vector<std::string> kmcTmpDirs;
-	std::vector<std::string> toolsOutputFiles;
+
+	std::string outputFilesTemplate;
+	std::vector<std::string> outputFiles;
 	OutputFileType outputFileType = OutputFileType::Matrix;
 
 	uint32_t nThreads = std::thread::hardware_concurrency();
 	uint32_t nKMCWorkers = 8;
 	uint32_t maxRamGB = 16;
-	std::string outputFile;
 	uint64_t dumpStepSize = static_cast<uint64_t>(1E9);
 	bool splitDumpOutput = false;
 	const uint32_t count_symbols = 10; // for 4G
+
+	const uint32_t sigToBinMapStatsPercentage = 5;
+	std::string mapStatsFileName;
 
 	bool nKMCWorkersUserSet = false;
 
@@ -59,7 +63,6 @@ struct Params
 
 	KMC::Stage1Params stage1Params;
 	KMC::Stage2Params stage2Params;
-	KMCToolsParams kmcToolsParams;
 
 	FilterParams filterParams;
 

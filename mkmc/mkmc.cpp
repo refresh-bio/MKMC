@@ -5,12 +5,12 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 #include "kmc_core/kmc_runner.h"
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"
 #include "parameters.h"
 #include "KMCRunner.h"
-#include "KMCToolsRunner.h"
 #include "Dump.h"
 #include "Finish.h"
 #include "Start.h"
@@ -77,23 +77,26 @@ void fill_temporary_kmc_databases_names(Params& params)
 
 	for (uint32_t tmp_database_id = 0; tmp_database_id < mkmcParams.inputFilesPerSample.size(); ++tmp_database_id)
 	{
-		std::ostringstream sstreamKMCDir, sstreamKMC, sstreamTools;
+		std::ostringstream sstreamKMCDir, sstreamKMC;
 		sstreamKMCDir << mkmcParams.tmpPath;
 		sstreamKMC << mkmcParams.tmpPath;
-		sstreamTools << mkmcParams.tmpPath;
 		if (mkmcParams.tmpPath.back() != '/' && mkmcParams.tmpPath.back() != '\\')
 		{
 			sstreamKMCDir << "/";
 			sstreamKMC << "/";
-			sstreamTools << "/";
 		}
 		sstreamKMCDir << "kmc_tmp_" << std::setfill('0') << std::setw(5) << tmp_database_id;
 		sstreamKMC << "kmc_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
-		sstreamTools << "tools_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
 
 		mkmcParams.kmcTmpDirs.push_back(sstreamKMCDir.str());
 		mkmcParams.kmcOutputFiles.push_back(sstreamKMC.str());
-		mkmcParams.toolsOutputFiles.push_back(sstreamTools.str());
+	}
+
+	const uint32_t nBinsDigits = static_cast<uint32_t>(std::log10(static_cast<double>(params.stage1Params.GetNBins()))) + 1;
+	for (uint32_t binId = 0; binId < params.stage1Params.GetNBins(); ++binId) {
+		std::ostringstream sstreamOutput;
+		sstreamOutput << mkmcParams.outputFilesTemplate << std::setfill('0') << std::setw(nBinsDigits) << binId;
+		mkmcParams.outputFiles.push_back(sstreamOutput.str());
 	}
 }
 
@@ -279,7 +282,8 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 
 	std::string input_file_name = std::string(argv[i++]);
 
-	mkmcParams.outputFile = argv[i++];
+	mkmcParams.outputFilesTemplate = argv[i++];
+	mkmcParams.mapStatsFileName = "mapping_" + mkmcParams.outputFilesTemplate;
 
 	mkmcParams.tmpPath = argv[i++];
 
@@ -323,7 +327,7 @@ int main(int argc, char** argv)
 
 		params.setKMCParams();
 
-		Timer kmc_timer, tools_timer, dump_timer;
+		Timer kmc_timer, dump_timer;
 
 		Start start(params);
 		start.verifyFiles();
@@ -334,14 +338,8 @@ int main(int argc, char** argv)
 		kmcRunner.runKMCParallel();
 		kmc_timer.stopTimer();
 
-		std::cerr << "\nStarting k-mer databases converting..." << std::endl;
-		KMCToolsRunner kmcToolsRunner(params);
-		tools_timer.startTimer();
-		kmcToolsRunner.runKMCToolsParallel();
-		tools_timer.stopTimer();
-
 		Dump dump(params);
-		std::cerr << "\nStarting dumping to file " << params.mkmcParams.outputFile << "..." << std::endl;
+		std::cerr << "\nStarting dumping to file " << params.mkmcParams.outputFilesTemplate << "..." << std::endl;
 		if (params.mkmcParams.outputFileType == OutputFileType::Matrix)
 		{
 			dump_timer.startTimer();
@@ -361,9 +359,6 @@ int main(int argc, char** argv)
 		std::cerr << "\nKMC: \n";
 		std::cerr << "\tStart: " << kmc_timer.getStartTime() << "\n";
 		std::cerr << "\tEnd:   " << kmc_timer.getStopTime() << "\n";
-		std::cerr << "KMC tools: \n";
-		std::cerr << "\tStart: " << tools_timer.getStartTime() << "\n";
-		std::cerr << "\tEnd:   " << tools_timer.getStopTime() << "\n";
 		std::cerr << "Dump: \n";
 		std::cerr << "\tStart: " << dump_timer.getStartTime() << "\n";
 		std::cerr << "\tEnd:   " << dump_timer.getStopTime() << "\n";

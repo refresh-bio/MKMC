@@ -24,10 +24,14 @@ void KMCRunner::operator()()
 		KMC::Stage1Params stage1Params = params.stage1Params;
 		stage1Params.SetInputFiles(taskData.inputFiles);
 		stage1Params.SetTmpPath(taskData.tmpDir);
+
+		stage1Params.SetSigToBinMappingPath(params.mkmcParams.mapStatsFileName);
+
 		runner.RunStage1(stage1Params);
 
 		KMC::Stage2Params stage2Params = params.stage2Params;
 		stage2Params.SetOutputFileName(taskData.outputFile);
+
 		runner.RunStage2(stage2Params);
 		Logger::Inst().Log("k-mer counting for" + inputFiles + " done.");
 	}
@@ -38,6 +42,28 @@ void KMCRunner::runKMCParallel()
 	if (!params.stage1Params.GetRamOnlyMode())
 		for (const auto& dirPath : params.mkmcParams.kmcTmpDirs)
 			std::filesystem::create_directory(dirPath);
+
+	// Generate mappings
+	{
+		KMC::Runner runner;
+
+		KMC::Stage1Params stage1Params = params.stage1Params;
+
+		std::vector<std::string> allInputFiles;
+		for (const std::vector<std::string>& sample : params.mkmcParams.inputFilesPerSample)
+			for (const std::string& inputFile : sample)
+				allInputFiles.push_back(inputFile);
+
+		stage1Params.SetInputFiles(allInputFiles);
+		stage1Params.SetTmpPath(params.mkmcParams.tmpPath);
+
+		stage1Params.SetSigToBinMapStatsPercentage(params.mkmcParams.sigToBinMapStatsPercentage);
+		stage1Params.SetOnlyGenerateSigToBinMapping(params.mkmcParams.mapStatsFileName);
+
+		stage1Params.SetMaxRamGB(params.mkmcParams.maxRamGB);
+
+		runner.RunStage1(stage1Params);
+	}
 
 	std::vector<std::thread> threads(params.mkmcParams.nKMCWorkers);
 	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nKMCWorkers; ++i_thred)

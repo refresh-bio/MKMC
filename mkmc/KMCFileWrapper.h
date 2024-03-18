@@ -22,6 +22,7 @@ private:
 public:
 	KMCFileWrapper(KMCFileWrapper&&) = default;
 	KMCFileWrapper& operator=(KMCFileWrapper&&) = default;
+	KMCFileWrapper(const std::string& path, const std::string &mapStatsFileName, uint32_t binId);
 
 	KMCFileWrapper(const std::string& path);
 	uint32_t GetK() const
@@ -63,7 +64,7 @@ inline void KMCFileWrapper::Next()
 		cur_count = cnt;
 		return res;
 #else
-		return kmc_file->ReadNextKmer(cur, cur_count);
+		return kmc_file->ReadNextKmerFromBin(cur, cur_count);
 #endif
 	};
 
@@ -72,9 +73,13 @@ inline void KMCFileWrapper::Next()
 		// for the last one k-mer (cur_kmer_no == tot_kmers), it is legal to call Next, but ReadNextKmer will fail
 		if (cur_kmer_no != tot_kmers)
 		{
-			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")." << std::endl;
+			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")\n";
 			exit(1);
 		}
+	}
+	else {
+		int i = 0;
+		i++;
 	}
 	++cur_kmer_no;
 }

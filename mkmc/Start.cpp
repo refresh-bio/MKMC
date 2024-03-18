@@ -25,9 +25,9 @@ bool Start::canCreateFileInPath(const std::string& path)
 
 void Start::verifyFiles()
 {
-	if (!canCreateFile(params.mkmcParams.outputFile))
+	if (!canCreateFile(params.mkmcParams.outputFilesTemplate))
 	{
-		std::cerr << "Error: Cannot create file: " << params.mkmcParams.outputFile << "." << std::endl;
+		std::cerr << "Error: Cannot create file: " << params.mkmcParams.outputFilesTemplate << "." << std::endl;
 		exit(1);
 	}
 

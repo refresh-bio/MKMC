@@ -27,7 +27,7 @@ class BinaryHeapMergeStreams
 
 public:
 	template<typename DO_WITH_ELEM_IF_EXISTS>
-	BinaryHeapMergeStreams(size_t n_streams_to_merge, const DO_WITH_ELEM_IF_EXISTS& do_with_elem_if_exists, const COMPARATOR& comparator);
+	BinaryHeapMergeStreams(const std::vector<size_t>& streams_to_merge, const DO_WITH_ELEM_IF_EXISTS& do_with_elem_if_exists, const COMPARATOR& comparator);
 
 	template<typename DO_WITH_ELEM_IF_EXISTS, typename Callback>
 	void ProcessElem(const DO_WITH_ELEM_IF_EXISTS& do_with_elem_if_exists, Callback&& callback);
@@ -77,13 +77,13 @@ inline void BinaryHeapMergeStreams<T, COMPARATOR>::heap_down()
 
 template<typename T, typename COMPARATOR>
 template<typename DO_WITH_ELEM_IF_EXISTS>
-inline BinaryHeapMergeStreams<T, COMPARATOR>::BinaryHeapMergeStreams(size_t n_streams_to_merge, const DO_WITH_ELEM_IF_EXISTS& do_with_elem_if_exists, const COMPARATOR& comparator)
+inline BinaryHeapMergeStreams<T, COMPARATOR>::BinaryHeapMergeStreams(const std::vector<size_t>& streams_to_merge, const DO_WITH_ELEM_IF_EXISTS& do_with_elem_if_exists, const COMPARATOR& comparator)
 	: comparator(comparator)
 {
-	heap.reserve(n_streams_to_merge);
+	heap.reserve(streams_to_merge.size());
 
-	for (size_t id = 0; id < n_streams_to_merge; ++id) {
-		do_with_elem_if_exists(id, [&](const T& elem) { heap.emplace_back(elem, id); });
+	for (size_t i = 0; i < streams_to_merge.size(); ++i) {
+		do_with_elem_if_exists(streams_to_merge[i], [&](const T& elem) { heap.emplace_back(elem, streams_to_merge[i]); });
 	}
 
 	std::make_heap(heap.begin(), heap.end(), [&](const heap_desc_t<T>& elem1, const heap_desc_t<T>& elem2) -> bool {
