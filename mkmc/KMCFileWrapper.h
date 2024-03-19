@@ -24,7 +24,6 @@ public:
 	KMCFileWrapper& operator=(KMCFileWrapper&&) = default;
 	KMCFileWrapper(const std::string& path, const std::string &mapStatsFileName, uint32_t binId);
 
-	KMCFileWrapper(const std::string& path);
 	uint32_t GetK() const
 	{
 		return k;
@@ -76,10 +75,6 @@ inline void KMCFileWrapper::Next()
 			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")\n";
 			exit(1);
 		}
-	}
-	else {
-		int i = 0;
-		i++;
 	}
 	++cur_kmer_no;
 }
