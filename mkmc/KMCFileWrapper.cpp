@@ -4,7 +4,7 @@
 
 KMCFileWrapper::KMCFileWrapper(const std::string& path, const std::string& mapStatsFileName, uint32_t binId)
 {
-	kmc_file = std::make_unique<CKMCFile>();
+	kmc_file = std::make_unique<CKMCFile>(true);
 	if (!kmc_file->OpenForListingWithBinOrder(path, mapStatsFileName))
 	{
 		std::cerr << "Error: cannot open kmc database " << path << "\n";
