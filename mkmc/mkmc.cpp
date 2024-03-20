@@ -96,7 +96,7 @@ void fill_temporary_kmc_databases_names(Params& params)
 	const uint32_t nBinsDigits = static_cast<uint32_t>(std::log10(static_cast<double>(params.stage1Params.GetNBins()))) + 1;
 	for (uint32_t binId = 0; binId < params.stage1Params.GetNBins(); ++binId) {
 		std::ostringstream sstreamOutput;
-		sstreamOutput << mkmcParams.outputFilesTemplate << std::setfill('0') << std::setw(nBinsDigits) << binId;
+		sstreamOutput << mkmcParams.outputFilesTemplate << "_" << std::setfill('0') << std::setw(nBinsDigits) << binId;
 		mkmcParams.outputFiles.push_back(sstreamOutput.str());
 	}
 }

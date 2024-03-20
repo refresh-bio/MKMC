@@ -20,14 +20,14 @@ bool Start::canCreateFileInPath(const std::string& path)
 	if (path.back() == '\\' || path.back() == '/')
 		return canCreateFile(path + name);
 	else
-		return canCreateFile(path + '/' + name);
+		return canCreateFile(path + static_cast<char>(std::filesystem::path::preferred_separator) + name);
 }
 
 void Start::verifyFiles()
 {
-	if (!canCreateFile(params.mkmcParams.outputFilesTemplate))
+	if (!canCreateFile(params.mkmcParams.outputFiles.front()))
 	{
-		std::cerr << "Error: Cannot create file: " << params.mkmcParams.outputFilesTemplate << "." << std::endl;
+		std::cerr << "Error: Cannot create output file: " << params.mkmcParams.outputFiles.front() << "." << std::endl;
 		exit(1);
 	}
 
