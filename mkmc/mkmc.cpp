@@ -342,18 +342,9 @@ int main(int argc, char** argv)
 
 		Dump dump(params);
 		std::cerr << "\nStarting dumping to file " << params.mkmcParams.outputFilesTemplate << "..." << std::endl;
-		if (params.mkmcParams.outputFileType == OutputFileType::Matrix)
-		{
-			dump_timer.startTimer();
-			dump.dumpToFileParallel<MatrixFileGenerator>();
-			dump_timer.stopTimer();
-		}
-		else if (params.mkmcParams.outputFileType == OutputFileType::FASTA)
-		{
-			dump_timer.startTimer();
-			dump.dumpToFileParallel<FASTAFileGenerator>();
-			dump_timer.stopTimer();
-		}
+		dump_timer.startTimer();
+		dump.dumpToFileParallel();
+		dump_timer.stopTimer();
 
 		Finish finish(params);
 		finish.finishProcessing();

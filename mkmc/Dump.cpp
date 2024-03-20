@@ -27,6 +27,8 @@ bool Dump::allKAreSame(const std::vector<KMCFileWrapper>& samples)
 	return true;
 }
 
+
+
 void Dump::openDatabases(std::vector<KMCFileWrapper>& samples, uint32_t binId)
 {
 	for (const std::string& fileName : params.mkmcParams.kmcOutputFiles)
@@ -39,4 +41,45 @@ void Dump::openDatabases(std::vector<KMCFileWrapper>& samples, uint32_t binId)
 		std::cerr << "Error: each database should have the same k." << std::endl;
 		exit(1);
 	}
+}
+
+
+
+void Dump::dumpToFileParallel()
+{
+	tasksData.reserve(params.stage1Params.GetNBins());
+	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
+	{
+		tasksData.push_back(TaskData{ i });
+	}
+
+	std::vector<std::thread> threads(params.mkmcParams.nDumpThreads);
+	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nDumpThreads; ++i_thred)
+	{
+		threads[i_thred] = std::thread([this] { (*this)(); });
+	}
+
+	for (std::thread& thread : threads)
+	{
+		thread.join();
+	}
+}
+
+
+
+void Dump::operator()()
+{
+	TaskData taskData;
+	if (params.mkmcParams.outputFileType == OutputFileType::Matrix)
+		while (tasksPool.getTask(taskData))
+		{
+			dumpToFile<MatrixFileGenerator>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId);
+		}
+	else if (params.mkmcParams.outputFileType == OutputFileType::FASTA)
+		while (tasksPool.getTask(taskData))
+		{
+			dumpToFile<FASTAFileGenerator>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId);
+		}
+	else
+		assert(false);
 }

@@ -31,11 +31,12 @@ class Dump
 		{}
 	};
 	std::vector<TaskData> tasksData;
+	TasksPool<TaskData> tasksPool;
 
 	bool allKAreSame(const std::vector<KMCFileWrapper>& samples);
 	void openDatabases(std::vector<KMCFileWrapper>& samples, uint32_t binId);
 
-	template<typename GENRATOR_T>
+	template<typename GENERATOR_T>
 	void dumpToFile(std::string fileName, uint32_t fileId);
 
 public:
@@ -43,18 +44,14 @@ public:
 		params(params), tasksPool(tasksData)
 	{}
 
-	template<typename GENRATOR_T>
 	void dumpToFileParallel();
 
-	TasksPool<TaskData> tasksPool;
-
-	template<typename GENRATOR_T>
 	void operator()();
 };
 
 
 
-template<typename GENRATOR_T>
+template<typename GENERATOR_T>
 void Dump::dumpToFile(std::string fileName, uint32_t binId)
 {
 	std::ofstream outputFile(fileName);
@@ -74,7 +71,7 @@ void Dump::dumpToFile(std::string fileName, uint32_t binId)
 	PercentProgress progress(tot_all_kmers, params.mkmcParams.verbosity_level > 0);
 
 	uint32_t k = params.stage1Params.GetKmerLen();
-	GENRATOR_T fileGenerator(outputFile, params.mkmcParams.samples, params.mkmcParams.count_symbols, k);
+	GENERATOR_T fileGenerator(outputFile, params.mkmcParams.samples, params.mkmcParams.count_symbols, k);
 
 	std::vector<size_t> kMersCounts(samples.size());
 	Filter filter(params);
@@ -154,38 +151,5 @@ void Dump::dumpToFile(std::string fileName, uint32_t binId)
 	if (filter.keepKMer(kMersCounts))
 	{
 		fileGenerator.writeKmer(minKmer, kMersCounts);
-	}
-}
-
-
-
-template<typename GENRATOR_T>
-void Dump::dumpToFileParallel()
-{
-	tasksData.reserve(params.stage1Params.GetNBins());
-	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
-	{
-		tasksData.push_back(TaskData{ i });
-	}
-
-	std::vector<std::thread> threads(params.mkmcParams.nDumpThreads);
-	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nDumpThreads; ++i_thred)
-	{
-		threads[i_thred] = std::thread([this] { (*this).operator()<GENRATOR_T>(); });
-	}
-
-	for (std::thread& thread : threads)
-	{
-		thread.join();
-	}
-}
-
-template<typename GENRATOR_T>
-void Dump::operator()()
-{
-	TaskData taskData;
-	while (tasksPool.getTask(taskData))
-	{
-		dumpToFile<GENRATOR_T>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId);
 	}
 }
