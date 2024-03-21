@@ -4,7 +4,8 @@
 Params::Params()
 {
 	stage1Params.SetInputFileType(KMC::InputFileType::FASTQ);
-	stage1Params.SetNBins(64);
+
+	stage1Params.SetReopenTmeEachTime(true);
 
 	stage2Params.SetCutoffMin(1);
 	stage2Params.SetCutoffMax(static_cast<uint64_t>(4E9));
