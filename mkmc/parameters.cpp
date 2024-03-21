@@ -7,6 +7,8 @@ Params::Params()
 
 	stage1Params.SetReopenTmeEachTime(true);
 
+	stage1Params.SetSignatureSelectionScheme(KMC::SignatureSelectionScheme::min_hash);
+
 	stage2Params.SetCutoffMin(1);
 	stage2Params.SetCutoffMax(static_cast<uint64_t>(4E9));
 	stage2Params.SetCounterMax(65535);

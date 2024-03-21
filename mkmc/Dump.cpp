@@ -21,9 +21,18 @@ bool Dump::allKAreSame(const std::vector<KMCFileWrapper>& samples)
 	if (samples.empty())
 		return true;
 	uint32_t k = samples.front().GetK();
+	uint32_t signatureLen = samples.front().GetSignatureLen();
+	auto signatureSelectionScheme = samples.front().GetSignatureSelectionScheme();
+
 	for (const auto& sample : samples)
+	{
 		if (k != sample.GetK())
 			return false;
+		if (signatureLen != sample.GetSignatureLen())
+			return false;
+		if (signatureSelectionScheme != sample.GetSignatureSelectionScheme())
+			return false;
+	}
 	return true;
 }
 
@@ -33,12 +42,12 @@ void Dump::openDatabases(std::vector<KMCFileWrapper>& samples, uint32_t binId)
 {
 	for (const std::string& fileName : params.mkmcParams.kmcOutputFiles)
 	{
-		samples.emplace_back(fileName, params.mkmcParams.mapStatsFileName, binId);
+		samples.emplace_back(fileName, binId);
 	}
 
 	if (!allKAreSame(samples))
 	{
-		std::cerr << "Error: each database should have the same k." << std::endl;
+		std::cerr << "Error: KMC databases are not consistent." << std::endl;
 		exit(1);
 	}
 }

@@ -32,7 +32,6 @@ struct MKMCParams
 	const uint32_t count_symbols = 10; // for 4G
 
 	const uint32_t sigToBinMapStatsPercentage = 5;
-	std::string mapStatsFileName;
 
 	bool nKMCWorkersUserSet = false;
 

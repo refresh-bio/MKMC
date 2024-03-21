@@ -22,11 +22,27 @@ private:
 public:
 	KMCFileWrapper(KMCFileWrapper&&) = default;
 	KMCFileWrapper& operator=(KMCFileWrapper&&) = default;
-	KMCFileWrapper(const std::string& path, const std::string &mapStatsFileName, uint32_t binId);
+	KMCFileWrapper(const std::string& path, uint32_t binId);
 
 	uint32_t GetK() const
 	{
 		return k;
+	}
+	uint32_t GetNBins() const
+	{
+		return kmc_file->GetNBins();
+	}
+	uint32_t GetSignatureLen() const
+	{
+		CKMCFileInfo info;
+		kmc_file->Info(info);
+		return info.signature_len;
+	}
+	auto GetSignatureSelectionScheme() const
+	{
+		CKMCFileInfo info;
+		kmc_file->Info(info);
+		return info.signature_selection_scheme;
 	}
 	bool Finished() const
 	{
