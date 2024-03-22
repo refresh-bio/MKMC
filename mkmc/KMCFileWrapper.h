@@ -6,17 +6,16 @@
 #include "Filter.h"
 
 
-
+template<unsigned SIZE>
 class KMCFileWrapper
 {
 public:
-	using kmer_t = CKmerAPI;
 
 private:
 	std::unique_ptr<CKMCFile> kmc_file;
 	size_t tot_kmers;
 	size_t cur_kmer_no{};
-	kmer_t cur;
+	CKmer<SIZE> cur;
 	size_t cur_count;
 	uint32_t k;
 public:
@@ -48,7 +47,7 @@ public:
 	{
 		return cur_kmer_no > tot_kmers;
 	}
-	const kmer_t& First() const
+	const CKmer<SIZE>& First() const
 	{
 		return cur;
 	}
@@ -69,8 +68,36 @@ public:
 };
 
 
+template<unsigned SIZE>
+KMCFileWrapper<SIZE>::KMCFileWrapper(const std::string& path, uint32_t binId)
+{
+	kmc_file = std::make_unique<CKMCFile>(true);
+	if (!kmc_file->OpenForListingWithBinOrder(path))
+	{
+		std::cerr << "Error: cannot open kmc database " << path << "\n";
+		exit(1);
+	}
+	kmc_file->StartBin(binId);
+	if (!kmc_file->IsKMC2())
+	{
+		std::cerr << "Error: this version requires KMC 2 database format: " << path << "\n";
+		exit(1);
+	}
+	CKMCFileInfo kmc_file_info;
+	kmc_file->Info(kmc_file_info);
+	k = kmc_file_info.kmer_length;
 
-inline void KMCFileWrapper::Next()
+	kmc_file->GetNKmers(binId, tot_kmers);
+
+	cur.clear();
+
+	if (!Finished())
+		Next();
+}
+
+
+template<unsigned SIZE>
+inline void KMCFileWrapper<SIZE>::Next()
 {
 	auto read_cnt = [this] {
 #ifdef __APPLE__

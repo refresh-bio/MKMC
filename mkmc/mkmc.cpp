@@ -304,6 +304,27 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	return true;
 }
 
+class DumpRunner
+{
+	Params& params;
+	Timer& dump_timer;
+public:
+	DumpRunner(Params& params, Timer& dump_timer):
+		params(params),
+		dump_timer(dump_timer)
+	{
+
+	}
+	template<unsigned SIZE>
+	void Run()
+	{
+		Dump<SIZE> dump(params);
+		std::cerr << "\nStarting dumping to file " << params.mkmcParams.outputFilesTemplate << "..." << std::endl;
+		dump_timer.startTimer();
+		dump.dumpToFileParallel();
+		dump_timer.stopTimer();
+	}
+};
 //----------------------------------------------------------------------------------
 // Main function
 int main(int argc, char** argv)
@@ -338,11 +359,9 @@ int main(int argc, char** argv)
 		kmcRunner.runKMCParallel();
 		kmc_timer.stopTimer();
 
-		Dump dump(params);
-		std::cerr << "\nStarting dumping to file " << params.mkmcParams.outputFilesTemplate << "..." << std::endl;
-		dump_timer.startTimer();
-		dump.dumpToFileParallel();
-		dump_timer.stopTimer();
+		DumpRunner dump_runner(params, dump_timer);
+		DispatchKmerSize(params.stage1Params.GetKmerLen(), dump_runner);
+
 
 		Finish finish(params);
 		finish.finishProcessing();
