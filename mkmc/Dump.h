@@ -97,6 +97,7 @@ void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId)
 		tot_all_kmers += db.GetTotKmers();
 	}
 
+	ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, tot_all_kmers / 100ull));
 	uint32_t k = params.stage1Params.GetKmerLen();
 	GENERATOR_T fileGenerator(outputFile, params.mkmcParams.samples, params.mkmcParams.count_symbols, k);
 
@@ -114,7 +115,7 @@ void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId)
 		assert(!samples[id].Finished());
 
 		samples[id].Next();
-		++progress_bar;
+		++progress_bar_updater;
 
 		if (samples[id].Finished())
 			return false;

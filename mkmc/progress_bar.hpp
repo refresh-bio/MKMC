@@ -50,4 +50,32 @@ class ProgressBar {
     char unit_space_ = ' ';
 };
 
+//++ on atomic for each element may be very costly
+//this class may be used to limit number of this increments
+//its not thread safe!
+//the object must live longer than passed progress_bar
+//because it uses it in dtor
+class ProgressBarUpdater {
+    ProgressBar& progress_bar;
+    uint64_t frequency_update;
+    uint64_t cur_val{};
+public:
+    ProgressBarUpdater(ProgressBar& progress_bar, uint64_t frequency_update):
+        progress_bar(progress_bar), frequency_update(frequency_update) {
+
+    }
+    ProgressBarUpdater& operator++() {
+        ++cur_val;
+        if (cur_val == frequency_update) {
+            progress_bar += cur_val;
+            cur_val = 0;
+        }
+        return *this;
+    }
+    ~ProgressBarUpdater() {
+        progress_bar += cur_val;
+        cur_val = 0; //not needed
+    }
+};
+
 #endif // _PROGRESS_BAR_
