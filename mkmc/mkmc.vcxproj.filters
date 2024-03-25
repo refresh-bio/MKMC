@@ -43,6 +43,9 @@
     <ClCompile Include="TasksFiller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="progress_bar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KMCRunner.h">

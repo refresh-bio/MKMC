@@ -157,6 +157,7 @@
     <ClCompile Include="KMCRunner.cpp" />
     <ClCompile Include="mkmc.cpp" />
     <ClCompile Include="parameters.cpp" />
+    <ClCompile Include="progress_bar.cpp" />
     <ClCompile Include="Start.cpp" />
     <ClCompile Include="TasksFiller.cpp" />
     <ClCompile Include="TasksPool.cpp" />

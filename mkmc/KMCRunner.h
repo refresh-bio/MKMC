@@ -5,9 +5,9 @@
 #include <cstdint>
 #include <algorithm>
 #include <string>
+#include "progress_bar.hpp"
 #include "parameters.h"
 #include "TasksPool.h"
-
 
 
 class KMCRunner
@@ -23,12 +23,16 @@ class KMCRunner
 	const Params& params;
 
 	TasksPool<TaskData> tasksPool;
+
+	ProgressBar progress_bar;
+
 	void operator()();
 
 public:
 	KMCRunner(const Params& params) :
 		params(params),
-		tasksPool(tasksData)
+		tasksPool(tasksData),
+		progress_bar(params.mkmcParams.inputFilesPerSample.size() * 200, "k-mer counting", std::cerr, params.mkmcParams.verbosity_level == 0)
 	{
 		const MKMCParams& mkmcParams = params.mkmcParams;
 		tasksData.reserve(mkmcParams.inputFilesPerSample.size());

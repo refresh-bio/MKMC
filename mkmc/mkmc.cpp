@@ -318,8 +318,8 @@ public:
 	template<unsigned SIZE>
 	void Run()
 	{
-		Dump<SIZE> dump(params);
 		std::cerr << "\nStarting dumping to file " << params.mkmcParams.outputFilesTemplate << "..." << std::endl;
+		Dump<SIZE> dump(params);
 		dump_timer.startTimer();
 		dump.dumpToFileParallel();
 		dump_timer.stopTimer();

@@ -20,9 +20,9 @@
 #include "TasksPool.h"
 #include "Logger.h"
 #include "../kmc/kmc_dump/nc_utils.h"
+#include "progress_bar.hpp"
 #include "Dump.h"
 #include "Filter.h"
-
 
 template<unsigned SIZE>
 class Dump
@@ -42,15 +42,34 @@ class Dump
 	std::vector<TaskData> tasksData;
 	TasksPool<TaskData> tasksPool;
 
+	ProgressBar progress_bar;
+
 	bool allKAreSame(const std::vector<KMCFileWrapper<SIZE>>& samples);
 	void openDatabases(std::vector<KMCFileWrapper<SIZE>>& samples, uint32_t binId);
+
+	uint64_t getNTotInputKmers()
+	{
+		uint64_t res{};
+		for (const auto& x : params.mkmcParams.kmcOutputFiles)
+		{
+			CKMCFile tmp(true);
+			if (!tmp.OpenForListingWithBinOrder(x))
+			{
+				std::cerr << "Error: cannot open kmc database " << x << "\n";
+				exit(1);
+			}
+			res += tmp.KmerCount();
+		}
+		return res;
+	}
 
 	template<typename GENERATOR_T>
 	void dumpToFile(std::string fileName, uint32_t fileId);
 
 public:
 	Dump(const Params& params) :
-		params(params), tasksPool(tasksData)
+		params(params), tasksPool(tasksData),
+		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : getNTotInputKmers(), "Merge", std::cerr, params.mkmcParams.verbosity_level == 0)
 	{}
 
 	void dumpToFileParallel();
@@ -77,7 +96,6 @@ void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId)
 	for (const auto& db : samples) {
 		tot_all_kmers += db.GetTotKmers();
 	}
-	PercentProgress progress(tot_all_kmers, params.mkmcParams.verbosity_level > 0);
 
 	uint32_t k = params.stage1Params.GetKmerLen();
 	GENERATOR_T fileGenerator(outputFile, params.mkmcParams.samples, params.mkmcParams.count_symbols, k);
@@ -96,7 +114,7 @@ void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId)
 		assert(!samples[id].Finished());
 
 		samples[id].Next();
-		progress.NotifyProgress(1);
+		++progress_bar;
 
 		if (samples[id].Finished())
 			return false;
