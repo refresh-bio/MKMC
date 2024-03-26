@@ -152,7 +152,6 @@
   <ItemGroup>
     <ClCompile Include="..\kmc\kmc_dump\nc_utils.cpp" />
     <ClCompile Include="FileGenerators.cpp" />
-    <ClCompile Include="Filter.cpp" />
     <ClCompile Include="Finish.cpp" />
     <ClCompile Include="KMCRunner.cpp" />
     <ClCompile Include="mkmc.cpp" />

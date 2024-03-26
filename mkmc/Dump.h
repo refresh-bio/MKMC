@@ -102,7 +102,7 @@ void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId)
 	GENERATOR_T fileGenerator(outputFile, params.mkmcParams.samples, params.mkmcParams.count_symbols, k);
 
 	std::vector<size_t> kMersCounts(samples.size());
-	Filter filter(params);
+	FilterCountThreshold filter(params);
 
 
 	auto do_with_elem_if_exists_init = [&](size_t id, const auto& modifyHeapCallback) -> bool
