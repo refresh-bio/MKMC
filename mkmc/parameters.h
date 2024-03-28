@@ -49,11 +49,18 @@ struct FilterParams
 {
 	double minKmersAboveThresholdRatio = 0.0;
 	uint32_t minCountThreshold = 1;
+
+	bool filterKmersSequences = false;
+	std::string inputKmersSequencesToFilterOut; // input file name
+	std::string kmersSequencesToFilterOutDB;    // KMC file name
 };
 
 struct MutableParams
 {
 	bool tmpDirCreated = false;
+
+	mutable bool createdFastaFile = false;
+	mutable std::string kmersSequencesToFilterOut; // file containing k-mers to count (input or generated)
 };
 
 struct Params

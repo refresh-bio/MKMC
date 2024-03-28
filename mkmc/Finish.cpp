@@ -1,6 +1,8 @@
 #include "Finish.h"
 #include <filesystem>
 
+
+
 void Finish::finishProcessing()
 {
 	if (!params.mkmcParams.keepTmpFiles)
@@ -9,6 +11,15 @@ void Finish::finishProcessing()
 		{
 			std::filesystem::remove(kmcOutputFile + ".kmc_pre");
 			std::filesystem::remove(kmcOutputFile + ".kmc_suf");
+		}
+		if (params.filterParams.filterKmersSequences)
+		{
+			if (params.mutableParams.createdFastaFile)
+			{
+				std::filesystem::remove(params.mutableParams.kmersSequencesToFilterOut);
+			}
+			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB + ".kmc_pre");
+			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB + ".kmc_suf");
 		}
 	}
 	if (params.mutableParams.tmpDirCreated)

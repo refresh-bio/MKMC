@@ -40,6 +40,11 @@ public:
 		{
 			tasksData.push_back(TaskData{ mkmcParams.inputFilesPerSample[i], mkmcParams.kmcOutputFiles[i], mkmcParams.kmcTmpDirs[i]});
 		}
+
+		if (params.filterParams.filterKmersSequences)
+		{
+			tasksData.push_back(TaskData{ { params.mutableParams.kmersSequencesToFilterOut }, params.filterParams.kmersSequencesToFilterOutDB, mkmcParams.tmpPath });
+		}
 	}
 
 	void runKMCParallel();

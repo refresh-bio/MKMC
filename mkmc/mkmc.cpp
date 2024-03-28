@@ -19,6 +19,7 @@
 #include "time.hpp"
 #include "FileGenerators.h"
 #include "TasksFiller.h"
+#include "SequenceFilterInit.h"
 #include "Logger.h"
 
 
@@ -41,6 +42,7 @@ void usage()
 		<< "  <temp_dir> - a directory where temporary files will be stored\n"
 		<< "  -thr<X> - filter out k-mers occuring less than <X> times... (default: 1)\n"
 		<< "  -thr_rat<Y> - ... in a ratio <Y> of the input files (per k-mer sequence filtering) (default: 0.0)\n"
+		<< "  -flt<X> - filter out k-mers present in <X> file (FASTA or a sequence of the k-mers)\n"
 		<< "    E.g. -thr_rat0.5 and -thr2 mean that k-mers appearing at least twice in at least a half of the input files will be dumped.\n\n"
 		<< "As `[options]` you can also pass optional parameters:\n"
 		<< "  -k<len> - k-mer length (<len> from " << KMC::CfgConsts::min_k << " to " << KMC::CfgConsts::max_k << "; default: 25)\n"
@@ -239,6 +241,18 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				return false;
 			}
 		}
+		// File with k-mers to be filtered out
+		else if (strncmp(argv[i], "-flt", 4) == 0) //  must be before -f
+		{
+			std::string fileName = &argv[i][4];
+			if (fileName.empty())
+			{
+				std::cerr << "Error: file name of k-mers to be filtered out is not specified.\n" << std::endl;
+				return false;
+			}
+			filterParams.filterKmersSequences = true;
+			filterParams.inputKmersSequencesToFilterOut = fileName;
+		}
 		// input type
 		else if (strncmp(argv[i], "-f", 2) == 0)
 		{
@@ -299,6 +313,18 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			return false;
 	}
 
+	if (params.filterParams.filterKmersSequences) {
+		std::ifstream in(params.filterParams.inputKmersSequencesToFilterOut);
+		if (!in.good())
+		{
+			std::cerr << "Error: No " << params.filterParams.inputKmersSequencesToFilterOut << " file\n" << std::endl;
+			return false;
+		}
+
+		params.filterParams.kmersSequencesToFilterOutDB = params.mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter";
+		params.mutableParams.kmersSequencesToFilterOut = params.mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter.fa";
+	}
+
 	fill_temporary_kmc_databases_names(params);
 
 	return true;
@@ -348,11 +374,19 @@ int main(int argc, char** argv)
 
 		params.setKMCParams();
 
-		Timer kmc_timer, dump_timer;
+		Timer sequence_filter_init, kmc_timer, dump_timer;
 
 		Start start(params);
 		start.verifyFiles();
 
+		if (params.filterParams.filterKmersSequences)
+		{
+			SequenceFilterInit kmersFilter(params, sequence_filter_init);
+			kmersFilter.prepareKmersSequencesToFilter();
+		}
+
+		if (params.mutableParams.createdFastaFile)
+			std::cerr << '\n';
 		std::cerr << "Starting k-mer counting..." << std::endl;
 		KMCRunner kmcRunner(params);
 		kmc_timer.startTimer();
@@ -366,6 +400,12 @@ int main(int argc, char** argv)
 		Finish finish(params);
 		finish.finishProcessing();
 
+		if (params.mutableParams.createdFastaFile)
+		{
+			std::cerr << "\nPreparing temporary FASTA file for sequences filtering out: \n";
+			std::cerr << "\tStart: " << sequence_filter_init.getStartTime() << "\n";
+			std::cerr << "\tEnd:   " << sequence_filter_init.getStopTime() << "\n";
+		}
 		std::cerr << "\nKMC: \n";
 		std::cerr << "\tStart: " << kmc_timer.getStartTime() << "\n";
 		std::cerr << "\tEnd:   " << kmc_timer.getStopTime() << "\n";

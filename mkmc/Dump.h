@@ -23,6 +23,7 @@
 #include "progress_bar.hpp"
 #include "Dump.h"
 #include "Filter.h"
+#include "KmersSamplesStruct.h"
 
 template<unsigned SIZE>
 class Dump
@@ -102,7 +103,9 @@ void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId)
 	GENERATOR_T fileGenerator(outputFile, params.mkmcParams.samples, params.mkmcParams.count_symbols, k);
 
 	std::vector<size_t> kMersCounts(samples.size());
-	FilterCountThreshold filter(params);
+
+	using ParameterizedKmersSamplesStruct = KmersSamplesStruct<SIZE>;
+	FilterCountThreshold<ParameterizedKmersSamplesStruct,FilterSequences<ParameterizedKmersSamplesStruct>> filter(params, binId);
 
 
 	auto do_with_elem_if_exists_init = [&](size_t id, const auto& modifyHeapCallback) -> bool
@@ -163,9 +166,9 @@ void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId)
 				const CKmer<SIZE>& curKmer = samples[elem].First();
 				if (!(curKmer == minKmer))
 				{
-					if (filter.keepKMer(kMersCounts))
+					if (filter.keepKMer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts }))
 					{
-						fileGenerator.writeKmer(minKmer, kMersCounts);
+						fileGenerator.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 					}
 
 					minKmer = curKmer;
@@ -176,9 +179,9 @@ void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId)
 			});
 	}
 
-	if (filter.keepKMer(kMersCounts))
+	if (filter.keepKMer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts }))
 	{
-		fileGenerator.writeKmer(minKmer, kMersCounts);
+		fileGenerator.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 	}
 }
 
