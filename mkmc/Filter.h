@@ -86,9 +86,6 @@ bool FilterSequences<KmersSamplesData, NextFilter>::keepKMer(const KmersSamplesD
 	{
 		return nextFilter.keepKMer(kmersData);
 	}
-	else
-	{
-		kmcFile.Next();
-		return false;
-	}
+	kmcFile.Next();
+	return false;
 }
