@@ -17,6 +17,7 @@ class KMCRunner
 		std::vector<std::string> inputFiles;
 		std::string outputFile;
 		std::string tmpDir;
+		KMC::InputFileType inputFileType;
 	};
 	std::vector<TaskData> tasksData;
 
@@ -38,12 +39,12 @@ public:
 		tasksData.reserve(mkmcParams.inputFilesPerSample.size());
 		for (uint32_t i = 0; i < mkmcParams.inputFilesPerSample.size(); ++i)
 		{
-			tasksData.push_back(TaskData{ mkmcParams.inputFilesPerSample[i], mkmcParams.kmcOutputFiles[i], mkmcParams.kmcTmpDirs[i]});
+			tasksData.push_back(TaskData{ mkmcParams.inputFilesPerSample[i], mkmcParams.kmcOutputFiles[i], mkmcParams.kmcTmpDirs[i], params.stage1Params.GetInputFileType() });
 		}
 
 		if (params.filterParams.filterKmersSequences)
 		{
-			tasksData.push_back(TaskData{ { params.mutableParams.kmersSequencesToFilterOut }, params.filterParams.kmersSequencesToFilterOutDB, mkmcParams.tmpPath });
+			tasksData.push_back(TaskData{ { params.mutableParams.kmersSequencesToFilterOut }, params.filterParams.kmersSequencesToFilterOutDB, mkmcParams.tmpPath, KMC::InputFileType::FASTA });
 		}
 	}
 

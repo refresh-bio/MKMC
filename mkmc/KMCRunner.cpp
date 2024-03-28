@@ -46,6 +46,7 @@ void KMCRunner::operator()()
 		KMC::Stage1Params stage1Params = params.stage1Params;
 		stage1Params.SetInputFiles(taskData.inputFiles);
 		stage1Params.SetTmpPath(taskData.tmpDir);
+		stage1Params.SetInputFileType(taskData.inputFileType);
 		progress_observer.reset();
 		stage1Params.SetPercentProgressObserver(&progress_observer);
 
