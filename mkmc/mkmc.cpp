@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -7,6 +8,7 @@
 #include <iomanip>
 #include <cmath>
 #include <filesystem>
+#include <limits>
 #include "kmc_core/kmc_runner.h"
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"
@@ -220,8 +222,8 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		// Maximal counter value
 		else if (strncmp(argv[i], "-cs", 3) == 0)
 		{
-			int32_t cs = std::strtol(&argv[i][3], &strEnd, 10);
-			if (*strEnd != '\0' || cs < 2)
+			int64_t cs = std::strtoll(&argv[i][3], &strEnd, 10);
+			if (*strEnd != '\0' || cs < 2 || cs > static_cast<int64_t>(std::numeric_limits<uint32_t>::max()))
 			{
 				std::cerr << "Error: Maximal k-mers counter value should be a natural number and be at least 2.\n" << std::endl;
 				return false;
