@@ -45,8 +45,8 @@ As `[options]` you can also pass optional parameters:
  - `-ci<X>` - exclude counting k-mers occurring less than `<X>` times (if k-mer occurs less than `<X>` times in a file, it gets counter 0, but for this file only) (default: 1)
  - `-cx<X>` - exclude counting k-mers occurring more than `<X>` times (if k-mer occurs more than `<X>` times in a file, it gets counter 0, but for this file only) (default: 4e9)
  - `-cs<X>` - maximal value of a counter (default: 65535)
- - `-t<X>` - number of threads (default: no. of logic CPU cores)
- - `-wrk<X>` - number of parallel k-mer counting tasks (default: 8)
+ - `-t<X>` - number of threads (default: 16 or no. of logic CPU cores)
+ - `-wrk<X>` - number of parallel k-mer counting tasks (default: 4)
  - `-m<X>` - max amount of RAM in GB (from 2 to 1024); practically works only if `-r` is not set (default: 16)
  - `-r` - RAM only mode for k-mer counting
  - `-v` - verbose mode, shows progress
