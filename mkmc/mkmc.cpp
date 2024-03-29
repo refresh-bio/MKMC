@@ -44,7 +44,7 @@ void usage()
 		<< "  <temp_dir> - a directory where temporary files will be stored\n"
 		<< "  -thr<X> - filter out k-mers occuring less than <X> times... (default: 1)\n"
 		<< "  -thr_rat<Y> - ... in a ratio <Y> of the input files (per k-mer sequence filtering) (default: 0.0)\n"
-		<< "  -flt<X> - filter out k-mers present in <X> file (FASTA or a sequence of the k-mers)\n"
+		<< "  -flt<X> - keep k-mers present in <X> file (FASTA or a sequence of the k-mers) only\n"
 		<< "    E.g. -thr_rat0.5 and -thr2 mean that k-mers appearing at least twice in at least a half of the input files will be dumped.\n\n"
 		<< "As `[options]` you can also pass optional parameters:\n"
 		<< "  -k<len> - k-mer length (<len> from " << KMC::CfgConsts::min_k << " to " << KMC::CfgConsts::max_k << "; default: 25)\n"

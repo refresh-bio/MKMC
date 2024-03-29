@@ -78,14 +78,14 @@ bool FilterSequences<KmersSamplesData, NextFilter>::keepKMer(const KmersSamplesD
 {
 	if (kmcFile.Finished())
 	{
-		return nextFilter.keepKMer(kmersData);
+		return false;
 	}
 
 	//assert(!(kmcFile.First() < kmersData.minKmer));
 	if (kmersData.minKmer < kmcFile.First())
 	{
-		return nextFilter.keepKMer(kmersData);
+		return false;
 	}
 	kmcFile.Next();
-	return false;
+	return nextFilter.keepKMer(kmersData);
 }
