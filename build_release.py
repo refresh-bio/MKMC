@@ -82,7 +82,7 @@ if system == 'windows':
     with tarfile.open(f"mkmc-{ver}.{system}.{hardware}.tar.gz", "w:gz") as tar:
         #tar.add(source_dir, arcname=os.path.basename(source_dir))
         tar.add("x64\Release\mkmc.exe", arcname="mkmc.exe")
-        tar.add("x64\Release\kmc_tools.exe", arcname="kmc_tools.exe")
+
 else:
     run_cmd("make clean")
     run_cmd("make -j release")

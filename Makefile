@@ -1,4 +1,4 @@
-all: mkmc kmc_tools
+all: mkmc
 
 dummy := $(shell git submodule update --init --recursive)
 
@@ -102,12 +102,6 @@ $(LIB_KMC):
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
-
-kmc_tools: $(OUT_BIN_DIR)/kmc_tools
-
-$(OUT_BIN_DIR)/kmc_tools: $(LIB_ZLIB)
-	mkdir -p $(OUT_BIN_DIR)
-	(cd $(KMC_DIR); $(MAKE) kmc_tools); cp $(KMC_DIR)/bin/kmc_tools $@
 
 mkmc: $(OUT_BIN_DIR)/mkmc
 
