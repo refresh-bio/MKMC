@@ -32,7 +32,7 @@ bool SequenceFilterInit::isFasta()
 
 	if (!getNotEmptyLine(stream, line))
 	{
-		std::cerr << "Error: format of a file " << params.filterParams.inputKmersSequencesToFilterOut << "has not proper format; it must be one of: FASTA or a sequence of k-mers." << std::endl;
+		std::cerr << "Error: format of a file " << params.filterParams.inputKmersSequencesToFilterOut << "is not proper; it must be one of: FASTA or a sequence of k-mers." << std::endl;
 		exit(1);
 	}
 
@@ -40,13 +40,7 @@ bool SequenceFilterInit::isFasta()
 	{
 		if (!getNotEmptyLine(stream, kmer))
 		{
-			std::cerr << "Error: k-mers to be filtered out have inproper length, it must equal " << params.stage1Params.GetKmerLen() << "." << std::endl;
-			exit(1);
-		}
-
-		if (kmer.length() != params.stage1Params.GetKmerLen())
-		{
-			std::cerr << "Error: k-mers to be filtered out have inproper length, it must equal " << params.stage1Params.GetKmerLen() << "." << std::endl;
+			std::cerr << "Error: format of a file " << params.filterParams.inputKmersSequencesToFilterOut << "is not proper; it must be one of: FASTA or a sequence of k-mers." << std::endl;
 			exit(1);
 		}
 		return true;
