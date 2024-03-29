@@ -41,6 +41,7 @@ As `[options]` you can also pass optional parameters:
  - `-k<len>` - k-mer length (default: 25)
  - `-f<a/q/m>` - input in FASTA format (`-fa`), FASTQ format (`-fq`), or multi FASTA (`-fm`); mixing files is not supported (default: FASTQ)
  - `-of<a,matrix>` - output in FASTA format (`-ofa`) or matrix (`-ofmatrix`) (default: matrix)
+ - `-on<X>` - number of output files, reduce carefully (default: 512)
  - `-b` - turn off transformation of k-mers into canonical form
  - `-ci<X>` - exclude counting k-mers occurring less than `<X>` times (if k-mer occurs less than `<X>` times in a file, it gets counter 0, but for this file only) (default: 1)
  - `-cx<X>` - exclude counting k-mers occurring more than `<X>` times (if k-mer occurs more than `<X>` times in a file, it gets counter 0, but for this file only) (default: 4e9)

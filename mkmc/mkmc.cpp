@@ -50,6 +50,7 @@ void usage()
 		<< "  -k<len> - k-mer length (<len> from " << KMC::CfgConsts::min_k << " to " << KMC::CfgConsts::max_k << "; default: 25)\n"
 		<< "  -f<a/q/m> - input in FASTA format (-fa), FASTQ format (-fq), or multi FASTA (-fm); mixing files is not supported (default: FASTQ)\n"
 		<< "  -of<a,matrix> - output in FASTA format (-ofa) or matrix (-ofmatrix) (default: matrix)\n"
+		<< "  -on<X> - number of output files, reduce carefully (default: 512)\n"
 		<< "  -b - turn off transformation of k-mers into canonical form\n"
 		<< "  -ci<X> - exclude k-mers occurring less than <X> times (if k-mer occurs less than <X> times in a file, it gets counter 0, but for this file only) (default: 1)\n"
 		<< "  -cx<X> - exclude counting k-mers occurring more of than <X> times (if k-mer occurs more than <X> times in a file, it gets counter 0, but for this file only) (default: 4e9)\n"
@@ -229,6 +230,17 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				return false;
 			}
 			stage2Params.SetCounterMax(static_cast<uint64_t>(cs));
+		}
+		// Number of KMC bins and output files
+		else if (strncmp(argv[i], "-on", 3) == 0) // must be before -o
+		{
+			int32_t nKMCBins = std::strtol(&argv[i][3], &strEnd, 10);
+			if (*strEnd != '\0' || nKMCBins < 1)
+			{
+				std::cerr << "Error: Number of output files should be a natural number and be at least 1.\n" << std::endl;
+				return false;
+			}
+			mkmcParams.nKMCBins = static_cast<uint32_t>(nKMCBins);
 		}
 		//output type
 		else if (strncmp(argv[i], "-o", 2) == 0)
