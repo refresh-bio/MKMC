@@ -87,7 +87,13 @@ KMCFileWrapper<SIZE>::KMCFileWrapper(const std::string& path, uint32_t binId)
 	kmc_file->Info(kmc_file_info);
 	k = kmc_file_info.kmer_length;
 
+#ifdef __APPLE__
+	uint64_t _tot_kmers;
+	kmc_file->GetNKmers(binId, _tot_kmers);
+	tot_kmers = _tot_kmers;
+#else
 	kmc_file->GetNKmers(binId, tot_kmers);
+#endif
 
 	cur.clear();
 
@@ -101,7 +107,7 @@ inline void KMCFileWrapper<SIZE>::Next()
 	auto read_cnt = [this] {
 #ifdef __APPLE__
 		uint64 cnt;
-		bool res = kmc_file->ReadNextKmer(cur, cnt);
+		bool res = kmc_file->ReadNextKmerFromBin(cur, cnt);
 		cur_count = cnt;
 		return res;
 #else
