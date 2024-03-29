@@ -90,6 +90,8 @@ KMCFileWrapper<SIZE>::KMCFileWrapper(const std::string& path, uint32_t binId)
 	kmc_file->GetNKmers(binId, tot_kmers);
 
 	cur.clear();
+
+	Next();
 }
 
 
