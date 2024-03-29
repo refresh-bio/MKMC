@@ -39,7 +39,7 @@ public:
 		tasksData.reserve(mkmcParams.inputFilesPerSample.size());
 		for (uint32_t i = 0; i < mkmcParams.inputFilesPerSample.size(); ++i)
 		{
-			tasksData.push_back(TaskData{ mkmcParams.inputFilesPerSample[i], mkmcParams.kmcOutputFiles[i], mkmcParams.kmcTmpDirs[i], params.stage1Params.GetInputFileType() });
+			tasksData.push_back(TaskData{ mkmcParams.inputFilesPerSample[i], mkmcParams.kmcOutputFiles[i], mkmcParams.kmcTmpDirs[i], params.mkmcParams.inputFileType });
 		}
 
 		if (params.filterParams.filterKmersSequences)

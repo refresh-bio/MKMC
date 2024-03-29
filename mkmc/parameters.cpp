@@ -3,8 +3,6 @@
 
 Params::Params()
 {
-	stage1Params.SetInputFileType(KMC::InputFileType::FASTQ);
-
 	stage1Params.SetReopenTmeEachTime(true);
 
 	stage1Params.SetSignatureSelectionScheme(KMC::SignatureSelectionScheme::min_hash);

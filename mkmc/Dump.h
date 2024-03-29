@@ -6,12 +6,9 @@
 #include <iostream>
 #include <numeric>
 #include <algorithm>
-#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <cstdint>
-#include <algorithm>
 #include "parameters.h"
 #include "../kmc/kmc_api/kmc_file.h"
 #include "KMCFileWrapper.h"
@@ -56,7 +53,7 @@ class Dump
 			CKMCFile tmp(true);
 			if (!tmp.OpenForListingWithBinOrder(x))
 			{
-				std::cerr << "Error: cannot open kmc database " << x << "\n";
+				std::cerr << "Error: cannot open kmc database " << x << "." << std::endl;
 				exit(1);
 			}
 			res += tmp.KmerCount();

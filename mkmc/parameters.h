@@ -16,6 +16,7 @@ struct MKMCParams
 	std::string tmpPath;
 	std::vector<std::string> samples;
 	std::vector<std::vector<std::string>> inputFilesPerSample;
+	KMC::InputFileType inputFileType = KMC::InputFileType::FASTQ;
 	std::vector<std::string> kmcOutputFiles;
 	std::vector<std::string> kmcTmpDirs;
 
@@ -38,11 +39,6 @@ struct MKMCParams
 	bool keepTmpFiles = false;
 
 	int verbosity_level = 0;
-};
-
-struct KMCToolsParams
-{
-	uint32_t nThreads = 1;
 };
 
 struct FilterParams

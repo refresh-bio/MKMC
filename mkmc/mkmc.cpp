@@ -87,8 +87,8 @@ void fill_temporary_kmc_databases_names(Params& params)
 		sstreamKMC << mkmcParams.tmpPath;
 		if (mkmcParams.tmpPath.back() != '/' && mkmcParams.tmpPath.back() != '\\')
 		{
-			sstreamKMCDir << "/";
-			sstreamKMC << "/";
+			sstreamKMCDir << static_cast<char>(std::filesystem::path::preferred_separator);
+			sstreamKMC << static_cast<char>(std::filesystem::path::preferred_separator);
 		}
 		sstreamKMCDir << "kmc_tmp_" << std::setfill('0') << std::setw(5) << tmp_database_id;
 		sstreamKMC << "kmc_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
@@ -259,11 +259,11 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		else if (strncmp(argv[i], "-f", 2) == 0)
 		{
 			if (strncmp(argv[i] + 2, "a", 1) == 0)
-				stage1Params.SetInputFileType(KMC::InputFileType::FASTA);
+				mkmcParams.inputFileType = KMC::InputFileType::FASTA;
 			else if (strncmp(argv[i] + 2, "q", 1) == 0)
-				stage1Params.SetInputFileType(KMC::InputFileType::FASTQ);
+				mkmcParams.inputFileType = KMC::InputFileType::FASTQ;
 			else if (strncmp(argv[i] + 2, "m", 1) == 0)
-				stage1Params.SetInputFileType(KMC::InputFileType::MULTILINE_FASTA);
+				mkmcParams.inputFileType = KMC::InputFileType::MULTILINE_FASTA;
 			else
 			{
 				std::cerr << "Error: unsupported input type: " << argv[i] << " (use -fa, -fq, or -fm).\n" << std::endl;
@@ -303,7 +303,6 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 
 	mkmcParams.tmpPath = argv[i++];
 
-	std::vector<std::string> input_file_names;
 	if (input_file_name[0] != '@')
 	{
 		return false;
@@ -346,7 +345,7 @@ public:
 	template<unsigned SIZE>
 	void Run()
 	{
-		std::cerr << "\nStarting dumping to file " << params.mkmcParams.outputFilesTemplate << "..." << std::endl;
+		std::cerr << "\nStarting dumping to files " << params.mkmcParams.outputFilesTemplate << "_X..." << std::endl;
 		Dump<SIZE> dump(params);
 		dump_timer.startTimer();
 		dump.dumpToFileParallel();

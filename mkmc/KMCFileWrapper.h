@@ -74,13 +74,13 @@ KMCFileWrapper<SIZE>::KMCFileWrapper(const std::string& path, uint32_t binId)
 	kmc_file = std::make_unique<CKMCFile>(true);
 	if (!kmc_file->OpenForListingWithBinOrder(path))
 	{
-		std::cerr << "Error: cannot open kmc database " << path << "\n";
+		std::cerr << "Error: cannot open kmc database " << path << "." << std::endl;
 		exit(1);
 	}
 	kmc_file->StartBin(binId);
 	if (!kmc_file->IsKMC2())
 	{
-		std::cerr << "Error: this version requires KMC 2 database format: " << path << "\n";
+		std::cerr << "Error: this version requires KMC 2 database format: " << path << "." << std::endl;
 		exit(1);
 	}
 	CKMCFileInfo kmc_file_info;
@@ -90,9 +90,6 @@ KMCFileWrapper<SIZE>::KMCFileWrapper(const std::string& path, uint32_t binId)
 	kmc_file->GetNKmers(binId, tot_kmers);
 
 	cur.clear();
-
-	if (!Finished())
-		Next();
 }
 
 
@@ -115,7 +112,7 @@ inline void KMCFileWrapper<SIZE>::Next()
 		// for the last one k-mer (cur_kmer_no == tot_kmers), it is legal to call Next, but ReadNextKmer will fail
 		if (cur_kmer_no != tot_kmers)
 		{
-			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")\n";
+			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")" << std::endl;
 			exit(1);
 		}
 	}
