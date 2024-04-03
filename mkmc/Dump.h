@@ -229,8 +229,8 @@ void Dump<SIZE>::dumpToFileParallel()
 		tasksData.push_back(TaskData{ i });
 	}
 
-	std::vector<std::thread> threads(params.mkmcParams.nDumpThreads);
-	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nDumpThreads; ++i_thred)
+	std::vector<std::thread> threads(params.mkmcParams.nThreads);
+	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 	{
 		threads[i_thred] = std::thread([this] { (*this)(); });
 	}
