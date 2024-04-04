@@ -44,6 +44,7 @@ class Dump
 
 	bool allKAreSame(const std::vector<KMCFileWrapper<SIZE>>& samples);
 	void openDatabases(std::vector<KMCFileWrapper<SIZE>>& samples, uint32_t binId);
+	void fillTaskData();
 
 	uint64_t getNTotInputKmers()
 	{
@@ -220,14 +221,55 @@ void Dump<SIZE>::openDatabases(std::vector<KMCFileWrapper<SIZE>>& samples, uint3
 }
 
 
+
 template<unsigned SIZE>
-void Dump<SIZE>::dumpToFileParallel()
+inline void Dump<SIZE>::fillTaskData()
 {
 	tasksData.reserve(params.stage1Params.GetNBins());
 	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
 	{
 		tasksData.push_back(TaskData{ i });
 	}
+
+	size_t biggestSample = 0;
+	uint64_t biggestSampleKmersCount = 0;
+	{
+		for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i)
+		{
+			CKMCFile tmp(true);
+			if (!tmp.OpenForListingWithBinOrder(params.mkmcParams.kmcOutputFiles[i]))
+			{
+				std::cerr << "Error: cannot open kmc database " << params.mkmcParams.kmcOutputFiles[i] << "." << std::endl;
+				exit(1);
+			}
+
+			if (tmp.KmerCount() > biggestSampleKmersCount)
+			{
+				biggestSample = i;
+				biggestSampleKmersCount = tmp.KmerCount();
+			}
+		}
+	} // close samples
+
+	// sorting is performed in the following manner: first biggest bins are dumped, then smaller; but the sorting is performed basing on the biggest sample only
+
+	std::vector<uint64_t> samplesBeginSize;
+	samplesBeginSize.reserve(params.mkmcParams.nKMCBins);
+	for (size_t i = 0; i < params.mkmcParams.nKMCBins; ++i)
+	{
+		KMCFileWrapper<SIZE> currentSample(params.mkmcParams.kmcOutputFiles[biggestSample], i);
+		samplesBeginSize.push_back(currentSample.GetTotKmers());
+	}
+
+	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return samplesBeginSize[a.binId] > samplesBeginSize[b.binId]; });
+}
+
+
+
+template<unsigned SIZE>
+void Dump<SIZE>::dumpToFileParallel()
+{
+	fillTaskData();
 
 	std::vector<std::thread> threads(params.mkmcParams.nThreads);
 	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
