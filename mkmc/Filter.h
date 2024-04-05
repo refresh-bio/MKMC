@@ -6,56 +6,79 @@
 
 
 
-template <typename KmersSamplesData>
-class FilterKeepAll
+template <typename KmersSamplesData_T> 
+class FilterCountThreshold
 {
+	const Params& params;
+
 public:
-	FilterKeepAll(const Params& params, uint32_t binId) {}
-	bool keepKMer(const KmersSamplesData& kmersData) {
-		return true;
+	FilterCountThreshold(const Params& params, const uint32_t binId) :
+		params(params)
+	{}
+
+	bool keepKMer(const KmersSamplesData_T& kmersData);
+};
+
+
+
+template <typename KmersSamplesData_T>
+class FilterSequences
+{
+	const Params& params;
+	KMCFileWrapper<KmersSamplesData_T::SIZE> kmcFile;
+
+public:
+	FilterSequences(const Params& params, const uint32_t binId) :
+		params(params),
+		kmcFile(params.filterParams.kmersSequencesToFilterOutDB, binId)
+	{}
+
+	bool keepKMer(const KmersSamplesData_T& kmersData);
+};
+
+
+
+template<typename Filter_T, typename... NextFilters_T>
+class PerformFilter
+{
+	Filter_T filter;
+	PerformFilter<NextFilters_T...> nextPerformFilter;
+public:
+	PerformFilter(const Params& params, const uint32_t binId) :
+		filter(params, binId), nextPerformFilter(params, binId)
+	{}
+
+	template<typename KmersSamplesData_T>
+	bool keepKMer(const KmersSamplesData_T& kmersData)
+	{
+		if (!filter.keepKMer(kmersData))
+			return false;
+		return nextPerformFilter.keepKMer(kmersData);
 	}
 };
 
 
 
-template <typename KmersSamplesData, typename NextFilter = FilterKeepAll<KmersSamplesData>> 
-class FilterCountThreshold
+template<typename Filter_T>
+class PerformFilter<Filter_T>
 {
-	const Params& params;
-	NextFilter nextFilter;
-
+	Filter_T filter;
 public:
-	FilterCountThreshold(const Params& params, uint32_t binId) :
-		params(params),
-		nextFilter(params, binId)
+	PerformFilter(const Params& params, const uint32_t binId) :
+		filter(params, binId)
 	{}
 
-	bool keepKMer(const KmersSamplesData& kmersData);
+	template<typename KmersSamplesData_T>
+	bool keepKMer(const KmersSamplesData_T& kmersData)
+	{
+		return filter.keepKMer(kmersData);
+	}
 };
 
 
 
-template <typename KmersSamplesData, typename NextFilter = FilterKeepAll<KmersSamplesData>>
-class FilterSequences
-{
-	const Params& params;
-	NextFilter nextFilter;
-	KMCFileWrapper<KmersSamplesData::SIZE> kmcFile;
-
-public:
-	FilterSequences(const Params& params, uint32_t binId) :
-		params(params),
-		nextFilter(params, binId),
-		kmcFile(params.filterParams.kmersSequencesToFilterOutDB, binId)
-	{}
-
-	bool keepKMer(const KmersSamplesData& kmersData);
-};
-
-
-
-template <typename KmersSamplesData, typename NextFilter>
-bool FilterCountThreshold<KmersSamplesData, NextFilter>::keepKMer(const KmersSamplesData& kmersData)
+template <typename KmersSamplesData_T>
+bool FilterCountThreshold<KmersSamplesData_T>::keepKMer(const KmersSamplesData_T& kmersData)
 {
 	std::size_t nAboveThreshold = 0;
 	for (std::size_t count : kmersData.kMersCounts)
@@ -63,18 +86,18 @@ bool FilterCountThreshold<KmersSamplesData, NextFilter>::keepKMer(const KmersSam
 		if (count >= params.filterParams.minCountThreshold)
 			++nAboveThreshold;
 	}
-	double fracPresent = static_cast<double>(nAboveThreshold) / kmersData.kMersCounts.size();
 
+	const double fracPresent = static_cast<double>(nAboveThreshold) / kmersData.kMersCounts.size();
 	if (fracPresent >= params.filterParams.minKmersAboveThresholdRatio) {
-		return nextFilter.keepKMer(kmersData);
+		return true;
 	}
 	return false;
 }
 
 
 
-template<typename KmersSamplesData, typename NextFilter>
-bool FilterSequences<KmersSamplesData, NextFilter>::keepKMer(const KmersSamplesData& kmersData)
+template<typename KmersSamplesData_T>
+bool FilterSequences<KmersSamplesData_T>::keepKMer(const KmersSamplesData_T& kmersData)
 {
 	if (kmcFile.Finished())
 	{
@@ -87,5 +110,5 @@ bool FilterSequences<KmersSamplesData, NextFilter>::keepKMer(const KmersSamplesD
 		return false;
 	}
 	kmcFile.Next();
-	return nextFilter.keepKMer(kmersData);
+	return true;
 }

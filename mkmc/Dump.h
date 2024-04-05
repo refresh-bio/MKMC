@@ -62,7 +62,7 @@ class Dump
 		return res;
 	}
 
-	template<typename GENERATOR_T, typename Filters>
+	template<typename Generator_T, typename Filters_T>
 	void dumpToFile(std::string fileName, uint32_t fileId);
 
 public:
@@ -78,7 +78,7 @@ public:
 
 
 template<unsigned SIZE>
-template<typename GENERATOR_T, typename Filters>
+template<typename Generator_T, typename Filters_T>
 void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId)
 {
 	std::ofstream outputFile(fileName);
@@ -98,11 +98,11 @@ void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId)
 
 	ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, tot_all_kmers / 100ull));
 	uint32_t k = params.stage1Params.GetKmerLen();
-	GENERATOR_T fileGenerator(outputFile, params.mkmcParams.samples, params.mkmcParams.count_symbols, k);
+	Generator_T fileGenerator(outputFile, params.mkmcParams.samples, params.mkmcParams.count_symbols, k);
 
 	std::vector<size_t> kMersCounts(samples.size());
 
-	Filters filter(params, binId);
+	Filters_T filter(params, binId);
 
 
 	auto do_with_elem_if_exists_init = [&](size_t id, const auto& modifyHeapCallback) -> bool
@@ -295,12 +295,12 @@ void Dump<SIZE>::operator()()
 		{
 			if (params.filterParams.filterKmersSequences)
 			{
-				using Filters = FilterCountThreshold<ParameterizedKmersSamplesStruct, FilterSequences<ParameterizedKmersSamplesStruct>>;
+				using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
 				dumpToFile<MatrixFileGenerator, Filters>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId);
 			}
 			else
 			{
-				using Filters = FilterCountThreshold<ParameterizedKmersSamplesStruct>;
+				using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
 				dumpToFile<MatrixFileGenerator, Filters>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId);
 			}
 		}
@@ -309,12 +309,12 @@ void Dump<SIZE>::operator()()
 		{
 			if (params.filterParams.filterKmersSequences)
 			{
-				using Filters = FilterCountThreshold<ParameterizedKmersSamplesStruct, FilterSequences<ParameterizedKmersSamplesStruct>>;
+				using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
 				dumpToFile<FASTAFileGenerator, Filters>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId);
 			}
 			else
 			{
-				using Filters = FilterCountThreshold<ParameterizedKmersSamplesStruct>;
+				using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
 				dumpToFile<FASTAFileGenerator, Filters>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId);
 			}
 		}

@@ -19,8 +19,8 @@ class MatrixFileGenerator
 public:
 	MatrixFileGenerator(std::ostream& file, const std::vector<std::string>& samples, uint32_t countSymbols, uint32_t k);
 
-	template<typename KmersSamplesData>
-	uint32_t writeKmer(const KmersSamplesData& kmersData);
+	template<typename KmersSamplesData_T>
+	uint32_t writeKmer(const KmersSamplesData_T& kmersData);
 };
 
 
@@ -34,14 +34,14 @@ class FASTAFileGenerator
 public:
 	FASTAFileGenerator(std::ostream& file, const std::vector<std::string>& samples, uint32_t countSymbols, uint32_t k);
 
-	template<typename KmersSamplesData>
-	uint32_t writeKmer(const KmersSamplesData& kmersData);
+	template<typename KmersSamplesData_T>
+	uint32_t writeKmer(const KmersSamplesData_T& kmersData);
 };
 
 
 
-template<typename KmersSamplesData>
-uint32_t MatrixFileGenerator::writeKmer(const KmersSamplesData& kmersData)
+template<typename KmersSamplesData_T>
+uint32_t MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
 	kmersData.minKmer.to_string(k, str_kmer_buff.get());
 	uint32_t pos = k;
@@ -60,8 +60,8 @@ uint32_t MatrixFileGenerator::writeKmer(const KmersSamplesData& kmersData)
 }
 
 
-template<typename KmersSamplesData>
-uint32_t FASTAFileGenerator::writeKmer(const KmersSamplesData& kmersData)
+template<typename KmersSamplesData_T>
+uint32_t FASTAFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
 	file << ">\n";
 	kmersData.minKmer.to_string(k, str_kmer_buff.get());
