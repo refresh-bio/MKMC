@@ -204,7 +204,7 @@ namespace refresh
 
 			n_ties_Y += (n - j_Y) * (n - j_Y - 1) / 2;
 
-			double n_pairs = n * (n - 1) / 2;
+			double n_pairs = (double)(n * (n - 1) / 2);
 			double numerator = n_pairs - n_ties_X - n_ties_Y + n_ties_both - 2 * n_swaps;
 
 			return numerator / sqrt((n_pairs - (double)n_ties_X) * (n_pairs - (double)n_ties_Y));

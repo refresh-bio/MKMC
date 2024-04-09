@@ -343,6 +343,8 @@ namespace refresh
 				return serialize_method_frequency_count(data);
 			if (m == base::method_t::quantile)
 				return serialize_method_quantile(data);
+			assert(false);
+			return false;
 		}
 
 		// *************************************************************************************
@@ -389,6 +391,7 @@ namespace refresh
 				if(base::method_included(base::method_t::quantile))
 					merge_method_quantile(*p);
 			}
+			return true;
 		}
 	};
 	
@@ -477,7 +480,8 @@ namespace refresh
 				return deserialize_method_frequency_count(data);
 			if (m == base::method_t::quantile)
 				return deserialize_method_quantile(data);
-
+			assert(false);
+			return false;
 		}
 
 		// *************************************************************************************
