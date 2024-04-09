@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <algorithm>
 #include <string>
+#define NOMINMAX
 #include "progress_bar.hpp"
 #include "parameters.h"
 #include "TasksPool.h"

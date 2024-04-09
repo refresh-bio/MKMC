@@ -34,6 +34,7 @@ killifishretina2 kfB.fastq.gz
  - `-thr<X>` - filter out k-mers occuring less than `<X>` times... (default: 1)
  - `-thr_rat<Y>` ... in a ratio `<Y>` of the input files (per k-mer sequence filtering) (default: 0.0)
  - `-flt<X>` - keep k-mers present in <X> file (FASTA or a set of the k-mers, one in each line) only
+ - `-cor<X>` - generate normalized counts and determine correlations basing on a phenotype file <X> (a set of the integers, one in each line)
 
 E.g. `-thr_rat0.5` and `-thr2` mean that k-mers appearing at least twice in at least a half of the input files will be dumped. We recommend to be careful while specifying `<Y>` parameter, small values (e.g. 0.0) cause obtaining an enormous output file.
 

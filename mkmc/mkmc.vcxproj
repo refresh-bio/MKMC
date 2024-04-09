@@ -121,7 +121,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -138,7 +138,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -159,6 +159,7 @@
     <ClCompile Include="parameters.cpp" />
     <ClCompile Include="progress_bar.cpp" />
     <ClCompile Include="Start.cpp" />
+    <ClCompile Include="StatisticsGenerator.cpp" />
     <ClCompile Include="TasksFiller.cpp" />
     <ClCompile Include="TasksPool.cpp" />
   </ItemGroup>
@@ -185,6 +186,7 @@
     <ClInclude Include="KmersSamplesStruct.h" />
     <ClInclude Include="parameters.h" />
     <ClInclude Include="Start.h" />
+    <ClInclude Include="StatisticsGenerator.h" />
     <ClInclude Include="TasksFiller.h" />
     <ClInclude Include="TasksPool.h" />
     <ClInclude Include="time.hpp" />

@@ -6,6 +6,8 @@
 #include "kmc_core/kmc_runner.h"
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"
+#undef small
+#include "lib/statistics/lib/statistics_normalization.h"
 
 
 
@@ -23,6 +25,13 @@ struct MKMCParams
 	std::string outputFilesTemplate;
 	std::vector<std::string> outputFiles;
 	OutputFileType outputFileType = OutputFileType::Matrix;
+
+	std::vector<std::string> outputFilesNormFrequency;
+	std::vector<std::string> outputFilesNormQuantile;
+
+	std::vector<std::string> outputFilesPearson;
+	std::vector<std::string> outputFilesSpearman;
+	std::vector<std::string> outputFilesKendall;
 
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
 	uint32_t nKMCWorkers = 4;
@@ -51,6 +60,18 @@ struct FilterParams
 	std::string kmersSequencesToFilterOutDB;    // KMC file name
 };
 
+struct StatisticsParams
+{
+	using NormalizationMethod = refresh::normalization_base<size_t, double>::method_t;
+	using NormalizationLearning = refresh::normalization_learn<size_t, double>;
+
+	bool generateStatistics = false;
+	std::string phenotypeFile;
+
+	std::string normFrequencyFileTmp = "frequency.txt";
+	std::string normQuantileFileTmp = "quantile.txt";
+};
+
 struct MutableParams
 {
 	bool tmpDirCreated = false;
@@ -68,6 +89,7 @@ struct Params
 	KMC::Stage2Params stage2Params;
 
 	FilterParams filterParams;
+	StatisticsParams statisticsParams;
 
 	Params();
 	void setKMCParams();

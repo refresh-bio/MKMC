@@ -1,4 +1,3 @@
-#define NOMINMAX
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -23,6 +22,7 @@
 #include "TasksFiller.h"
 #include "SequenceFilterInit.h"
 #include "Logger.h"
+#include "StatisticsGenerator.h"
 
 
 //----------------------------------------------------------------------------------
@@ -45,6 +45,7 @@ void usage()
 		<< "  -thr<X> - filter out k-mers occuring less than <X> times... (default: 1)\n"
 		<< "  -thr_rat<Y> - ... in a ratio <Y> of the input files (per k-mer sequence filtering) (default: 0.0)\n"
 		<< "  -flt<X> - keep k-mers present in <X> file (FASTA or a set of the k-mers, one in each line) only\n"
+		<< "  -cor<X> - generate normalized counts and determine correlations basing on a phenotype file <X> (a set of the integers, one in each line)\n"
 		<< "    E.g. -thr_rat0.5 and -thr2 mean that k-mers appearing at least twice in at least a half of the input files will be dumped.\n\n"
 		<< "As `[options]` you can also pass optional parameters:\n"
 		<< "  -k<len> - k-mer length (<len> from " << KMC::CfgConsts::min_k << " to " << KMC::CfgConsts::max_k << "; default: 25)\n"
@@ -103,7 +104,23 @@ void fill_temporary_kmc_databases_names(Params& params)
 		std::ostringstream sstreamOutput;
 		sstreamOutput << mkmcParams.outputFilesTemplate << "_" << std::setfill('0') << std::setw(nBinsDigits) << binId;
 		mkmcParams.outputFiles.push_back(sstreamOutput.str());
+
+		mkmcParams.outputFilesNormFrequency.push_back(sstreamOutput.str() + "_norm_frequency");
+		mkmcParams.outputFilesNormQuantile.push_back(sstreamOutput.str() + "_norm_quantile");
+
+		mkmcParams.outputFilesPearson.push_back(sstreamOutput.str() + "_pearson");
+		mkmcParams.outputFilesSpearman.push_back(sstreamOutput.str() + "_spearman");
+		mkmcParams.outputFilesKendall.push_back(sstreamOutput.str() + "_kendall_tau");
 	}
+
+	std::ostringstream sstreamOutput;
+	sstreamOutput << mkmcParams.tmpPath;
+	if (mkmcParams.tmpPath.back() != '/' && mkmcParams.tmpPath.back() != '\\')
+	{
+		sstreamOutput << static_cast<char>(std::filesystem::path::preferred_separator);
+	}
+	params.statisticsParams.normFrequencyFileTmp = sstreamOutput.str() + params.statisticsParams.normFrequencyFileTmp;
+	params.statisticsParams.normQuantileFileTmp = sstreamOutput.str() + params.statisticsParams.normQuantileFileTmp;
 }
 
 //----------------------------------------------------------------------------------
@@ -114,6 +131,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	KMC::Stage2Params& stage2Params = params.stage2Params;
 	MKMCParams& mkmcParams = params.mkmcParams;
 	FilterParams& filterParams = params.filterParams;
+	StatisticsParams& statisticsParams = params.statisticsParams;
 	int i;
 
 	bool was_m = false;
@@ -282,6 +300,18 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				return false;
 			}
 		}
+		// Generate statistics
+		else if (strncmp(argv[i], "-cor", 4) == 0)
+		{
+			std::string fileName = &argv[i][4];
+			if (fileName.empty())
+			{
+				std::cerr << "Error: phenotype file name is not specified.\n" << std::endl;
+				return false;
+			}
+			statisticsParams.generateStatistics = true;
+			statisticsParams.phenotypeFile = fileName;
+		}
 		// split dump file
 		else if (strncmp(argv[i], "-dmp", 4) == 0)
 		{
@@ -324,6 +354,12 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		TasksFiller tasksFiller(mkmcParams, input_file_name);
 		if (!tasksFiller.readSamples(params.mkmcParams.samples, params.mkmcParams.inputFilesPerSample))
 			return false;
+	}
+
+	if (statisticsParams.generateStatistics && mkmcParams.outputFileType != OutputFileType::Matrix)
+	{
+		std::cerr << "Warning: due to statistics generation, temporarily the output file type has to be matrix (-of switch will be ignored)." << std::endl;
+		mkmcParams.outputFileType = OutputFileType::Matrix;
 	}
 
 	if (params.filterParams.filterKmersSequences) {
@@ -387,7 +423,7 @@ int main(int argc, char** argv)
 
 		params.setKMCParams();
 
-		Timer sequence_filter_init, kmc_timer, dump_timer;
+		Timer sequence_filter_init, kmc_timer, dump_timer, statistics_timer;
 
 		Start start(params);
 		start.verifyFiles();
@@ -409,6 +445,14 @@ int main(int argc, char** argv)
 		DumpRunner dump_runner(params, dump_timer);
 		DispatchKmerSize(params.stage1Params.GetKmerLen(), dump_runner);
 
+		if (params.statisticsParams.generateStatistics)
+		{
+			std::cerr << "\nStarting normalizing and computing correlation...\n";
+			StatisticsGenerator statisticsGenerator(params);
+			statistics_timer.startTimer();
+			statisticsGenerator.generateStatisticsParallel();
+			statistics_timer.stopTimer();
+		}
 
 		Finish finish(params);
 		finish.finishProcessing();
@@ -425,6 +469,13 @@ int main(int argc, char** argv)
 		std::cerr << "Dump: \n";
 		std::cerr << "\tStart: " << dump_timer.getStartTime() << "\n";
 		std::cerr << "\tEnd:   " << dump_timer.getStopTime() << "\n";
+
+		if (params.statisticsParams.generateStatistics)
+		{
+			std::cerr << "Normalization and correlation: \n";
+			std::cerr << "\tStart: " << statistics_timer.getStartTime() << "\n";
+			std::cerr << "\tEnd:   " << statistics_timer.getStopTime() << "\n";
+		}
 	}
 	catch (const std::exception& e)
 	{
