@@ -10,10 +10,12 @@ void StatisticsGenerator::readPhenotype(std::vector<int>& phenotype)
 		std::cerr << "Error: cannot open " << params.statisticsParams.phenotypeFile << "." << std::endl;
 		exit(1);
 	}
-	while (!phenotypeFile.eof())
+	while (true)
 	{
 		int value;
 		phenotypeFile >> value;
+		if (phenotypeFile.eof())
+			break;
 		phenotype.push_back(value);
 	}
 	if (phenotype.size() != params.mkmcParams.inputFilesPerSample.size())
