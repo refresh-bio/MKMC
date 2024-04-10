@@ -25,11 +25,11 @@ bool Start::canCreateFileInPath(const std::string& path)
 
 void Start::verifyFiles()
 {
-	//if (!canCreateFile(params.mkmcParams.outputFiles.front()))
-	//{
-	//	std::cerr << "Error: Cannot create output file: " << params.mkmcParams.outputFiles.front() << "." << std::endl;
-	//	exit(1);
-	//}
+	if (!canCreateFile(params.mkmcParams.outputMatrixFiles.front()))
+	{
+		std::cerr << "Error: Cannot create output file: " << params.mkmcParams.outputMatrixFiles.front() << "." << std::endl;
+		exit(1);
+	}
 
 	if (!std::filesystem::exists(params.mkmcParams.tmpPath))
 	{
