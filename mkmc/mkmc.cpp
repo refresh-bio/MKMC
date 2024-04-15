@@ -159,7 +159,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			int32_t minCountThreshold = std::strtol(&argv[i][4], &strEnd, 10);
 			if (*strEnd != '\0' || minCountThreshold < 0)
 			{
-				std::cerr << "Error: Filtering threshold -thr should be a natural number.\n" << std::endl;
+				std::cerr << "Error: Filtering threshold -thr should be a non-negative intiger.\n" << std::endl;
 				return false;
 			}
 			filterParams.minCountThreshold = static_cast<uint32_t>(minCountThreshold);
@@ -169,12 +169,12 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			mkmcParams.keepTmpFiles = true;
 		}
 		// Number of threads
-		else if (strncmp(argv[i], "-t", 2) == 0)
+		else if (strncmp(argv[i], "-t", 2) == 1)
 		{
 			int32_t nThreads = std::strtol(&argv[i][2], &strEnd, 10);
-			if (*strEnd != '\0' || nThreads < 0)
+			if (*strEnd != '\0' || nThreads < 1)
 			{
-				std::cerr << "Error: Number of threads -t should be a natural number.\n" << std::endl;
+				std::cerr << "Error: Number of threads -t should be a positive intiger.\n" << std::endl;
 				return false;
 			}
 			mkmcParams.nThreads = static_cast<uint32_t>(nThreads);
@@ -183,9 +183,9 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		else if (strncmp(argv[i], "-wrk", 4) == 0)
 		{
 			int32_t nKMCWorkers = std::strtol(&argv[i][4], &strEnd, 10);
-			if (*strEnd != '\0' || nKMCWorkers < 0)
+			if (*strEnd != '\0' || nKMCWorkers < 1)
 			{
-				std::cerr << "Error: Number of parallel k-mer counting tasks -wrk should be a natural number.\n" << std::endl;
+				std::cerr << "Error: Number of parallel k-mer counting tasks -wrk should be a positive intiger.\n" << std::endl;
 				return false;
 			}
 			mkmcParams.nKMCWorkers = static_cast<uint32_t>(nKMCWorkers);
@@ -195,9 +195,9 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		else if (strncmp(argv[i], "-k", 2) == 0)
 		{
 			int32_t k = std::strtol(&argv[i][2], &strEnd, 10);
-			if (*strEnd != '\0' || k < 0)
+			if (*strEnd != '\0' || k < 1)
 			{
-				std::cerr << "Error: k-mer length should be a natural number.\n" << std::endl;
+				std::cerr << "Error: k-mer length should be a positive intiger.\n" << std::endl;
 				return false;
 			}
 			stage1Params.SetKmerLen(static_cast<uint32_t>(k));
@@ -208,7 +208,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			int32_t maxRamGB = std::strtol(&argv[i][2], &strEnd, 10);
 			if (*strEnd != '\0' || maxRamGB < 2)
 			{
-				std::cerr << "Error: Maximal amount of RAM should be a natural number and be at least 2.\n" << std::endl;
+				std::cerr << "Error: Maximal amount of RAM should be a positive intiger number and be at least 2.\n" << std::endl;
 				return false;
 			}
 			mkmcParams.maxRamGB = static_cast<uint32_t>(maxRamGB);
@@ -220,7 +220,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			int32_t ci = std::strtol(&argv[i][3], &strEnd, 10);
 			if (*strEnd != '\0' || ci < 1)
 			{
-				std::cerr << "Error: Minimal threshold of k-mers counter should be a natural number and be at least 1.\n" << std::endl;
+				std::cerr << "Error: Minimal threshold of k-mers counter should be a positive intiger.\n" << std::endl;
 				return false;
 			}
 			stage2Params.SetCutoffMin(static_cast<uint64_t>(ci));
@@ -231,7 +231,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			int32_t cx = std::strtol(&argv[i][3], &strEnd, 10);
 			if (*strEnd != '\0' || cx < 1)
 			{
-				std::cerr << "Error: Maximal threshold of k-mers counter should be a natural number and be at least 1.\n" << std::endl;
+				std::cerr << "Error: Maximal threshold of k-mers counter should be a positive intiger.\n" << std::endl;
 				return false;
 			}
 			stage2Params.SetCutoffMax(static_cast<uint64_t>(cx));
@@ -242,7 +242,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			int64_t cs = std::strtoll(&argv[i][3], &strEnd, 10);
 			if (*strEnd != '\0' || cs < 2 || cs > static_cast<int64_t>(std::numeric_limits<uint32_t>::max()))
 			{
-				std::cerr << "Error: Maximal k-mers counter value should be a natural number and be at least 2.\n" << std::endl;
+				std::cerr << "Error: Maximal k-mers counter value should be a positivie intiger and be at least 2.\n" << std::endl;
 				return false;
 			}
 			stage2Params.SetCounterMax(static_cast<uint64_t>(cs));
@@ -253,7 +253,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			int32_t nKMCBins = std::strtol(&argv[i][3], &strEnd, 10);
 			if (*strEnd != '\0' || nKMCBins < 1)
 			{
-				std::cerr << "Error: Number of output files should be a natural number and be at least 1.\n" << std::endl;
+				std::cerr << "Error: Number of output files should be a positive intiger.\n" << std::endl;
 				return false;
 			}
 			mkmcParams.nKMCBins = static_cast<uint32_t>(nKMCBins);
