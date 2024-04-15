@@ -23,8 +23,10 @@ struct MKMCParams
 	std::vector<std::string> kmcTmpDirs;
 
 	std::string outputFilesTemplate;
-	std::vector<std::string> outputFiles;
-	OutputFileType outputFileType = OutputFileType::Matrix;
+	std::vector<std::string> outputFASTAFiles;
+	std::vector<std::string> outputMatrixFiles;
+	std::vector<OutputFileType> outputFileTypes = { OutputFileType::Matrix };
+
 
 	std::vector<std::string> outputFilesNormFrequency;
 	std::vector<std::string> outputFilesNormQuantile;

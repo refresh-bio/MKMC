@@ -68,8 +68,8 @@ class Dump
 		return res;
 	}
 
-	template<typename Generator_T, typename Filters_T>
-	void dumpToFile(std::string fileName, uint32_t fileId, StatisticsParams::NormalizationLearning& normalizationLearning);
+	template<typename Generators_T, typename Filters_T>
+	void dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning);
 
 public:
 	Dump(const Params& params) :
@@ -83,17 +83,11 @@ public:
 };
 
 
-template<unsigned SIZE>
-template<typename Generator_T, typename Filters_T>
-void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning)
-{
-	std::ofstream outputFile(fileName);
-	if (!outputFile.is_open())
-	{
-		std::cerr << "Error: cannot create output file " << params.mkmcParams.outputFilesTemplate << "." << std::endl;
-		exit(1);
-	}
 
+template<unsigned SIZE>
+template<typename Generators_T, typename Filters_T>
+void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning)
+{
 	std::vector<KMCFileWrapper<SIZE>> samples;
 	openDatabases(samples, binId);
 
@@ -103,8 +97,7 @@ void Dump<SIZE>::dumpToFile(std::string fileName, uint32_t binId, StatisticsPara
 	}
 
 	ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, tot_all_kmers / 100ull));
-	uint32_t k = params.stage1Params.GetKmerLen();
-	Generator_T fileGenerator(outputFile, params.mkmcParams.samples, params.mkmcParams.count_symbols, k);
+	Generators_T fileGenerator(params, binId);
 
 	std::vector<size_t> kMersCounts(samples.size());
 
@@ -333,44 +326,50 @@ void Dump<SIZE>::operator()()
 	TaskData taskData;
 	using ParameterizedKmersSamplesStruct = KmersSamplesStruct<SIZE>;
 
-	if (params.mkmcParams.outputFileType == OutputFileType::Matrix)
-		while (tasksPool.getTask(taskData))
-		{
-			normalizationLearnings[taskData.binId].register_method(StatisticsParams::NormalizationMethod::frequency_count);
-			normalizationLearnings[taskData.binId].register_method(StatisticsParams::NormalizationMethod::quantile);
-			normalizationLearnings[taskData.binId].set_no_series(params.mkmcParams.inputFilesPerSample.size());
-			normalizationLearnings[taskData.binId].initialize();
+	while (tasksPool.getTask(taskData))
+	{
+		normalizationLearnings[taskData.binId].register_method(StatisticsParams::NormalizationMethod::frequency_count);
+		normalizationLearnings[taskData.binId].register_method(StatisticsParams::NormalizationMethod::quantile);
+		normalizationLearnings[taskData.binId].set_no_series(params.mkmcParams.inputFilesPerSample.size());
+		normalizationLearnings[taskData.binId].initialize();
 
-			if (params.filterParams.filterKmersSequences)
+		if (params.filterParams.filterKmersSequences)
+		{
+			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
+			if (params.mkmcParams.outputFileTypes.size() == 2)
 			{
-				using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
-				dumpToFile<MatrixFileGenerator, Filters>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId, normalizationLearnings[taskData.binId]);
+				using Generators_T = PerformGenerate<MatrixFileGenerator, FASTAFileGenerator>;
+				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
+			}
+			else if (params.mkmcParams.outputFileTypes.front() == OutputFileType::Matrix)
+			{
+				using Generators_T = PerformGenerate<MatrixFileGenerator>;
+				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
 			}
 			else
 			{
-				using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
-				dumpToFile<MatrixFileGenerator, Filters>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId, normalizationLearnings[taskData.binId]);
+				using Generators_T = PerformGenerate<FASTAFileGenerator>;
+				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
 			}
 		}
-	else if (params.mkmcParams.outputFileType == OutputFileType::FASTA)
-		while (tasksPool.getTask(taskData))
+		else
 		{
-			normalizationLearnings[taskData.binId].register_method(StatisticsParams::NormalizationMethod::frequency_count);
-			normalizationLearnings[taskData.binId].register_method(StatisticsParams::NormalizationMethod::quantile);
-			normalizationLearnings[taskData.binId].set_no_series(params.mkmcParams.inputFilesPerSample.size());
-			normalizationLearnings[taskData.binId].initialize();
-
-			if (params.filterParams.filterKmersSequences)
+			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
+			if (params.mkmcParams.outputFileTypes.size() == 2)
 			{
-				using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
-				dumpToFile<FASTAFileGenerator, Filters>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId, normalizationLearnings[taskData.binId]);
+				using Generators_T = PerformGenerate<MatrixFileGenerator, FASTAFileGenerator>;
+				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
+			}
+			else if (params.mkmcParams.outputFileTypes.front() == OutputFileType::Matrix)
+			{
+				using Generators_T = PerformGenerate<MatrixFileGenerator>;
+				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
 			}
 			else
 			{
-				using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
-				dumpToFile<FASTAFileGenerator, Filters>(params.mkmcParams.outputFiles[taskData.binId], taskData.binId, normalizationLearnings[taskData.binId]);
+				using Generators_T = PerformGenerate<FASTAFileGenerator>;
+				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
 			}
 		}
-	else
-		assert(false);
+	}
 }

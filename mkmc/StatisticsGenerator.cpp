@@ -48,10 +48,10 @@ void StatisticsGenerator::operator()()
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
 	{
-		std::ifstream matrixFile(params.mkmcParams.outputFiles[taskData.binId]);
+		std::ifstream matrixFile(params.mkmcParams.outputMatrixFiles[taskData.binId]);
 		if (!matrixFile.is_open())
 		{
-			std::cerr << "Error: cannot open " << params.mkmcParams.outputFiles[taskData.binId] << "." << std::endl;
+			std::cerr << "Error: cannot open " << params.mkmcParams.outputMatrixFiles[taskData.binId] << "." << std::endl;
 			exit(1);
 		}
 

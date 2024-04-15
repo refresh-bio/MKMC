@@ -102,15 +102,18 @@ void fill_temporary_kmc_databases_names(Params& params)
 	const uint32_t nBinsDigits = static_cast<uint32_t>(std::log10(static_cast<double>(params.stage1Params.GetNBins()))) + 1;
 	for (uint32_t binId = 0; binId < params.stage1Params.GetNBins(); ++binId) {
 		std::ostringstream sstreamOutput;
-		sstreamOutput << mkmcParams.outputFilesTemplate << "_" << std::setfill('0') << std::setw(nBinsDigits) << binId;
-		mkmcParams.outputFiles.push_back(sstreamOutput.str());
+		sstreamOutput << std::setfill('0') << std::setw(nBinsDigits) << binId;
+		const std::string binIdStr = sstreamOutput.str();
 
-		mkmcParams.outputFilesNormFrequency.push_back(sstreamOutput.str() + "_norm_frequency");
-		mkmcParams.outputFilesNormQuantile.push_back(sstreamOutput.str() + "_norm_quantile");
+		mkmcParams.outputMatrixFiles.push_back(mkmcParams.outputFilesTemplate + "_matrix_" + binIdStr);
+		mkmcParams.outputFASTAFiles.push_back(mkmcParams.outputFilesTemplate + + "_" + binIdStr + ".fa");
 
-		mkmcParams.outputFilesPearson.push_back(sstreamOutput.str() + "_pearson");
-		mkmcParams.outputFilesSpearman.push_back(sstreamOutput.str() + "_spearman");
-		mkmcParams.outputFilesKendall.push_back(sstreamOutput.str() + "_kendall_tau");
+		mkmcParams.outputFilesNormFrequency.push_back(mkmcParams.outputFilesTemplate + "_norm_frequency_" + binIdStr);
+		mkmcParams.outputFilesNormQuantile.push_back(mkmcParams.outputFilesTemplate + "_norm_quantile_" + binIdStr);
+
+		mkmcParams.outputFilesPearson.push_back(mkmcParams.outputFilesTemplate + "_pearson_" + binIdStr);
+		mkmcParams.outputFilesSpearman.push_back(mkmcParams.outputFilesTemplate + "_spearman_" + binIdStr);
+		mkmcParams.outputFilesKendall.push_back(mkmcParams.outputFilesTemplate + "_kendall_tau_" + binIdStr);
 	}
 
 	std::ostringstream sstreamOutput;
@@ -136,6 +139,8 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 
 	bool was_m = false;
 	bool was_r = false;
+
+	std::vector<OutputFileType> outputFileTypes;
 
 	if (argc < 4)
 		return false;
@@ -263,15 +268,29 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		//output type
 		else if (strncmp(argv[i], "-o", 2) == 0)
 		{
+			bool wasDuplication = false;
+			OutputFileType outputFileType = OutputFileType::Matrix;
+
 			if (strncmp(argv[i] + 2, "fa", 2) == 0)
-				mkmcParams.outputFileType = OutputFileType::FASTA;
+				outputFileType = OutputFileType::FASTA;
 			else if (strncmp(argv[i] + 2, "matrix", 6) == 0)
-				mkmcParams.outputFileType = OutputFileType::Matrix;
+				outputFileType = OutputFileType::Matrix;
 			else
 			{
 				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -ofa or -omatrix)\n" << std::endl;
 				return false;
 			}
+
+			for (auto fileType : outputFileTypes)
+			{
+				if (fileType == outputFileType)
+				{
+					std::cerr << "Warning: output format flag " << argv[i] << " was given multiple times." << std::endl;
+					wasDuplication = true;
+				}
+			}
+			if (!wasDuplication)
+				outputFileTypes.push_back(outputFileType);
 		}
 		// File with k-mers to be filtered out
 		else if (strncmp(argv[i], "-flt", 4) == 0) //  must be before -f
@@ -339,6 +358,9 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		std::cerr << "Warning: when -r parameter is given, limit specified with -m may be exceeded." << std::endl;
 	}
 
+	if (!outputFileTypes.empty())
+		params.mkmcParams.outputFileTypes = outputFileTypes;
+
 	std::string input_file_name = std::string(argv[i++]);
 
 	mkmcParams.outputFilesTemplate = argv[i++];
@@ -356,10 +378,17 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			return false;
 	}
 
-	if (statisticsParams.generateStatistics && mkmcParams.outputFileType != OutputFileType::Matrix)
+	if (statisticsParams.generateStatistics)
 	{
-		std::cerr << "Warning: due to statistics generation, temporarily the output file type has to be matrix (-of switch will be ignored)." << std::endl;
-		mkmcParams.outputFileType = OutputFileType::Matrix;
+		bool generateMatrix = false;
+		for (auto fileType : mkmcParams.outputFileTypes)
+			if (fileType == OutputFileType::Matrix)
+				generateMatrix = true;
+		if (!generateMatrix)
+		{
+			std::cerr << "Warning: due to statistics generation, temporarily MKMC has to generate output matrix (-omatrix switch will be additionally applied)." << std::endl;
+			mkmcParams.outputFileTypes.push_back(OutputFileType::Matrix);
+		}
 	}
 
 	if (params.filterParams.filterKmersSequences) {

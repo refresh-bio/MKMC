@@ -7,20 +7,21 @@
 #include "KMCFileWrapper.h"
 #include "../kmc/kmc_dump/nc_utils.h"
 #include "KmersSamplesStruct.h"
+#include "parameters.h"
 
 
 
 class MatrixFileGenerator
 {
 	std::unique_ptr<char[]> str_kmer_buff;
-	std::ostream& file;
+	std::ofstream file;
 	uint32_t k;
 
 public:
-	MatrixFileGenerator(std::ostream& file, const std::vector<std::string>& samples, uint32_t countSymbols, uint32_t k);
+	MatrixFileGenerator(const Params& params, uint32_t binId);
 
 	template<typename KmersSamplesData_T>
-	uint32_t writeKmer(const KmersSamplesData_T& kmersData);
+	void writeKmer(const KmersSamplesData_T& kmersData);
 };
 
 
@@ -28,20 +29,59 @@ public:
 class FASTAFileGenerator
 {
 	std::unique_ptr<char[]> str_kmer_buff;
-	std::ostream& file;
+	std::ofstream file;
 	uint32_t k;
 
 public:
-	FASTAFileGenerator(std::ostream& file, const std::vector<std::string>& samples, uint32_t countSymbols, uint32_t k);
+	FASTAFileGenerator(const Params& params, uint32_t binId);
 
 	template<typename KmersSamplesData_T>
-	uint32_t writeKmer(const KmersSamplesData_T& kmersData);
+	void writeKmer(const KmersSamplesData_T& kmersData);
+};
+
+
+
+template<typename Generator_T, typename... NextGenerators_T>
+class PerformGenerate
+{
+	Generator_T generator;
+	PerformGenerate<NextGenerators_T...> nextPerformGenerate;
+public:
+	PerformGenerate(const Params& params, uint32_t binId) :
+		generator(params, binId),
+		nextPerformGenerate(params, binId)
+	{}
+
+	template<typename KmersSamplesData_T>
+	void writeKmer(const KmersSamplesData_T& kmersData)
+	{
+		generator.writeKmer(kmersData);
+		nextPerformGenerate.writeKmer(kmersData);
+	}
+};
+
+
+
+template<typename Generator_T>
+class PerformGenerate<Generator_T>
+{
+	Generator_T generator;
+public:
+	PerformGenerate(const Params& params, uint32_t binId) :
+		generator(params, binId)
+	{}
+
+	template<typename KmersSamplesData_T>
+	void writeKmer(const KmersSamplesData_T& kmersData)
+	{
+		generator.writeKmer(kmersData);
+	}
 };
 
 
 
 template<typename KmersSamplesData_T>
-uint32_t MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
+void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
 	kmersData.minKmer.to_string(k, str_kmer_buff.get());
 	uint32_t pos = k;
@@ -56,16 +96,17 @@ uint32_t MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 	str_kmer_buff[pos + 1] = '\0';
 	file << str_kmer_buff.get();
 
-	return pos;
+	// pos - number of written symbols
 }
 
 
+
 template<typename KmersSamplesData_T>
-uint32_t FASTAFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
+void FASTAFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
 	file << ">\n";
 	kmersData.minKmer.to_string(k, str_kmer_buff.get());
 	file << str_kmer_buff.get() << '\n';
 
-	return k;
+	// k - number of written symbols
 }
