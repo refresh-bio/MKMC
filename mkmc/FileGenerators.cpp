@@ -4,7 +4,7 @@
 
 
 MatrixFileGenerator::MatrixFileGenerator(const Params& params, uint32_t binId) :
-	str_kmer_buff(std::make_unique<char[]>(params.mkmcParams.samples.size() * (params.mkmcParams.count_symbols + 1) + params.stage1Params.GetKmerLen() + 1)),
+	str_kmer_buff(std::make_unique<char[]>(params.mkmcParams.samples.size() * (params.mkmcParams.countSymbols + 1) + params.stage1Params.GetKmerLen() + 1)),
 	file(params.mkmcParams.outputMatrixFiles[binId]),
 	k(params.stage1Params.GetKmerLen())
 {

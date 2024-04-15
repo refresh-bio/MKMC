@@ -170,9 +170,6 @@
     <ProjectReference Include="..\kmc\kmc_core\kmc_core.vcxproj">
       <Project>{8c8b90da-28b7-4d82-81f3-c0e7ce52d59f}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\kmc\kmc_tools\kmc_tools.vcxproj">
-      <Project>{f3b0cc94-9dd0-4642-891c-ea08bda50260}</Project>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dump.h" />

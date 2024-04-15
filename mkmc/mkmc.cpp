@@ -82,22 +82,24 @@ void fill_temporary_kmc_databases_names(Params& params)
 {
 	MKMCParams& mkmcParams = params.mkmcParams;
 
+	std::string tmpFilesTemplate = mkmcParams.tmpPath;
+	if (mkmcParams.tmpPath.back() != '/' && mkmcParams.tmpPath.back() != '\\')
+	{
+		tmpFilesTemplate += static_cast<char>(std::filesystem::path::preferred_separator);
+	}
+
 	for (uint32_t tmp_database_id = 0; tmp_database_id < mkmcParams.inputFilesPerSample.size(); ++tmp_database_id)
 	{
 		std::ostringstream sstreamKMCDir, sstreamKMC;
-		sstreamKMCDir << mkmcParams.tmpPath;
-		sstreamKMC << mkmcParams.tmpPath;
-		if (mkmcParams.tmpPath.back() != '/' && mkmcParams.tmpPath.back() != '\\')
-		{
-			sstreamKMCDir << static_cast<char>(std::filesystem::path::preferred_separator);
-			sstreamKMC << static_cast<char>(std::filesystem::path::preferred_separator);
-		}
-		sstreamKMCDir << "kmc_tmp_" << std::setfill('0') << std::setw(5) << tmp_database_id;
-		sstreamKMC << "kmc_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
+		sstreamKMCDir << tmpFilesTemplate << "kmc_tmp_" << std::setfill('0') << std::setw(5) << tmp_database_id;
+		sstreamKMC << tmpFilesTemplate << "kmc_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
 
 		mkmcParams.kmcTmpDirs.push_back(sstreamKMCDir.str());
 		mkmcParams.kmcOutputFiles.push_back(sstreamKMC.str());
 	}
+
+	params.statisticsParams.normFrequencyFileTmp = tmpFilesTemplate + params.statisticsParams.normFrequencyFileTmp;
+	params.statisticsParams.normQuantileFileTmp = tmpFilesTemplate + params.statisticsParams.normQuantileFileTmp;
 
 	const uint32_t nBinsDigits = static_cast<uint32_t>(std::log10(static_cast<double>(params.stage1Params.GetNBins()))) + 1;
 	for (uint32_t binId = 0; binId < params.stage1Params.GetNBins(); ++binId) {
@@ -115,15 +117,6 @@ void fill_temporary_kmc_databases_names(Params& params)
 		mkmcParams.outputFilesSpearman.push_back(mkmcParams.outputFilesTemplate + "_spearman_" + binIdStr);
 		mkmcParams.outputFilesKendall.push_back(mkmcParams.outputFilesTemplate + "_kendall_tau_" + binIdStr);
 	}
-
-	std::ostringstream sstreamOutput;
-	sstreamOutput << mkmcParams.tmpPath;
-	if (mkmcParams.tmpPath.back() != '/' && mkmcParams.tmpPath.back() != '\\')
-	{
-		sstreamOutput << static_cast<char>(std::filesystem::path::preferred_separator);
-	}
-	params.statisticsParams.normFrequencyFileTmp = sstreamOutput.str() + params.statisticsParams.normFrequencyFileTmp;
-	params.statisticsParams.normQuantileFileTmp = sstreamOutput.str() + params.statisticsParams.normQuantileFileTmp;
 }
 
 //----------------------------------------------------------------------------------
@@ -331,12 +324,6 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			statisticsParams.generateStatistics = true;
 			statisticsParams.phenotypeFile = fileName;
 		}
-		// split dump file
-		else if (strncmp(argv[i], "-dmp", 4) == 0)
-		{
-			mkmcParams.dumpStepSize = atoll(&argv[i][4]);
-			mkmcParams.splitDumpOutput = true;
-		}
 		else if (strncmp(argv[i], "-v", 2) == 0)
 		{
 			mkmcParams.verbosity_level++;
@@ -476,7 +463,7 @@ int main(int argc, char** argv)
 
 		if (params.statisticsParams.generateStatistics)
 		{
-			std::cerr << "\nStarting normalizing and computing correlation...\n";
+			std::cerr << "\nStarting normalizing and correlation computing...\n";
 			StatisticsGenerator statisticsGenerator(params);
 			statistics_timer.startTimer();
 			statisticsGenerator.generateStatisticsParallel();

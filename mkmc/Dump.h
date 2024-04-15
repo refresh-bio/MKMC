@@ -10,8 +10,8 @@
 #include <string>
 #include <vector>
 #include "parameters.h"
-#include "../kmc/kmc_api/kmc_file.h"
-#include "../kmc/kmc_dump/nc_utils.h"
+#include "kmc_api/kmc_file.h"
+#include "kmc_dump/nc_utils.h"
 #include "KMCFileWrapper.h"
 #include "HeapMerge.h"
 #include "FileGenerators.h"

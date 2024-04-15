@@ -38,9 +38,7 @@ struct MKMCParams
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
 	uint32_t nKMCWorkers = 4;
 	uint32_t maxRamGB = 16;
-	uint64_t dumpStepSize = static_cast<uint64_t>(1E9);
-	bool splitDumpOutput = false;
-	const uint32_t count_symbols = 10; // for 4G
+	const uint32_t countSymbols = 10; // for 4G
 
 	const uint32_t sigToBinMapStatsPercentage = 5;
 	uint32_t nKMCBins = 512;

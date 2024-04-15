@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 #include "KMCFileWrapper.h"
-#include "../kmc/kmc_dump/nc_utils.h"
+#include "kmc_dump/nc_utils.h"
 #include "KmersSamplesStruct.h"
 #include "parameters.h"
 

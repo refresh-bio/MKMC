@@ -2,7 +2,7 @@
 
 #include <string>
 #include <cstdint>
-#include "../kmc/kmc_api/kmc_file.h"
+#include "kmc_api/kmc_file.h"
 
 
 
