@@ -20,7 +20,12 @@ Params::Params()
 void Params::setKMCParams()
 {
 	bool mKMCWorkersReduced = false;
-	if (mkmcParams.nKMCWorkers > mkmcParams.nThreads - 1)
+	if (mkmcParams.nThreads == 1)
+	{
+		mkmcParams.nKMCWorkers = 1;
+		mKMCWorkersReduced = true;
+	}
+	else if (mkmcParams.nKMCWorkers > mkmcParams.nThreads - 1)
 	{
 		mkmcParams.nKMCWorkers = mkmcParams.nThreads - 1;
 		mKMCWorkersReduced = true;
