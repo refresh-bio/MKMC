@@ -21,6 +21,11 @@ void Finish::finishProcessing()
 			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB + ".kmc_pre");
 			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB + ".kmc_suf");
 		}
+		if (params.statisticsParams.generateStatistics)
+		{
+			std::filesystem::remove(params.statisticsParams.normFrequencyFileTmp);
+			std::filesystem::remove(params.statisticsParams.normQuantileFileTmp);
+		}
 	}
 	if (params.mutableParams.tmpDirCreated)
 		std::filesystem::remove_all(params.mkmcParams.tmpPath);

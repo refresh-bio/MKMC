@@ -68,8 +68,8 @@ struct StatisticsParams
 	bool generateStatistics = false;
 	std::string phenotypeFile;
 
-	std::string normFrequencyFileTmp = "frequency.txt";
-	std::string normQuantileFileTmp = "quantile.txt";
+	std::string normFrequencyFileTmp = "frequencyDump";
+	std::string normQuantileFileTmp = "quantileDump";
 };
 
 struct MutableParams
