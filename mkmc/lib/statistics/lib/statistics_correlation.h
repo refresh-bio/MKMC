@@ -89,6 +89,9 @@ namespace refresh
 
 			size_t n_pairs = n * (n - 1) / 2;
 
+			if (n_pairs == n_ties_X || n_pairs == n_ties_Y)
+				return std::numeric_limits<double>::quiet_NaN();
+
 			return ((double)(n_concordant)-(double)n_discordant) / sqrt(((double)n_pairs - (double)n_ties_X) * ((double)n_pairs - (double)n_ties_Y));
 		}
 
@@ -204,10 +207,15 @@ namespace refresh
 
 			n_ties_Y += (n - j_Y) * (n - j_Y - 1) / 2;
 
-			double n_pairs = (double)(n * (n - 1) / 2);
-			double numerator = n_pairs - n_ties_X - n_ties_Y + n_ties_both - 2 * n_swaps;
+			auto n_pairs = n * (n - 1) / 2;
 
-			return numerator / sqrt((n_pairs - (double)n_ties_X) * (n_pairs - (double)n_ties_Y));
+			if (n_pairs == n_ties_X || n_pairs == n_ties_Y)
+				return std::numeric_limits<double>::quiet_NaN();
+
+			double n_pairs_d = n_pairs;
+			double numerator = n_pairs_d - n_ties_X - n_ties_Y + n_ties_both - 2 * n_swaps;
+
+			return numerator / sqrt((n_pairs_d - (double)n_ties_X) * (n_pairs_d - (double)n_ties_Y));
 		}
 
 	public:

@@ -144,7 +144,7 @@ namespace refresh
 					if (small[i])
 						hist.emplace_back(i, small[i]);
 
-				for (const auto x : big)
+				for (const auto& x : big)
 					hist.emplace_back(x.first, x.second);
 
 //				hist.shrink_to_fit();
@@ -162,7 +162,7 @@ namespace refresh
 				for (size_t i = 0; i < ch.small.size(); ++i)
 					if (ch.small[i] != 0)
 						add(i, ch.small[i]);
-				for (const auto p : ch.big)
+				for (const auto& p : ch.big)
 					add(p.first, p.second);
 			}
 		};
@@ -309,7 +309,7 @@ namespace refresh
 					mapping[j] = std::make_pair(lh[j].first, v / (VALUE_T) base::no_series / (VALUE_T) (right_side - left_side));
 				}
 
-				for (const auto x : mapping)
+				for (const auto& x : mapping)
 					serialization::serialize_little_endian(x, data);
 			}
 
