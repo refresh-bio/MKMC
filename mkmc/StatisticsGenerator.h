@@ -6,6 +6,8 @@
 #include "parameters.h"
 #include "TasksPool.h"
 #include "lib/statistics/lib/statistics.h"
+#define NOMINMAX
+#include "progress_bar.hpp"
 
 
 
@@ -26,6 +28,9 @@ class StatisticsGenerator
 	};
 	std::vector<TaskData> tasksData;
 	TasksPool<TaskData> tasksPool;
+
+	uint64_t totAllKmers;
+	ProgressBar progress_bar;
 
 	void fillTaskData();
 
@@ -54,6 +59,16 @@ class StatisticsGenerator
 		stream << '\n';
 	}
 
+	uint64_t getNTotInputKmers()
+	{
+		std::vector<uint64_t> nOutputKmersPerBin;
+		readDump(nOutputKmersPerBin, params.statisticsParams.statsNOutputKmers);
+		uint64_t nKmers = 0;
+		for (auto a : nOutputKmersPerBin)
+			nKmers += a;
+		return nKmers;
+	}
+
 	std::vector<uint8_t> normalizationData;
 	std::vector<int> phenotype;
 
@@ -62,7 +77,9 @@ class StatisticsGenerator
 public:
 	StatisticsGenerator(Params& params) :
 		params(params),
-		tasksPool(tasksData)
+		tasksPool(tasksData),
+		totAllKmers(getNTotInputKmers()),
+		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : totAllKmers, "Statistics", std::cerr, params.mkmcParams.verbosity_level == 0)
 	{}
 
 	void generateStatisticsParallel();

@@ -1,4 +1,5 @@
 #include "StatisticsGenerator.h"
+#include <algorithm>
 
 
 
@@ -114,6 +115,8 @@ void StatisticsGenerator::operator()()
 		matrixEntry.resize(params.mkmcParams.inputFilesPerSample.size());
 		normEntry.resize(params.mkmcParams.inputFilesPerSample.size());
 
+		ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, totAllKmers / 100ull));
+
 		while (true)
 		{
 			if (!getLine(matrixFile, kmerSequence, matrixEntry))
@@ -131,6 +134,8 @@ void StatisticsGenerator::operator()()
 
 			double kendall = corr.kendall_tau(normEntry.begin(), normEntry.end(), phenotype.begin());
 			putLine(kendallFile, kmerSequence, { kendall });
+
+			++progress_bar_updater;
 		}
 	}
 }
