@@ -45,7 +45,9 @@ void usage()
 		<< "  -thr<X> - filter out k-mers occuring less than <X> times... (default: 1)\n"
 		<< "  -thr_rat<Y> - ... in a ratio <Y> of the input files (per k-mer sequence filtering) (default: 0.0)\n"
 		<< "  -flt<X> - keep k-mers present in <X> file (FASTA or a set of the k-mers, one in each line) only\n"
-		<< "  -cor<X> - generate normalized counts and determine correlations basing on a phenotype file <X> (a set of the integers, one in each line)\n"
+		<< "  -n<freq/q> - generate normalized counts (frequency count/quantile normalization)\n"
+		<< "  -p<X> - set a phenotype file <X> (a set of the integers, one in each line)\n"
+		<< "  -cor<kendall/pearson/spearman> - determine correlations basing on a phenotype file (requires also -n and -p) (Kendall Tau/Pearson/Spearman correlation)\n"
 		<< "    E.g. -thr_rat0.5 and -thr2 mean that k-mers appearing at least twice in at least a half of the input files will be dumped.\n\n"
 		<< "As `[options]` you can also pass optional parameters:\n"
 		<< "  -k<len> - k-mer length (<len> from " << KMC::CfgConsts::min_k << " to " << KMC::CfgConsts::max_k << "; default: 25)\n"
@@ -110,8 +112,8 @@ void fill_temporary_kmc_databases_names(Params& params)
 		mkmcParams.outputMatrixFiles.push_back(mkmcParams.outputFilesTemplate + "_matrix_" + binIdStr);
 		mkmcParams.outputFASTAFiles.push_back(mkmcParams.outputFilesTemplate + + "_" + binIdStr + ".fa");
 
-		mkmcParams.outputFilesNormFrequency.push_back(mkmcParams.outputFilesTemplate + "_norm_frequency_" + binIdStr);
-		mkmcParams.outputFilesNormQuantile.push_back(mkmcParams.outputFilesTemplate + "_norm_quantile_" + binIdStr);
+		mkmcParams.outputFilesNormFrequency.push_back(mkmcParams.outputFilesTemplate + "_norm_" + binIdStr);
+		mkmcParams.outputFilesNormQuantile.push_back(mkmcParams.outputFilesTemplate + "_norm_" + binIdStr);
 
 		mkmcParams.outputFilesPearson.push_back(mkmcParams.outputFilesTemplate + "_pearson_" + binIdStr);
 		mkmcParams.outputFilesSpearman.push_back(mkmcParams.outputFilesTemplate + "_spearman_" + binIdStr);
@@ -313,16 +315,68 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			}
 		}
 		// Generate statistics
-		else if (strncmp(argv[i], "-cor", 4) == 0)
+		else if (strncmp(argv[i], "-n", 2) == 0)
 		{
-			std::string fileName = &argv[i][4];
+			std::string typeName = &argv[i][2];
+			if (typeName == "freq")
+			{
+				statisticsParams.generateNormalization = true;
+				statisticsParams.normalizationMethod = StatisticsParams::NormalizationMethod::frequency_count;
+			}
+			else if (typeName == "q")
+			{
+				statisticsParams.generateNormalization = true;
+				statisticsParams.normalizationMethod = StatisticsParams::NormalizationMethod::quantile;
+			}
+			else
+			{
+				std::cerr << "Error: unsupported normalization method: " << typeName << " (use -nfreq, or -nq).\n" << std::endl;
+				return false;
+			}
+		}
+		else if (strncmp(argv[i], "-p", 2) == 0)
+		{
+			std::string fileName = &argv[i][2];
 			if (fileName.empty())
 			{
 				std::cerr << "Error: phenotype file name is not specified.\n" << std::endl;
 				return false;
 			}
-			statisticsParams.generateStatistics = true;
 			statisticsParams.phenotypeFile = fileName;
+		}
+		else if (strncmp(argv[i], "-cor", 4) == 0)
+		{
+			std::string typeName = &argv[i][4];
+			bool wasDuplication = false;
+			StatisticsParams::CorrelationMethod correlationMethod;
+			if (typeName == "kendall")
+			{
+				correlationMethod = StatisticsParams::CorrelationMethod::Kendall;
+			}
+			else if (typeName == "pearson")
+			{
+				correlationMethod = StatisticsParams::CorrelationMethod::Pearson;
+			}
+			else if (typeName == "spearman")
+			{
+				correlationMethod = StatisticsParams::CorrelationMethod::Spearman;
+			}
+			else
+			{
+				std::cerr << "Error: unsupported correlation method: " << typeName << " (use -corkendall, -corpearson, or -corspearman).\n" << std::endl;
+				return false;
+			}
+
+			for (auto method : params.statisticsParams.correlationMethods)
+			{
+				if (method == correlationMethod)
+				{
+					std::cerr << "Warning: correlation method " << typeName << " was given multiple times." << std::endl;
+					wasDuplication = true;
+				}
+			}
+			if (!wasDuplication)
+				params.statisticsParams.correlationMethods.push_back(correlationMethod);
 		}
 		else if (strncmp(argv[i], "-v", 2) == 0)
 		{
@@ -348,6 +402,12 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	if (!outputFileTypes.empty())
 		params.mkmcParams.outputFileTypes = outputFileTypes;
 
+	if (!statisticsParams.correlationMethods.empty() && (!statisticsParams.generateNormalization || statisticsParams.phenotypeFile.empty()))
+	{
+		std::cerr << "Error: cor<X> parameter requires also -n and -p parameters.\n" << std::endl;
+		return false;
+	}
+
 	std::string input_file_name = std::string(argv[i++]);
 
 	mkmcParams.outputFilesTemplate = argv[i++];
@@ -365,7 +425,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			return false;
 	}
 
-	if (statisticsParams.generateStatistics)
+	if (statisticsParams.generateNormalization)
 	{
 		bool generateMatrix = false;
 		for (auto fileType : mkmcParams.outputFileTypes)
@@ -373,7 +433,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				generateMatrix = true;
 		if (!generateMatrix)
 		{
-			std::cerr << "Warning: due to statistics generation, temporarily MKMC has to generate output matrix (-omatrix switch will be additionally applied)." << std::endl;
+			std::cerr << "Warning: due to normalization generation, temporarily MKMC has to generate output matrix (-omatrix switch will be additionally applied)." << std::endl;
 			mkmcParams.outputFileTypes.push_back(OutputFileType::Matrix);
 		}
 	}
@@ -461,7 +521,7 @@ int main(int argc, char** argv)
 		DumpRunner dump_runner(params, dump_timer);
 		DispatchKmerSize(params.stage1Params.GetKmerLen(), dump_runner);
 
-		if (params.statisticsParams.generateStatistics)
+		if (params.statisticsParams.generateNormalization)
 		{
 			std::cerr << "\nStarting normalizing and correlation computing...\n";
 			StatisticsGenerator statisticsGenerator(params);
@@ -486,7 +546,7 @@ int main(int argc, char** argv)
 		std::cerr << "\tStart: " << dump_timer.getStartTime() << "\n";
 		std::cerr << "\tEnd:   " << dump_timer.getStopTime() << "\n";
 
-		if (params.statisticsParams.generateStatistics)
+		if (params.statisticsParams.generateNormalization)
 		{
 			std::cerr << "Normalization and correlation: \n";
 			std::cerr << "\tStart: " << statistics_timer.getStartTime() << "\n";

@@ -51,44 +51,69 @@ void StatisticsGenerator::operator()()
 			exit(1);
 		}
 
-		std::ofstream frequenceNormFile(params.mkmcParams.outputFilesNormFrequency[taskData.binId]);
-		if (!frequenceNormFile.is_open())
+		std::string normFileName;
+		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::frequency_count)
+			normFileName = params.mkmcParams.outputFilesNormFrequency[taskData.binId];
+		else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile)
+			normFileName = params.mkmcParams.outputFilesNormQuantile[taskData.binId];
+		std::ofstream normFile(normFileName);
+		if (!normFile.is_open())
 		{
-			std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesNormFrequency[taskData.binId] << "." << std::endl;
+			std::cerr << "Error: cannot open " << normFileName << "." << std::endl;
 			exit(1);
 		}
-		std::ofstream pearsonFile(params.mkmcParams.outputFilesPearson[taskData.binId]);
-		if (!pearsonFile.is_open())
+
+		bool generatePearson = false, generateSpearman = false, generateKendall = false;
+		for (auto method : params.statisticsParams.correlationMethods)
 		{
-			std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesPearson[taskData.binId] << "." << std::endl;
-			exit(1);
-		}
-		std::ofstream spearmanFile(params.mkmcParams.outputFilesSpearman[taskData.binId]);
-		if (!spearmanFile.is_open())
-		{
-			std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesSpearman[taskData.binId] << "." << std::endl;
-			exit(1);
-		}
-		std::ofstream kendallFile(params.mkmcParams.outputFilesKendall[taskData.binId]);
-		if (!kendallFile.is_open())
-		{
-			std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesKendall[taskData.binId] << "." << std::endl;
-			exit(1);
+			if (method == StatisticsParams::CorrelationMethod::Pearson)
+				generatePearson = true;
+			else if (method == StatisticsParams::CorrelationMethod::Spearman)
+				generateSpearman = true;
+			else if (method == StatisticsParams::CorrelationMethod::Kendall)
+				generateKendall = true;
 		}
 
 		std::string header;
 		std::getline(matrixFile, header);
-		frequenceNormFile << header << '\n';
-		pearsonFile << header << '\n';
+		normFile << header << '\n';
+
+		std::ofstream pearsonFile, spearmanFile, kendallFile;
+		if (generatePearson)
+		{
+			pearsonFile.open(params.mkmcParams.outputFilesPearson[taskData.binId]);
+			if (!pearsonFile.is_open())
+			{
+				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesPearson[taskData.binId] << "." << std::endl;
+				exit(1);
+			}
+			pearsonFile << header << '\n';
+		}
+		if (generateSpearman)
+		{
+			spearmanFile.open(params.mkmcParams.outputFilesSpearman[taskData.binId]);
+			if (!spearmanFile.is_open())
+			{
+				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesSpearman[taskData.binId] << "." << std::endl;
+				exit(1);
+			}
+			spearmanFile << header << '\n';
+		}
+		if (generateKendall)
+		{
+			kendallFile.open(params.mkmcParams.outputFilesKendall[taskData.binId]);
+			if (!kendallFile.is_open())
+			{
+				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesKendall[taskData.binId] << "." << std::endl;
+				exit(1);
+			}
+			kendallFile << header << '\n';
+		}
 
 		refresh::normalization_work<size_t, double> normalization;
-
-		normalization.register_method(StatisticsParams::NormalizationMethod::frequency_count);
-		//norm.register_method(StatisticsParams::NormalizationMethod::quantile);
-
+		normalization.register_method(params.statisticsParams.normalizationMethod);
 		normalization.set_no_series(params.mkmcParams.inputFilesPerSample.size());
-		normalization.deserialize(StatisticsParams::NormalizationMethod::frequency_count, normalizationData);
-		//norm.deserialize(StatisticsParams::NormalizationMethod::quantile, normalizationData);
+		normalization.deserialize(params.statisticsParams.normalizationMethod, normalizationData);
 
 		normalization.initialize();
 
@@ -104,19 +129,27 @@ void StatisticsGenerator::operator()()
 		{
 			if (!getLine(matrixFile, kmerSequence, matrixEntry))
 				break;
-			normalization.norm_entry(StatisticsParams::NormalizationMethod::frequency_count, matrixEntry, normEntry);
-			putLine(frequenceNormFile, kmerSequence, normEntry);
 
-			double pearson = refresh::correlation::pearson(normEntry.begin(), normEntry.end(), phenotype.begin());
-			putLine(pearsonFile, kmerSequence, { pearson });
+			normalization.norm_entry(params.statisticsParams.normalizationMethod, matrixEntry, normEntry);
+			putLine(normFile, kmerSequence, normEntry);
 
-			refresh::correlation corr;
-
-			double spearman = corr.spearman(normEntry.begin(), normEntry.end(), phenotype.begin());
-			putLine(spearmanFile, kmerSequence, { spearman });
-
-			double kendall = corr.kendall_tau(normEntry.begin(), normEntry.end(), phenotype.begin());
-			putLine(kendallFile, kmerSequence, { kendall });
+			if (generatePearson)
+			{
+				double pearson = refresh::correlation::pearson(normEntry.begin(), normEntry.end(), phenotype.begin());
+				putLine(pearsonFile, kmerSequence, { pearson });
+			}
+			if (generateSpearman)
+			{
+				refresh::correlation corr;
+				double spearman = corr.spearman(normEntry.begin(), normEntry.end(), phenotype.begin());
+				putLine(spearmanFile, kmerSequence, { spearman });
+			}
+			if (generateKendall)
+			{
+				refresh::correlation corr;
+				double kendall = corr.kendall_tau(normEntry.begin(), normEntry.end(), phenotype.begin());
+				putLine(kendallFile, kmerSequence, { kendall });
+			}
 
 			++progress_bar_updater;
 		}
@@ -128,8 +161,16 @@ void StatisticsGenerator::generateStatisticsParallel()
 {
 	fillTaskData();
 
-	readDump(normalizationData, params.statisticsParams.normFrequencyFileTmp);
-	readPhenotype(phenotype);
+	if (params.statisticsParams.generateNormalization)
+	{
+		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::frequency_count)
+			readDump(normalizationData, params.statisticsParams.normFrequencyFileTmp);
+		else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile)
+			readDump(normalizationData, params.statisticsParams.normQuantileFileTmp);
+	}
+
+	if (!params.statisticsParams.correlationMethods.empty())
+		readPhenotype(phenotype);
 
 	std::vector<std::thread> threads(params.mkmcParams.nThreads);
 	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)

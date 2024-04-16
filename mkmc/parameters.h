@@ -65,8 +65,13 @@ struct StatisticsParams
 	using NormalizationMethod = refresh::normalization_base<size_t, double>::method_t;
 	using NormalizationLearning = refresh::normalization_learn<size_t, double>;
 
-	bool generateStatistics = false;
+	enum class CorrelationMethod { Pearson, Spearman, Kendall };
+
+	bool generateNormalization = false;
+	NormalizationMethod normalizationMethod;
+
 	std::string phenotypeFile;
+	std::vector<CorrelationMethod> correlationMethods;
 
 	std::string normFrequencyFileTmp = "frequencyDump";
 	std::string normQuantileFileTmp = "quantileDump";
