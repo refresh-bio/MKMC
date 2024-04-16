@@ -2,6 +2,20 @@
 
 
 
+void StatisticsGenerator::fillTaskData()
+{
+	tasksData.reserve(params.stage1Params.GetNBins());
+	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
+	{
+		tasksData.push_back(TaskData{ i });
+	}
+	std::vector<uint64_t> nOutputKmersPerBin;
+	readDump(nOutputKmersPerBin, params.statisticsParams.statsNOutputKmers);
+	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return nOutputKmersPerBin[a.binId] > nOutputKmersPerBin[b.binId]; });
+}
+
+
+
 void StatisticsGenerator::readPhenotype(std::vector<int>& phenotype)
 {
 	std::ifstream phenotypeFile(params.statisticsParams.phenotypeFile);
@@ -24,18 +38,19 @@ void StatisticsGenerator::readPhenotype(std::vector<int>& phenotype)
 
 
 
-void StatisticsGenerator::readNormalizationDump(std::vector<uint8_t>& normalizationData, std::string normalizationFileName)
+template<typename T>
+void StatisticsGenerator::readDump(std::vector<T>& data, std::string fileName)
 {
-	std::ifstream normalizationFile(normalizationFileName, std::ios::binary);
-	if (!normalizationFile.is_open())
+	std::ifstream file(fileName, std::ios::binary);
+	if (!file.is_open())
 	{
-		std::cerr << "Error: cannot open " << normalizationFileName << "." << std::endl;
+		std::cerr << "Error: cannot open " << fileName << "." << std::endl;
 		exit(1);
 	}
-	size_t normalizationDataSize;
-	normalizationFile.read(reinterpret_cast<char*>(&normalizationDataSize), sizeof(size_t));
-	normalizationData.resize(normalizationDataSize);
-	normalizationFile.read(reinterpret_cast<char*>(normalizationData.data()), normalizationDataSize * sizeof(uint8_t));
+	size_t nElements;
+	file.read(reinterpret_cast<char*>(&nElements), sizeof(size_t));
+	data.resize(nElements);
+	file.read(reinterpret_cast<char*>(data.data()), nElements * sizeof(T));
 }
 
 
@@ -123,13 +138,9 @@ void StatisticsGenerator::operator()()
 
 void StatisticsGenerator::generateStatisticsParallel()
 {
-	tasksData.reserve(params.stage1Params.GetNBins());
-	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
-	{
-		tasksData.push_back(TaskData{ i });
-	}
+	fillTaskData();
 
-	readNormalizationDump(normalizationData, params.statisticsParams.normFrequencyFileTmp);
+	readDump(normalizationData, params.statisticsParams.normFrequencyFileTmp);
 	readPhenotype(phenotype);
 
 	std::vector<std::thread> threads(params.mkmcParams.nThreads);

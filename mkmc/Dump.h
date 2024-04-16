@@ -44,13 +44,16 @@ class Dump
 	std::vector<TaskData> tasksData;
 	TasksPool<TaskData> tasksPool;
 
+	std::vector<uint64_t> nOutputKmersPerBin;
+
 	ProgressBar progress_bar;
 
 	bool allKAreSame(const std::vector<KMCFileWrapper<SIZE>>& samples);
 	void openDatabases(std::vector<KMCFileWrapper<SIZE>>& samples, uint32_t binId);
 	void fillTaskData();
-	void writeNormalizationDump(const std::vector<uint8_t>& normalizationData, std::string normalizationFileName);
-	void serializeAndDumpNormalization();
+	template<typename T>
+	void writeDump(const std::vector<T>& data, std::string fileName);
+	void serializeNormalizationAndDump();
 
 	uint64_t getNTotInputKmers()
 	{
@@ -147,6 +150,7 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 		return;
 
 	CKmer<SIZE> minKmer;
+	uint64_t nOutputKmers = 0;
 
 	heap.ProcessElem(do_with_elem_if_exists, [&](size_t elem, size_t id)
 		{
@@ -166,6 +170,7 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 					{
 						fileGenerator.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 						normalizationLearning.add_entry(kMersCounts);
+						++nOutputKmers;
 					}
 
 					minKmer = curKmer;
@@ -180,7 +185,9 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 	{
 		fileGenerator.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 		normalizationLearning.add_entry(kMersCounts);
+		++nOutputKmers;
 	}
+	nOutputKmersPerBin[binId] = nOutputKmers;
 }
 
 
@@ -232,6 +239,7 @@ inline void Dump<SIZE>::fillTaskData()
 		tasksData.push_back(TaskData{ i });
 	}
 	normalizationLearnings.resize(params.stage1Params.GetNBins());
+	nOutputKmersPerBin.resize(params.stage1Params.GetNBins(), 0);
 
 	size_t biggestSample = 0;
 	uint64_t biggestSampleKmersCount = 0;
@@ -269,24 +277,25 @@ inline void Dump<SIZE>::fillTaskData()
 
 
 template<unsigned SIZE>
-void Dump<SIZE>::writeNormalizationDump(const std::vector<uint8_t>& normalizationData, std::string normalizationFileName)
+template<typename T>
+void Dump<SIZE>::writeDump(const std::vector<T>& normalizationData, std::string normalizationFileName)
 {
-	std::ofstream normalizationFile(normalizationFileName, std::ios::binary);
-	if (!normalizationFile.is_open())
+	std::ofstream file(normalizationFileName, std::ios::binary);
+	if (!file.is_open())
 	{
 		std::cerr << "Error: cannot open " << normalizationFileName << "." << std::endl;
 		exit(1);
 	}
 
-	size_t normalizationDataSize = normalizationData.size();
-	normalizationFile.write(reinterpret_cast<char*>(&normalizationDataSize), sizeof(size_t));
-	normalizationFile.write(const_cast<char*>(reinterpret_cast<const char*>(normalizationData.data())), normalizationData.size() * sizeof(uint8_t));
+	size_t nElements = normalizationData.size();
+	file.write(reinterpret_cast<char*>(&nElements), sizeof(size_t));
+	file.write(const_cast<char*>(reinterpret_cast<const char*>(normalizationData.data())), normalizationData.size() * sizeof(T));
 }
 
 
 
 template<unsigned SIZE>
-void Dump<SIZE>::serializeAndDumpNormalization()
+void Dump<SIZE>::serializeNormalizationAndDump()
 {
 	normalizationLearnings.front().merge_with(normalizationLearnings.begin() + 1, normalizationLearnings.end());
 
@@ -294,8 +303,10 @@ void Dump<SIZE>::serializeAndDumpNormalization()
 	normalizationLearnings.front().serialize(StatisticsParams::NormalizationMethod::frequency_count, frequencyNormalizationData);
 	normalizationLearnings.front().serialize(StatisticsParams::NormalizationMethod::quantile, quantileNormalizationData);
 
-	writeNormalizationDump(frequencyNormalizationData, params.statisticsParams.normFrequencyFileTmp);
-	writeNormalizationDump(quantileNormalizationData, params.statisticsParams.normQuantileFileTmp);
+	writeDump(frequencyNormalizationData, params.statisticsParams.normFrequencyFileTmp);
+	writeDump(quantileNormalizationData, params.statisticsParams.normQuantileFileTmp);
+
+	writeDump(nOutputKmersPerBin, params.statisticsParams.statsNOutputKmers);
 }
 
 
@@ -316,7 +327,8 @@ void Dump<SIZE>::dumpToFileParallel()
 		thread.join();
 	}
 
-	serializeAndDumpNormalization();
+	if (params.statisticsParams.generateStatistics)
+		serializeNormalizationAndDump();
 }
 
 

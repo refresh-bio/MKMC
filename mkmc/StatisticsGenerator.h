@@ -27,8 +27,11 @@ class StatisticsGenerator
 	std::vector<TaskData> tasksData;
 	TasksPool<TaskData> tasksPool;
 
+	void fillTaskData();
+
 	void readPhenotype(std::vector<int>& phenotype);
-	void readNormalizationDump(std::vector<uint8_t>& normalizationData, std::string normalizationFileName);
+	template<typename T>
+	void readDump(std::vector<T>& normalizationData, std::string normalizationFileName);
 
 	bool getLine(std::ifstream& stream, std::string& kmerSequence, std::vector<size_t>& counts)
 	{
