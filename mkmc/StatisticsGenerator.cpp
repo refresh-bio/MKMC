@@ -39,23 +39,6 @@ void StatisticsGenerator::readPhenotype(std::vector<int>& phenotype)
 
 
 
-template<typename T>
-void StatisticsGenerator::readDump(std::vector<T>& data, std::string fileName)
-{
-	std::ifstream file(fileName, std::ios::binary);
-	if (!file.is_open())
-	{
-		std::cerr << "Error: cannot open " << fileName << "." << std::endl;
-		exit(1);
-	}
-	size_t nElements;
-	file.read(reinterpret_cast<char*>(&nElements), sizeof(size_t));
-	data.resize(nElements);
-	file.read(reinterpret_cast<char*>(data.data()), nElements * sizeof(T));
-}
-
-
-
 void StatisticsGenerator::operator()()
 {
 	TaskData taskData;
