@@ -404,8 +404,13 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 
 	if (!statisticsParams.correlationMethods.empty() && (!statisticsParams.generateNormalization || statisticsParams.phenotypeFile.empty()))
 	{
-		std::cerr << "Error: cor<X> parameter requires also -n and -p parameters.\n" << std::endl;
+		std::cerr << "Error: -cor parameter requires also -n and -p parameters.\n" << std::endl;
 		return false;
+	}
+
+	if (statisticsParams.correlationMethods.empty() && !statisticsParams.phenotypeFile.empty())
+	{
+		std::cerr << "Warning: phenotype file was given (-p parameter), but no correlation -cor method is chosen; it wille be ignored." << std::endl;
 	}
 
 	std::string input_file_name = std::string(argv[i++]);
@@ -438,16 +443,26 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		}
 	}
 
-	if (params.filterParams.filterKmersSequences) {
-		std::ifstream in(params.filterParams.inputKmersSequencesToFilterOut);
+	if (filterParams.filterKmersSequences) {
+		std::ifstream in(filterParams.inputKmersSequencesToFilterOut);
 		if (!in.good())
 		{
-			std::cerr << "Error: No " << params.filterParams.inputKmersSequencesToFilterOut << " file\n" << std::endl;
+			std::cerr << "Error: No " << params.filterParams.inputKmersSequencesToFilterOut << " file.\n" << std::endl;
 			return false;
 		}
 
 		params.filterParams.kmersSequencesToFilterOutDB = params.mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter";
 		params.mutableParams.kmersSequencesToFilterOut = params.mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter.fa";
+	}
+
+	if (!statisticsParams.correlationMethods.empty() && !statisticsParams.phenotypeFile.empty())
+	{
+		std::ifstream in(statisticsParams.phenotypeFile);
+		if (!in.good())
+		{
+			std::cerr << "Error: No " << statisticsParams.phenotypeFile << " file.\n" << std::endl;
+			return false;
+		}
 	}
 
 	fill_temporary_kmc_databases_names(params);
