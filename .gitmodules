@@ -1,3 +1,12 @@
 [submodule "kmc"]
 	path = kmc
 	url = https://github.com/refresh-bio/kmc
+[submodule "mkmc/CLI11"]
+	path = mkmc/CLI11
+	url = https://github.com/CLIUtils/CLI11.git
+[submodule "mkmc/stats"]
+	path = mkmc/stats
+	url = https://github.com/refresh-bio-dependencies/stats
+[submodule "mkmc/gcem"]
+	path = mkmc/gcem
+	url = https://github.com/refresh-bio-dependencies/gcem

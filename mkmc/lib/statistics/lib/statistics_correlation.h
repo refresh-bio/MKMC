@@ -212,7 +212,7 @@ namespace refresh
 			if (n_pairs == n_ties_X || n_pairs == n_ties_Y)
 				return std::numeric_limits<double>::quiet_NaN();
 
-			double n_pairs_d = n_pairs;
+			double n_pairs_d = (double) n_pairs;
 			double numerator = n_pairs_d - n_ties_X - n_ties_Y + n_ties_both - 2 * n_swaps;
 
 			return numerator / sqrt((n_pairs_d - (double)n_ties_X) * (n_pairs_d - (double)n_ties_Y));
