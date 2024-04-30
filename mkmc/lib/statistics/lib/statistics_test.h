@@ -6,7 +6,7 @@
 #include <cmath>
 
 #define STATS_ENABLE_STDVEC_WRAPPERS
-#include "stats/include/stats.hpp"
+#include "../../../stats/include/stats.hpp"
 
 namespace refresh
 {
