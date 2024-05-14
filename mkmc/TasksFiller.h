@@ -9,7 +9,6 @@
 class TasksFiller
 {
 	const MKMCParams& mkmcParams;
-	const std::string inputFileName;
 
 	std::vector<std::string> samplesNames;
 	std::vector<std::vector<std::string>> inputFilesPerSample;
@@ -18,9 +17,8 @@ class TasksFiller
 	bool canOpenFile(const std::string& fileName, uint32_t lineNo);
 
 public:
-	TasksFiller(const MKMCParams& mkmcParams, const std::string& inputFileName) :
-		mkmcParams(mkmcParams),
-		inputFileName(inputFileName)
+	TasksFiller(const MKMCParams& mkmcParams) :
+		mkmcParams(mkmcParams)
 	{}
 
 	bool readSamples(std::vector<std::string>& oSamplesNames, std::vector<std::vector<std::string>>& oInputFilesPerSample);

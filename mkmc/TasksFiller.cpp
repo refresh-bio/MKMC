@@ -50,7 +50,7 @@ bool TasksFiller::canOpenFile(const std::string& fileName, uint32_t lineNo)
 	std::ifstream inFile(fileName);
 	if (!inFile.is_open())
 	{
-		std::cerr << "Error: Cannot open " << fileName << " (" << inputFileName << ", line " << lineNo << ").\n" << std::endl;
+		std::cerr << "Error: Cannot open " << fileName << " (" << mkmcParams.inputFileName << ", line " << lineNo << ").\n" << std::endl;
 		return false;
 	}
 	return true;
@@ -60,10 +60,10 @@ bool TasksFiller::canOpenFile(const std::string& fileName, uint32_t lineNo)
 
 bool TasksFiller::readSamples(std::vector<std::string>& oSamplesNames, std::vector<std::vector<std::string>>& oInputFilesPerSample)
 {
-	std::ifstream in(inputFileName.c_str() + 1);
+	std::ifstream in(mkmcParams.inputFileName);
 	if (!in.good())
 	{
-		std::cerr << "Error: No " << inputFileName.c_str() + 1 << " file\n" << std::endl;
+		std::cerr << "Error: No " << mkmcParams.inputFileName << " file.\n" << std::endl;
 		return false;
 	}
 

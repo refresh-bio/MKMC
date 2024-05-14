@@ -1,5 +1,10 @@
 #include "parameters.h"
+#include "TasksFiller.h"
 #include <iostream>
+#include <filesystem>
+#include <algorithm>
+
+
 
 Params::Params()
 {
@@ -17,7 +22,61 @@ Params::Params()
 	stage1Params.SetProgressObserver(&nullProgressObserver);
 }
 
-void Params::setKMCParams()
+
+
+bool Params::readAdditionalParamsFromFiles()
+{
+	TasksFiller tasksFiller(mkmcParams);
+	return tasksFiller.readSamples(mkmcParams.samples, mkmcParams.inputFilesPerSample);
+}
+
+
+
+void Params::generateTempAndOutputFilesNames()
+{
+	std::string tmpFilesTemplate = mkmcParams.tmpPath;
+	if (mkmcParams.tmpPath.back() != '/' && mkmcParams.tmpPath.back() != '\\')
+	{
+		tmpFilesTemplate += static_cast<char>(std::filesystem::path::preferred_separator);
+	}
+
+	for (uint32_t tmp_database_id = 0; tmp_database_id < mkmcParams.inputFilesPerSample.size(); ++tmp_database_id)
+	{
+		std::ostringstream sstreamKMCDir, sstreamKMC;
+		sstreamKMCDir << tmpFilesTemplate << "kmc_tmp_" << std::setfill('0') << std::setw(5) << tmp_database_id;
+		sstreamKMC << tmpFilesTemplate << "kmc_db_" << std::setfill('0') << std::setw(5) << tmp_database_id;
+
+		mkmcParams.kmcTmpDirs.push_back(sstreamKMCDir.str());
+		mkmcParams.kmcOutputFiles.push_back(sstreamKMC.str());
+	}
+
+	filterParams.kmersSequencesToFilterOutDB = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter";
+	mutableParams.kmersSequencesToFilterOut = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter.fa";
+
+	statisticsParams.normFrequencyFileTmp = tmpFilesTemplate + statisticsParams.normFrequencyFileTmp;
+	statisticsParams.normQuantileFileTmp = tmpFilesTemplate + statisticsParams.normQuantileFileTmp;
+
+	const uint32_t nBinsDigits = static_cast<uint32_t>(std::log10(static_cast<double>(stage1Params.GetNBins()))) + 1;
+	for (uint32_t binId = 0; binId < stage1Params.GetNBins(); ++binId) {
+		std::ostringstream sstreamOutput;
+		sstreamOutput << std::setfill('0') << std::setw(nBinsDigits) << binId;
+		const std::string binIdStr = sstreamOutput.str();
+
+		mkmcParams.outputMatrixFiles.push_back(mkmcParams.outputFilesTemplate + "_matrix_" + binIdStr);
+		mkmcParams.outputFASTAFiles.push_back(mkmcParams.outputFilesTemplate + +"_" + binIdStr + ".fa");
+
+		mkmcParams.outputFilesNormFrequency.push_back(mkmcParams.outputFilesTemplate + "_norm_" + binIdStr);
+		mkmcParams.outputFilesNormQuantile.push_back(mkmcParams.outputFilesTemplate + "_norm_" + binIdStr);
+
+		mkmcParams.outputFilesPearson.push_back(mkmcParams.outputFilesTemplate + "_pearson_" + binIdStr);
+		mkmcParams.outputFilesSpearman.push_back(mkmcParams.outputFilesTemplate + "_spearman_" + binIdStr);
+		mkmcParams.outputFilesKendall.push_back(mkmcParams.outputFilesTemplate + "_kendall_tau_" + binIdStr);
+	}
+}
+
+
+
+void Params::adjustKMCPerformanceParams()
 {
 	bool mKMCWorkersReduced = false;
 	if (mkmcParams.nThreads == 1)
@@ -49,4 +108,40 @@ void Params::setKMCParams()
 	stage2Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 
 	stage1Params.SetNBins(mkmcParams.nKMCBins);
+}
+
+
+
+void Params::adjustAnotherParams()
+{
+	if (mkmcParams.maxRamGBUserDefined && stage1Params.GetRamOnlyMode())
+	{
+		std::cerr << "Warning: when -r parameter is given, limit specified with -m may be exceeded." << std::endl;
+	}
+
+	size_t nCorrelationMethods = statisticsParams.correlationMethods.size();
+	std::sort(statisticsParams.correlationMethods.begin(), statisticsParams.correlationMethods.end());
+	statisticsParams.correlationMethods.erase(std::unique(statisticsParams.correlationMethods.begin(), statisticsParams.correlationMethods.end()), statisticsParams.correlationMethods.end());
+	if (nCorrelationMethods != statisticsParams.correlationMethods.size())
+	{
+		std::cerr << "Warning: some correlation methods were given multiple times." << std::endl;
+	}
+
+	size_t nOutputFileTypes = mkmcParams.outputFileTypes.size();
+	std::sort(mkmcParams.outputFileTypes.begin(), mkmcParams.outputFileTypes.end());
+	mkmcParams.outputFileTypes.erase(std::unique(mkmcParams.outputFileTypes.begin(), mkmcParams.outputFileTypes.end()), mkmcParams.outputFileTypes.end());
+
+	if (nOutputFileTypes != mkmcParams.outputFileTypes.size())
+	{
+		std::cerr << "Warning: some output files types were given multiple times." << std::endl;
+	}
+
+	if (statisticsParams.generateNormalization)
+	{
+		if (std::find(mkmcParams.outputFileTypes.begin(), mkmcParams.outputFileTypes.end(), OutputFileType::Matrix) == mkmcParams.outputFileTypes.end())
+		{
+			std::cerr << "Warning: due to normalization generation, temporarily MKMC has to generate output matrix (-o matrix flag will be additionally applied)." << std::endl;
+			mkmcParams.outputFileTypes.push_back(OutputFileType::Matrix);
+		}
+	}
 }

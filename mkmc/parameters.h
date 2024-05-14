@@ -15,17 +15,18 @@ enum class OutputFileType {FASTA, Matrix};
 
 struct MKMCParams
 {
+	std::string inputFileName;
 	std::string tmpPath;
 	std::vector<std::string> samples;
 	std::vector<std::vector<std::string>> inputFilesPerSample;
-	KMC::InputFileType inputFileType = KMC::InputFileType::FASTQ;
+	KMC::InputFileType inputFileType = KMC::InputFileType::FASTQ; // also default "fq" value in input parameters
 	std::vector<std::string> kmcOutputFiles;
 	std::vector<std::string> kmcTmpDirs;
 
 	std::string outputFilesTemplate;
 	std::vector<std::string> outputFASTAFiles;
 	std::vector<std::string> outputMatrixFiles;
-	std::vector<OutputFileType> outputFileTypes = { OutputFileType::Matrix };
+	std::vector<OutputFileType> outputFileTypes = { OutputFileType::Matrix }; // also default "matrix" value in input parameters
 
 
 	std::vector<std::string> outputFilesNormFrequency;
@@ -38,6 +39,7 @@ struct MKMCParams
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
 	uint32_t nKMCWorkers = 4;
 	uint32_t maxRamGB = 16;
+	bool maxRamGBUserDefined = false;
 	const uint32_t countSymbols = 10; // for 4G
 
 	const uint32_t sigToBinMapStatsPercentage = 5;
@@ -87,10 +89,20 @@ struct MutableParams
 	mutable std::string kmersSequencesToFilterOut; // file containing k-mers to count (input or generated)
 };
 
+struct DefaultKMCParams
+{
+	const uint32_t k = 25;
+	const uint64_t ci = 1;
+	const uint64_t cx = static_cast<uint32_t>(4e9);
+	const uint64_t cs = 65535;
+};
+
 struct Params
 {
 	MKMCParams mkmcParams;
 	mutable MutableParams mutableParams;
+
+	DefaultKMCParams defaultKMCParams;
 
 	KMC::Stage1Params stage1Params;
 	KMC::Stage2Params stage2Params;
@@ -99,5 +111,8 @@ struct Params
 	StatisticsParams statisticsParams;
 
 	Params();
-	void setKMCParams();
+	void generateTempAndOutputFilesNames();
+	bool readAdditionalParamsFromFiles();
+	void adjustKMCPerformanceParams();
+	void adjustAnotherParams();
 };
