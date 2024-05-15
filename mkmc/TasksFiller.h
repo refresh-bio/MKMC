@@ -13,7 +13,7 @@ class TasksFiller
 	std::vector<std::string> samplesNames;
 	std::vector<std::vector<std::string>> inputFilesPerSample;
 
-	bool parseLine(const std::string& line, uint32_t lineNo);
+	bool parseLine(const std::string& line, uint32_t lineNo, bool& singleWordLines);
 	bool canOpenFile(const std::string& fileName, uint32_t lineNo);
 
 public:

@@ -25,9 +25,9 @@ bool Start::canCreateFileInPath(const std::string& path)
 
 void Start::verifyFiles()
 {
-	if (!canCreateFile(params.mkmcParams.outputMatrixFiles.front()))
+	if (!canCreateFile(params.mkmcParams.outputFilesTemplate))
 	{
-		std::cerr << "Error: Cannot create output file: " << params.mkmcParams.outputMatrixFiles.front() << "." << std::endl;
+		std::cerr << "Error: Cannot create output file: " << params.mkmcParams.outputFilesTemplate << "." << std::endl;
 		exit(1);
 	}
 
@@ -42,7 +42,7 @@ void Start::verifyFiles()
 		{
 			std::cerr << "Warning: the specified directory " << params.mkmcParams.tmpPath << " does not exist. It will be temporary created." << std::endl;
 			if (params.mkmcParams.keepTmpFiles)
-				std::cerr << "Warning: the temporary files will not be kept (-keep parameter will be ignored)." << std::endl;
+				std::cerr << "Warning: the temporary files will not be kept (--keep parameter will be ignored)." << std::endl;
 			params.mutableParams.tmpDirCreated = true;
 		}
 	}

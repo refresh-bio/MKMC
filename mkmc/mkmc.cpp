@@ -214,7 +214,7 @@ int main(int argc, char** argv)
 
 		if (params.statisticsParams.generateNormalization)
 		{
-			std::cerr << "\nStarting normalizing and correlation computing...\n";
+			std::cerr << "\nStarting normalizing and computing correlation...\n";
 			StatisticsGenerator statisticsGenerator(params);
 			statistics_timer.startTimer();
 			statisticsGenerator.generateStatisticsParallel();
@@ -226,20 +226,20 @@ int main(int argc, char** argv)
 
 		if (params.mutableParams.createdFastaFile)
 		{
-			std::cerr << "\nPreparing temporary FASTA file for sequences filtering out: \n";
+			std::cerr << "\nPreparing temporary FASTA file for sequences filtering out:\n";
 			std::cerr << "\tStart: " << sequence_filter_init.getStartTime() << "\n";
 			std::cerr << "\tEnd:   " << sequence_filter_init.getStopTime() << "\n";
 		}
-		std::cerr << "\nKMC: \n";
+		std::cerr << "\nk-mer counting:\n";
 		std::cerr << "\tStart: " << kmc_timer.getStartTime() << "\n";
 		std::cerr << "\tEnd:   " << kmc_timer.getStopTime() << "\n";
-		std::cerr << "Dump: \n";
+		std::cerr << "Dumping:\n";
 		std::cerr << "\tStart: " << dump_timer.getStartTime() << "\n";
 		std::cerr << "\tEnd:   " << dump_timer.getStopTime() << "\n";
 
 		if (params.statisticsParams.generateNormalization)
 		{
-			std::cerr << "Normalization and correlation: \n";
+			std::cerr << "Normalizing and computing correlation:\n";
 			std::cerr << "\tStart: " << statistics_timer.getStartTime() << "\n";
 			std::cerr << "\tEnd:   " << statistics_timer.getStopTime() << "\n";
 		}

@@ -79,7 +79,7 @@ public:
 		params(params),
 		tasksPool(tasksData),
 		totAllKmers(getNTotInputKmers()),
-		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : totAllKmers, "Statistics", std::cerr, params.mkmcParams.verbosity_level == 0)
+		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : totAllKmers, "Computing statistics", std::cerr, params.mkmcParams.verbosity_level == 0)
 	{}
 
 	void generateStatisticsParallel();

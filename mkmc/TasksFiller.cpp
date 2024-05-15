@@ -5,7 +5,7 @@
 
 
 
-bool TasksFiller::parseLine(const std::string& line, uint32_t lineNo)
+bool TasksFiller::parseLine(const std::string& line, uint32_t lineNo, bool& singleWordLine)
 {
 	std::istringstream lineStream(line);
 	std::string sampleName, fileName;
@@ -19,8 +19,7 @@ bool TasksFiller::parseLine(const std::string& line, uint32_t lineNo)
 	lineStream >> fileName;
 	if (!lineStream) // sample name = file name
 	{
-		if (mkmcParams.verbosity_level > 0)
-			std::cerr << "Warning: input file line " << lineNo << " contains just one word, it will be treated both as a sample and a file name." << std::endl;
+		singleWordLine = true;
 
 		if (!canOpenFile(sampleName, lineNo))
 			return false;
@@ -69,12 +68,16 @@ bool TasksFiller::readSamples(std::vector<std::string>& oSamplesNames, std::vect
 
 	std::string line;
 	uint32_t lineNo = 1;
+	bool singleWordLines = false;
 	while (std::getline(in, line))
 	{
-		if (!parseLine(line, lineNo))
+		if (!parseLine(line, lineNo, singleWordLines))
 			return false;
 		++lineNo;
 	}
+
+	if (singleWordLines && mkmcParams.verbosity_level > 0)
+		std::cerr << "Warning: some of input file " << mkmcParams.inputFileName << " lines contain just one word, they will be treated both as samples names and files names." << std::endl;
 
 	oSamplesNames.swap(samplesNames);
 	oInputFilesPerSample.swap(inputFilesPerSample);

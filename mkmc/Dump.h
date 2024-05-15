@@ -77,7 +77,7 @@ class Dump
 public:
 	Dump(const Params& params) :
 		params(params), tasksPool(tasksData),
-		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : getNTotInputKmers(), "Merge", std::cerr, params.mkmcParams.verbosity_level == 0)
+		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : getNTotInputKmers(), "Dumping", std::cerr, params.mkmcParams.verbosity_level == 0)
 	{}
 
 	void dumpToFileParallel();
