@@ -9,6 +9,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <mutex>
 #include "parameters.h"
 #include "kmc_api/kmc_file.h"
 #include "kmc_dump/nc_utils.h"
@@ -29,7 +30,8 @@ class Dump
 {
 	const Params& params;
 
-	std::vector<StatisticsParams::NormalizationLearning> normalizationLearnings;
+	StatisticsParams::NormalizationLearning normalizationLearning;
+	std::mutex normalizationLearningMutex;
 
 	struct TaskData
 	{
@@ -78,7 +80,12 @@ public:
 	Dump(const Params& params) :
 		params(params), tasksPool(tasksData),
 		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : getNTotInputKmers(), "Dumping", std::cerr, params.mkmcParams.verbosity_level == 0)
-	{}
+	{
+		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::frequency_count);
+		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
+		normalizationLearning.set_no_series(params.mkmcParams.samples.size());
+		normalizationLearning.initialize();
+	}
 
 	void dumpToFileParallel();
 
@@ -238,7 +245,6 @@ inline void Dump<SIZE>::fillTaskData()
 	{
 		tasksData.push_back(TaskData{ i });
 	}
-	normalizationLearnings.resize(params.stage1Params.GetNBins());
 	nOutputKmersPerBin.resize(params.stage1Params.GetNBins(), 0);
 
 	size_t biggestSample = 0;
@@ -297,11 +303,9 @@ void Dump<SIZE>::writeDump(const std::vector<T>& normalizationData, std::string 
 template<unsigned SIZE>
 void Dump<SIZE>::serializeNormalizationAndDump()
 {
-	normalizationLearnings.front().merge_with(normalizationLearnings.begin() + 1, normalizationLearnings.end());
-
 	std::vector<uint8_t> frequencyNormalizationData, quantileNormalizationData;
-	normalizationLearnings.front().serialize(StatisticsParams::NormalizationMethod::frequency_count, frequencyNormalizationData);
-	normalizationLearnings.front().serialize(StatisticsParams::NormalizationMethod::quantile, quantileNormalizationData);
+	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::frequency_count, frequencyNormalizationData);
+	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::quantile, quantileNormalizationData);
 
 	writeDump(frequencyNormalizationData, params.statisticsParams.normFrequencyFileTmp);
 	writeDump(quantileNormalizationData, params.statisticsParams.normQuantileFileTmp);
@@ -340,10 +344,11 @@ void Dump<SIZE>::operator()()
 
 	while (tasksPool.getTask(taskData))
 	{
-		normalizationLearnings[taskData.binId].register_method(StatisticsParams::NormalizationMethod::frequency_count);
-		normalizationLearnings[taskData.binId].register_method(StatisticsParams::NormalizationMethod::quantile);
-		normalizationLearnings[taskData.binId].set_no_series(params.mkmcParams.samples.size());
-		normalizationLearnings[taskData.binId].initialize();
+		StatisticsParams::NormalizationLearning currentBinNormalizationLearnings;
+		currentBinNormalizationLearnings.register_method(StatisticsParams::NormalizationMethod::frequency_count);
+		currentBinNormalizationLearnings.register_method(StatisticsParams::NormalizationMethod::quantile);
+		currentBinNormalizationLearnings.set_no_series(params.mkmcParams.samples.size());
+		currentBinNormalizationLearnings.initialize();
 
 		if (params.filterParams.filterKmersSequences)
 		{
@@ -351,17 +356,17 @@ void Dump<SIZE>::operator()()
 			if (params.mkmcParams.outputFileTypes.size() == 2)
 			{
 				using Generators_T = PerformGenerate<MatrixFileGenerator, FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
+				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
 			}
 			else if (params.mkmcParams.outputFileTypes.front() == OutputFileType::Matrix)
 			{
 				using Generators_T = PerformGenerate<MatrixFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
+				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
 			}
 			else
 			{
 				using Generators_T = PerformGenerate<FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
+				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
 			}
 		}
 		else
@@ -370,18 +375,21 @@ void Dump<SIZE>::operator()()
 			if (params.mkmcParams.outputFileTypes.size() == 2)
 			{
 				using Generators_T = PerformGenerate<MatrixFileGenerator, FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
+				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
 			}
 			else if (params.mkmcParams.outputFileTypes.front() == OutputFileType::Matrix)
 			{
 				using Generators_T = PerformGenerate<MatrixFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
+				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
 			}
 			else
 			{
 				using Generators_T = PerformGenerate<FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, normalizationLearnings[taskData.binId]);
+				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
 			}
 		}
+		normalizationLearningMutex.lock();
+		normalizationLearning.merge_with(&currentBinNormalizationLearnings, &currentBinNormalizationLearnings + 1);
+		normalizationLearningMutex.unlock();
 	}
 }

@@ -112,6 +112,8 @@ void StatisticsGenerator::operator()()
 
 		normalization.initialize();
 
+		refresh::correlation correlation;
+
 		std::string kmerSequence;
 		std::vector<uint64_t> matrixEntry;
 		std::vector<double> normEntry;
@@ -130,19 +132,17 @@ void StatisticsGenerator::operator()()
 
 			if (generatePearson)
 			{
-				double pearson = refresh::correlation::pearson(normEntry.begin(), normEntry.end(), phenotype.begin());
+				const double pearson = refresh::correlation::pearson(normEntry.begin(), normEntry.end(), phenotype.begin());
 				putLine(pearsonFile, kmerSequence, { pearson });
 			}
 			if (generateSpearman)
 			{
-				refresh::correlation corr;
-				double spearman = corr.spearman(normEntry.begin(), normEntry.end(), phenotype.begin());
+				const double spearman = correlation.spearman(normEntry.begin(), normEntry.end(), phenotype.begin());
 				putLine(spearmanFile, kmerSequence, { spearman });
 			}
 			if (generateKendall)
 			{
-				refresh::correlation corr;
-				double kendall = corr.kendall_tau(normEntry.begin(), normEntry.end(), phenotype.begin());
+				const double kendall = refresh::correlation::kendall_tau(normEntry.begin(), normEntry.end(), phenotype.begin());
 				putLine(kendallFile, kmerSequence, { kendall });
 			}
 
