@@ -15,9 +15,9 @@ MatrixFileGenerator::MatrixFileGenerator(const Params& params, uint32_t binId) :
 	}
 
 	file << "k-mer\t";
-	for (const std::string& db : params.mkmcParams.samples)
+	for (const Sample& sample : params.mkmcParams.samples)
 	{
-		file << db << '\t';
+		file << sample.name << '\t';
 	}
 	file << '\n';
 }

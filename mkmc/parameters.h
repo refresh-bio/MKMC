@@ -13,12 +13,18 @@
 
 enum class OutputFileType {FASTA, Matrix};
 
+struct Sample
+{
+	std::string name;
+	std::vector<std::string> inputFiles;
+};
+
 struct MKMCParams
 {
 	std::string inputFileName;
 	std::string tmpPath;
-	std::vector<std::string> samples;
-	std::vector<std::vector<std::string>> inputFilesPerSample;
+	std::vector<Sample> samples;
+
 	KMC::InputFileType inputFileType = KMC::InputFileType::FASTQ; // also default "fq" value in input parameters
 	std::vector<std::string> kmcOutputFiles;
 	std::vector<std::string> kmcTmpDirs;
@@ -29,8 +35,7 @@ struct MKMCParams
 	std::vector<OutputFileType> outputFileTypes = { OutputFileType::Matrix }; // also default "matrix" value in input parameters
 
 
-	std::vector<std::string> outputFilesNormFrequency;
-	std::vector<std::string> outputFilesNormQuantile;
+	std::vector<std::string> outputFilesNorm;
 
 	std::vector<std::string> outputFilesPearson;
 	std::vector<std::string> outputFilesSpearman;
@@ -42,7 +47,6 @@ struct MKMCParams
 	bool maxRamGBUserDefined = false;
 	const uint32_t countSymbols = 10; // for 4G
 
-	const uint32_t sigToBinMapStatsPercentage = 5;
 	uint32_t nKMCBins = 512;
 
 	bool nKMCWorkersUserSet = false;
@@ -64,8 +68,8 @@ struct FilterParams
 
 struct StatisticsParams
 {
-	using NormalizationMethod = refresh::normalization_base<size_t, double>::method_t;
-	using NormalizationLearning = refresh::normalization_learn<size_t, double>;
+	using NormalizationMethod = refresh::normalization_base<uint64_t, double>::method_t;
+	using NormalizationLearning = refresh::normalization_learn<uint64_t, double>;
 
 	enum class CorrelationMethod { Pearson, Spearman, Kendall };
 

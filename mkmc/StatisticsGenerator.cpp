@@ -30,9 +30,9 @@ void StatisticsGenerator::readPhenotype(std::vector<int>& phenotype)
 	while (phenotypeFile >> value)
 		phenotype.push_back(value);
 
-	if (phenotype.size() != params.mkmcParams.inputFilesPerSample.size())
+	if (phenotype.size() != params.mkmcParams.samples.size())
 	{
-		std::cerr << "Error: a phenotype size in a file " << params.statisticsParams.phenotypeFile  <<  " (" << phenotype.size() << ") is different than number of samples (" << params.mkmcParams.inputFilesPerSample.size() << ")." << std::endl;
+		std::cerr << "Error: a phenotype size in a file " << params.statisticsParams.phenotypeFile  <<  " (" << phenotype.size() << ") is different than number of samples (" << params.mkmcParams.samples.size() << ")." << std::endl;
 		exit(1);
 	}
 }
@@ -51,15 +51,10 @@ void StatisticsGenerator::operator()()
 			exit(1);
 		}
 
-		std::string normFileName;
-		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::frequency_count)
-			normFileName = params.mkmcParams.outputFilesNormFrequency[taskData.binId];
-		else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile)
-			normFileName = params.mkmcParams.outputFilesNormQuantile[taskData.binId];
-		std::ofstream normFile(normFileName);
+		std::ofstream normFile(params.mkmcParams.outputFilesNorm[taskData.binId]);
 		if (!normFile.is_open())
 		{
-			std::cerr << "Error: cannot open " << normFileName << "." << std::endl;
+			std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesNorm[taskData.binId] << "." << std::endl;
 			exit(1);
 		}
 
@@ -110,18 +105,18 @@ void StatisticsGenerator::operator()()
 			kendallFile << header << '\n';
 		}
 
-		refresh::normalization_work<size_t, double> normalization;
+		refresh::normalization_work<uint64_t, double> normalization;
 		normalization.register_method(params.statisticsParams.normalizationMethod);
-		normalization.set_no_series(params.mkmcParams.inputFilesPerSample.size());
+		normalization.set_no_series(params.mkmcParams.samples.size());
 		normalization.deserialize(params.statisticsParams.normalizationMethod, normalizationData);
 
 		normalization.initialize();
 
 		std::string kmerSequence;
-		std::vector<size_t> matrixEntry;
+		std::vector<uint64_t> matrixEntry;
 		std::vector<double> normEntry;
-		matrixEntry.resize(params.mkmcParams.inputFilesPerSample.size());
-		normEntry.resize(params.mkmcParams.inputFilesPerSample.size());
+		matrixEntry.resize(params.mkmcParams.samples.size());
+		normEntry.resize(params.mkmcParams.samples.size());
 
 		ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, totAllKmers / 100ull));
 

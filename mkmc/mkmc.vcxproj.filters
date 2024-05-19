@@ -37,7 +37,7 @@
     <ClCompile Include="FileGenerators.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TasksFiller.cpp">
+    <ClCompile Include="SamplesFileReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="progress_bar.cpp">
@@ -81,7 +81,7 @@
     <ClInclude Include="KMCFileWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TasksFiller.h">
+    <ClInclude Include="SamplesFileReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="HeapMerge.h">

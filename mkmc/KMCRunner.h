@@ -34,13 +34,13 @@ public:
 	KMCRunner(const Params& params) :
 		params(params),
 		tasksPool(tasksData),
-		progress_bar((params.mkmcParams.inputFilesPerSample.size() + params.filterParams.filterKmersSequences) * 200, "k-mer counting", std::cerr, params.mkmcParams.verbosity_level == 0)
+		progress_bar((params.mkmcParams.samples.size() + params.filterParams.filterKmersSequences) * 200, "k-mer counting", std::cerr, params.mkmcParams.verbosity_level == 0)
 	{
 		const MKMCParams& mkmcParams = params.mkmcParams;
-		tasksData.reserve(mkmcParams.inputFilesPerSample.size());
-		for (uint32_t i = 0; i < mkmcParams.inputFilesPerSample.size(); ++i)
+		tasksData.reserve(mkmcParams.samples.size());
+		for (uint32_t i = 0; i < mkmcParams.samples.size(); ++i)
 		{
-			tasksData.push_back(TaskData{ mkmcParams.inputFilesPerSample[i], mkmcParams.kmcOutputFiles[i], mkmcParams.kmcTmpDirs[i], params.mkmcParams.inputFileType });
+			tasksData.push_back(TaskData{ mkmcParams.samples[i].inputFiles, mkmcParams.kmcOutputFiles[i], mkmcParams.kmcTmpDirs[i], params.mkmcParams.inputFileType });
 		}
 
 		if (params.filterParams.filterKmersSequences)

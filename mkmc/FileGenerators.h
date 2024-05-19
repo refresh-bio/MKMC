@@ -85,7 +85,7 @@ void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
 	kmersData.minKmer.to_string(k, str_kmer_buff.get());
 	uint32_t pos = k;
-	for (size_t count : kmersData.kMersCounts)
+	for (uint64_t count : kmersData.kMersCounts)
 	{
 		str_kmer_buff[pos++] = '\t';
 		uint32_t shift = CNumericConversions::Int2PChar(count, reinterpret_cast<uchar*>(str_kmer_buff.get()) + pos);

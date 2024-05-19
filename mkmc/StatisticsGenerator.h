@@ -38,7 +38,7 @@ class StatisticsGenerator
 	template<typename T>
 	void readDump(std::vector<T>& normalizationData, std::string normalizationFileName);
 
-	bool getLine(std::ifstream& stream, std::string& kmerSequence, std::vector<size_t>& counts)
+	bool getLine(std::ifstream& stream, std::string& kmerSequence, std::vector<uint64_t>& counts)
 	{
 		stream >> kmerSequence;
 		if (stream.eof())

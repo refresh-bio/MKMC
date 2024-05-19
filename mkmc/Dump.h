@@ -102,7 +102,7 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 	ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, tot_all_kmers / 100ull));
 	Generators_T fileGenerator(params, binId);
 
-	std::vector<size_t> kMersCounts(samples.size());
+	std::vector<uint64_t> kMersCounts(samples.size());
 
 	Filters_T filter(params, binId);
 
@@ -342,7 +342,7 @@ void Dump<SIZE>::operator()()
 	{
 		normalizationLearnings[taskData.binId].register_method(StatisticsParams::NormalizationMethod::frequency_count);
 		normalizationLearnings[taskData.binId].register_method(StatisticsParams::NormalizationMethod::quantile);
-		normalizationLearnings[taskData.binId].set_no_series(params.mkmcParams.inputFilesPerSample.size());
+		normalizationLearnings[taskData.binId].set_no_series(params.mkmcParams.samples.size());
 		normalizationLearnings[taskData.binId].initialize();
 
 		if (params.filterParams.filterKmersSequences)

@@ -16,7 +16,7 @@ private:
 	size_t tot_kmers;
 	size_t cur_kmer_no{};
 	CKmer<SIZE> cur;
-	size_t cur_count;
+	uint64_t cur_count;
 	uint32_t k;
 public:
 	KMCFileWrapper(KMCFileWrapper&&) = default;
@@ -51,7 +51,7 @@ public:
 	{
 		return cur;
 	}
-	size_t FirstCount() const
+	uint64_t FirstCount() const
 	{
 		return cur_count;
 	}

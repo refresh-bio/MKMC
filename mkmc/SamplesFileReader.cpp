@@ -1,11 +1,11 @@
-#include "TasksFiller.h"
+#include "SamplesFileReader.h"
 #include <fstream>
 #include <sstream>
 #include <string>
 
 
 
-bool TasksFiller::parseLine(const std::string& line, uint32_t lineNo, bool& singleWordLine)
+bool SamplesFileReader::parseLine(const std::string& line, uint32_t lineNo, bool& singleWordLine)
 {
 	std::istringstream lineStream(line);
 	std::string sampleName, fileName;
@@ -13,8 +13,7 @@ bool TasksFiller::parseLine(const std::string& line, uint32_t lineNo, bool& sing
 	if (!lineStream) // nothing in line
 		return true;
 
-	samplesNames.push_back(sampleName);
-	inputFilesPerSample.push_back(std::vector<std::string>());
+	samples.push_back(Sample{ sampleName, std::vector<std::string>() });
 
 	lineStream >> fileName;
 	if (!lineStream) // sample name = file name
@@ -24,7 +23,7 @@ bool TasksFiller::parseLine(const std::string& line, uint32_t lineNo, bool& sing
 		if (!canOpenFile(sampleName, lineNo))
 			return false;
 
-		inputFilesPerSample.back().push_back(sampleName);
+		samples.back().inputFiles.push_back(sampleName);
 	}
 	else
 	{
@@ -33,7 +32,7 @@ bool TasksFiller::parseLine(const std::string& line, uint32_t lineNo, bool& sing
 			if (!canOpenFile(fileName, lineNo))
 				return false;
 
-			inputFilesPerSample.back().push_back(fileName);
+			samples.back().inputFiles.push_back(fileName);
 
 			lineStream >> fileName;
 		} while (lineStream);
@@ -44,7 +43,7 @@ bool TasksFiller::parseLine(const std::string& line, uint32_t lineNo, bool& sing
 
 
 
-bool TasksFiller::canOpenFile(const std::string& fileName, uint32_t lineNo)
+bool SamplesFileReader::canOpenFile(const std::string& fileName, uint32_t lineNo)
 {
 	std::ifstream inFile(fileName);
 	if (!inFile.is_open())
@@ -57,7 +56,7 @@ bool TasksFiller::canOpenFile(const std::string& fileName, uint32_t lineNo)
 
 
 
-bool TasksFiller::readSamples(std::vector<std::string>& oSamplesNames, std::vector<std::vector<std::string>>& oInputFilesPerSample)
+bool SamplesFileReader::readSamples(std::vector<Sample>& oSamples)
 {
 	std::ifstream in(mkmcParams.inputFileName);
 	if (!in.good())
@@ -79,7 +78,6 @@ bool TasksFiller::readSamples(std::vector<std::string>& oSamplesNames, std::vect
 	if (singleWordLines && mkmcParams.verbosity_level > 0)
 		std::cerr << "Warning: some of input file " << mkmcParams.inputFileName << " lines contain just one word, they will be treated both as samples names and files names." << std::endl;
 
-	oSamplesNames.swap(samplesNames);
-	oInputFilesPerSample.swap(inputFilesPerSample);
+	oSamples = samples;
 	return true;
 }

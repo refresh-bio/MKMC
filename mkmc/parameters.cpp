@@ -1,5 +1,5 @@
 #include "parameters.h"
-#include "TasksFiller.h"
+#include "SamplesFileReader.h"
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
@@ -26,8 +26,8 @@ Params::Params()
 
 bool Params::readAdditionalParamsFromFiles()
 {
-	TasksFiller tasksFiller(mkmcParams);
-	return tasksFiller.readSamples(mkmcParams.samples, mkmcParams.inputFilesPerSample);
+	SamplesFileReader tasksFiller(mkmcParams);
+	return tasksFiller.readSamples(mkmcParams.samples);
 }
 
 
@@ -40,7 +40,7 @@ void Params::generateTempAndOutputFilesNames()
 		tmpFilesTemplate += static_cast<char>(std::filesystem::path::preferred_separator);
 	}
 
-	for (uint32_t tmp_database_id = 0; tmp_database_id < mkmcParams.inputFilesPerSample.size(); ++tmp_database_id)
+	for (uint32_t tmp_database_id = 0; tmp_database_id < mkmcParams.samples.size(); ++tmp_database_id)
 	{
 		std::ostringstream sstreamKMCDir, sstreamKMC;
 		sstreamKMCDir << tmpFilesTemplate << "kmc_tmp_" << std::setfill('0') << std::setw(5) << tmp_database_id;
@@ -65,8 +65,7 @@ void Params::generateTempAndOutputFilesNames()
 		mkmcParams.outputMatrixFiles.push_back(mkmcParams.outputFilesTemplate + "_matrix_" + binIdStr);
 		mkmcParams.outputFASTAFiles.push_back(mkmcParams.outputFilesTemplate + +"_" + binIdStr + ".fa");
 
-		mkmcParams.outputFilesNormFrequency.push_back(mkmcParams.outputFilesTemplate + "_norm_" + binIdStr);
-		mkmcParams.outputFilesNormQuantile.push_back(mkmcParams.outputFilesTemplate + "_norm_" + binIdStr);
+		mkmcParams.outputFilesNorm.push_back(mkmcParams.outputFilesTemplate + "_norm_" + binIdStr);
 
 		mkmcParams.outputFilesPearson.push_back(mkmcParams.outputFilesTemplate + "_pearson_" + binIdStr);
 		mkmcParams.outputFilesSpearman.push_back(mkmcParams.outputFilesTemplate + "_spearman_" + binIdStr);

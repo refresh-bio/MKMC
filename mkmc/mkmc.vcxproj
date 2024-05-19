@@ -161,7 +161,7 @@
     <ClCompile Include="progress_bar.cpp" />
     <ClCompile Include="Start.cpp" />
     <ClCompile Include="StatisticsGenerator.cpp" />
-    <ClCompile Include="TasksFiller.cpp" />
+    <ClCompile Include="SamplesFileReader.cpp" />
     <ClCompile Include="TasksPool.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -185,7 +185,7 @@
     <ClInclude Include="parameters.h" />
     <ClInclude Include="Start.h" />
     <ClInclude Include="StatisticsGenerator.h" />
-    <ClInclude Include="TasksFiller.h" />
+    <ClInclude Include="SamplesFileReader.h" />
     <ClInclude Include="TasksPool.h" />
     <ClInclude Include="time.hpp" />
   </ItemGroup>

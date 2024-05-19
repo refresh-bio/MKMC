@@ -81,7 +81,7 @@ template <typename KmersSamplesData_T>
 bool FilterCountThreshold<KmersSamplesData_T>::keepKMer(const KmersSamplesData_T& kmersData)
 {
 	std::size_t nAboveThreshold = 0;
-	for (std::size_t count : kmersData.kMersCounts)
+	for (uint64_t count : kmersData.kMersCounts)
 	{
 		if (count >= params.filterParams.minCountThreshold)
 			++nAboveThreshold;
