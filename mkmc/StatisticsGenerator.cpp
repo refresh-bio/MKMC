@@ -82,7 +82,7 @@ void StatisticsGenerator::operator()()
 				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesPearson[taskData.binId] << "." << std::endl;
 				exit(1);
 			}
-			pearsonFile << header << '\n';
+			pearsonFile << "k-mer\tcorrelation\n";
 		}
 		if (generateSpearman)
 		{
@@ -92,7 +92,7 @@ void StatisticsGenerator::operator()()
 				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesSpearman[taskData.binId] << "." << std::endl;
 				exit(1);
 			}
-			spearmanFile << header << '\n';
+			spearmanFile << "k-mer\tcorrelation\n";
 		}
 		if (generateKendall)
 		{
@@ -102,7 +102,7 @@ void StatisticsGenerator::operator()()
 				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesKendall[taskData.binId] << "." << std::endl;
 				exit(1);
 			}
-			kendallFile << header << '\n';
+			kendallFile << "k-mer\tcorrelation\n";
 		}
 
 		refresh::normalization_work<uint64_t, double> normalization;
