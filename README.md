@@ -22,13 +22,13 @@ Positionals:
 
 Options:
  - `-h,--help` - Print this help message and exit
+ - `-k UINT:UINT in [1 - 256] [25]` - k-mer length
  - `--thr UINT:POSITIVE [1]` -  filter out k-mers occuring less than specified number of times...
  - `--thr_rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
  - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only
  - `-n ENUM:value in {freq,q}` - generate normalized counts (frequency count/quantile normalization)
- - `-k UINT:UINT in [1 - 256] [25]` - k-mer length
+ - `--cor ENUM:value in {kendall,pearson,spearman}` Needs: `-n` `-p` - compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)	
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a set of the integers, one in each line)
- - `--cor ENUM:value in {kendall,pearson,spearman}` Needs: `-n` `-p` - determine correlations basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)	
 
 [Option Group: optional parameters]
   Options:	
@@ -37,7 +37,7 @@ Options:
  - `--on UINT:POSITIVE [512]` - number of output files, reduce carefully
  - `-b` - turn off transformation of k-mers into canonical form
  - `--ci UINT:POSITIVE [1]` - exclude k-mers occurring less than specified number of times (if k-mer occurs less than --ci times in a sample, it gets counter 0, but for this sample only)
- - `--cx UINT:POSITIVE [4000000000]` - exclude counting k-mers occurring more of than specified number of times (if k-mer occurs more than --cx times in a sample, it gets counter 0, but for this sample only)
+ - `--cx UINT:POSITIVE [4000000000]` - exclude counting k-mers occurring more than specified number of times (if k-mer occurs more than --cx times in a sample, it gets counter 0, but for this sample only)
  - `--cs UINT:UINT in [2 - 4294967295] [65535]` - maximal value of a counter
  - `--wrk UINT [4]` - number of parallel k-mer counting tasks
  - `-t UINT [no. of logic CPU cores]` - number of threads

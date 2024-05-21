@@ -64,6 +64,12 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	app.add_option("output_files", mkmcParams.outputFilesTemplate, "file where the matrix of k-mers counts or FASTA file will be dumped")->required();
 	app.add_option("temp_dir", mkmcParams.tmpPath, "a directory where temporary files will be stored")->required()->check(CLI::ExistingDirectory);
 
+	std::function<void(const uint32_t&)> kCallback = [&](const uint32_t& k)
+	{
+		stage1Params.SetKmerLen(k);
+	};
+	app.add_option_function("-k", kCallback, "k-mer length")->check(CLI::Range(KMC::CfgConsts::min_k, KMC::CfgConsts::max_k))->default_val(defaultKMCParams.k);
+
 	app.add_option("--thr", filterParams.minCountThreshold, "filter out k-mers occuring less than specified number of times...")->check(CLI::PositiveNumber)->default_val(filterParams.minCountThreshold);
 	app.add_option("--thr_rat", filterParams.minKmersAboveThresholdRatio, "... in a specified ratio of the input files (see example)")->check(CLI::Range(0.0, 1.0))->default_val(filterParams.minKmersAboveThresholdRatio);
 
@@ -82,16 +88,10 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	n = app.add_option_function("-n", nCallback, "generate normalized counts (frequency count/quantile normalization)")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
 
-	p = app.add_option("-p", statisticsParams.phenotypeFile, "set a phenotype file (a set of the integers, one in each line)")->check(CLI::ExistingFile);
-
-	std::function<void(const uint32_t&)> kCallback = [&](const uint32_t& k)
-	{
-		stage1Params.SetKmerLen(k);
-	};
-	app.add_option_function("-k", kCallback, "k-mer length")->check(CLI::Range(KMC::CfgConsts::min_k, KMC::CfgConsts::max_k))->default_val(defaultKMCParams.k);
-
 	std::map<std::string, StatisticsParams::CorrelationMethod> correlationValuesMap{ {"pearson", StatisticsParams::CorrelationMethod::Pearson }, { "spearman", StatisticsParams::CorrelationMethod::Spearman }, {"kendall", StatisticsParams::CorrelationMethod::Kendall } };
-	cor = app.add_option("--cor", statisticsParams.correlationMethods, "determine correlations basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap))->needs(n)->needs(p);
+	cor = app.add_option("--cor", statisticsParams.correlationMethods, "compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
+
+	p = app.add_option("-p", statisticsParams.phenotypeFile, "set a phenotype file (a set of the integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
 
 	CLI::Option_group* optionalGroup = app.add_option_group("optional parameters");
 
@@ -118,7 +118,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	{
 		stage2Params.SetCutoffMax(static_cast<uint64_t>(cx));
 	};
-	optionalGroup->add_option_function("--cx", cxCallback, "exclude counting k-mers occurring more of than specified number of times (if k-mer occurs more than --cx times in a sample, it gets counter 0, but for this sample only)")->check(CLI::PositiveNumber)->default_val(static_cast<uint32_t>(defaultKMCParams.cx));
+	optionalGroup->add_option_function("--cx", cxCallback, "exclude counting k-mers occurring more than specified number of times (if k-mer occurs more than --cx times in a sample, it gets counter 0, but for this sample only)")->check(CLI::PositiveNumber)->default_val(static_cast<uint32_t>(defaultKMCParams.cx));
 
 	std::function<void(const uint32_t&)> csCallback = [&](const uint32_t& cs) // currently 32 bits
 	{
@@ -157,7 +157,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
 	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files");
 
-	p->needs(cor);
+	cor->needs(n)->needs(p);
 
 	app.footer("Example: to run MKMC, type:\n"
 		"    ./mkmc -k 20 --thr_rat 0.5 input_files_list.txt output tmp\n"
