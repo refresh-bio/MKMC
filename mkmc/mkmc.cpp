@@ -75,7 +75,12 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	app.add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only")->check(CLI::ExistingFile);
 
 	std::map<std::string, StatisticsParams::NormalizationMethod> valuesMap{ {"freq", StatisticsParams::NormalizationMethod::frequency_count }, {"q", StatisticsParams::NormalizationMethod::quantile } };
-	n = app.add_option("-n", statisticsParams.normalizationMethod, "generate normalized counts (frequency count/quantile normalization)")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
+	std::function<void(const decltype(statisticsParams.normalizationMethod)&)> nCallback = [&](const decltype(statisticsParams.normalizationMethod)& normalizationMethod)
+	{
+		statisticsParams.normalizationMethod = normalizationMethod;
+		statisticsParams.generateNormalization = true;
+	};
+	n = app.add_option_function("-n", nCallback, "generate normalized counts (frequency count/quantile normalization)")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
 
 	p = app.add_option("-p", statisticsParams.phenotypeFile, "set a phenotype file (a set of the integers, one in each line)")->check(CLI::ExistingFile);
 
