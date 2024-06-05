@@ -49,6 +49,9 @@
     <ClCompile Include="StatisticsGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DifferentialAnalysisPhenotypeParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KMCRunner.h">
@@ -94,6 +97,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StatisticsGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DifferentialAnalysisPhenotypeParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

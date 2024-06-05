@@ -27,8 +27,10 @@ Options:
  - `--thr_rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
  - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only
  - `-n ENUM:value in {freq,q}` - generate normalized counts (frequency count/quantile normalization)
- - `--cor ENUM:value in {kendall,pearson,spearman}` Needs: `-n` `-p` - compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)	
+ - `--cor ENUM:value in {kendall,pearson,spearman}` Needs: `-n` `-p` - compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a set of the integers, one in each line)
+ - `--diff ENUM:value in {t}` Needs: `-c` - perform differential k-mers analysis (T-Test)
+ - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a set of the natural numbers or text labels, one in each line)
 
 [Option Group: optional parameters]
   Options:	

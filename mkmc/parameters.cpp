@@ -6,7 +6,8 @@
 
 
 
-Params::Params()
+Params::Params() :
+	phenotypes({*this})
 {
 	stage1Params.SetReopenTmeEachTime(true);
 
@@ -142,5 +143,16 @@ void Params::adjustAnotherParams()
 			std::cerr << "Warning: due to normalization generation, temporarily MKMC has to generate output matrix (-o matrix flag will be additionally applied)." << std::endl;
 			mkmcParams.outputFileTypes.push_back(OutputFileType::Matrix);
 		}
+	}
+}
+
+
+
+void Params::readPhenotypes()
+{
+	if (!statisticsParams.differentialAnalysisPhenotypeFile.empty())
+	{
+		phenotypes.differentialAnalysisphenotype.readClasses();
+		phenotypes.differentialAnalysisphenotype.mapClassesToInt();
 	}
 }

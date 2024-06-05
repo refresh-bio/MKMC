@@ -155,6 +155,7 @@
     <ClCompile Include="FileGenerators.cpp" />
     <ClCompile Include="Finish.cpp" />
     <ClCompile Include="KMCRunner.cpp" />
+    <ClCompile Include="DifferentialAnalysisPhenotypeParser.cpp" />
     <ClCompile Include="SequenceFilterInit.cpp" />
     <ClCompile Include="mkmc.cpp" />
     <ClCompile Include="parameters.cpp" />
@@ -180,6 +181,7 @@
     <ClInclude Include="HeapMerge.h" />
     <ClInclude Include="KMCFileWrapper.h" />
     <ClInclude Include="KMCRunner.h" />
+    <ClInclude Include="DifferentialAnalysisPhenotypeParser.h" />
     <ClInclude Include="SequenceFilterInit.h" />
     <ClInclude Include="KmersSamplesStruct.h" />
     <ClInclude Include="parameters.h" />

@@ -3,6 +3,7 @@
 #include <string>
 #include <thread>
 #include <cstdint>
+#include "DifferentialAnalysisPhenotypeParser.h"
 #include "kmc_core/kmc_runner.h"
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"
@@ -71,6 +72,12 @@ struct StatisticsParams
 	using NormalizationMethod = refresh::normalization_base<uint64_t, double>::method_t;
 	using NormalizationLearning = refresh::normalization_learn<uint64_t, double>;
 
+	std::string normFrequencyFileTmp = "frequencyDump";
+	std::string normQuantileFileTmp = "quantileDump";
+
+	std::string statsNOutputKmers = "nKmers";
+
+
 	enum class CorrelationMethod { Pearson, Spearman, Kendall };
 
 	bool generateNormalization = false;
@@ -79,10 +86,11 @@ struct StatisticsParams
 	std::string phenotypeFile;
 	std::vector<CorrelationMethod> correlationMethods;
 
-	std::string normFrequencyFileTmp = "frequencyDump";
-	std::string normQuantileFileTmp = "quantileDump";
 
-	std::string statsNOutputKmers = "nKmers";
+	enum class DifferentialAnalysisMethod { TTest };
+
+	std::string differentialAnalysisPhenotypeFile;
+	std::vector<DifferentialAnalysisMethod> classificationMethods;
 };
 
 struct MutableParams
@@ -101,6 +109,11 @@ struct DefaultKMCParams
 	const uint64_t cs = 65535;
 };
 
+struct Phenotypes
+{
+	DifferentialAnalysisPhenotypeParser differentialAnalysisphenotype;
+};
+
 struct Params
 {
 	MKMCParams mkmcParams;
@@ -114,9 +127,12 @@ struct Params
 	FilterParams filterParams;
 	StatisticsParams statisticsParams;
 
+	Phenotypes phenotypes;
+
 	Params();
 	void generateTempAndOutputFilesNames();
 	bool readAdditionalParamsFromFiles();
 	void adjustKMCPerformanceParams();
 	void adjustAnotherParams();
+	void readPhenotypes();
 };

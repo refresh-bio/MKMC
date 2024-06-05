@@ -58,7 +58,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	stage2Params.SetCutoffMax(defaultKMCParams.cx);
 	stage2Params.SetCounterMax(defaultKMCParams.cs);
 
-	CLI::Option* p = nullptr, * n = nullptr, * cor = nullptr;
+	CLI::Option* p = nullptr, * n = nullptr, * cor = nullptr, * differentialAnalysis = nullptr, * c = nullptr;
 
 	app.add_option("input_samples_file", mkmcParams.inputFileName, "file with a list of samples names with input files names in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
 	app.add_option("output_files", mkmcParams.outputFilesTemplate, "file where the matrix of k-mers counts or FASTA file will be dumped")->required();
@@ -92,6 +92,11 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	cor = app.add_option("--cor", statisticsParams.correlationMethods, "compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
 
 	p = app.add_option("-p", statisticsParams.phenotypeFile, "set a phenotype file (a set of the integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
+
+	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"t", StatisticsParams::DifferentialAnalysisMethod::TTest } };
+	differentialAnalysis = app.add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (T-Test)")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
+
+	c = app.add_option("-c", statisticsParams.differentialAnalysisPhenotypeFile, "set a phenotype file for differential k-mers analysis (a set of the natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
 
 	CLI::Option_group* optionalGroup = app.add_option_group("optional parameters");
 
@@ -158,6 +163,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files");
 
 	cor->needs(n)->needs(p);
+	differentialAnalysis->needs(c);
 
 	app.footer("Example: to run MKMC, type:\n"
 		"    ./mkmc -k 20 --thr_rat 0.5 input_files_list.txt output tmp\n"
@@ -189,6 +195,7 @@ int main(int argc, char** argv)
 	params.generateTempAndOutputFilesNames();
 	params.adjustKMCPerformanceParams();
 	params.adjustAnotherParams();
+	params.readPhenotypes();
 
 	if (params.mkmcParams.verbosity_level > 0)
 		Logger::Inst().Enable();
