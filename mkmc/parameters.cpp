@@ -7,7 +7,7 @@
 
 
 Params::Params() :
-	phenotypes({*this})
+	phenotypes({*this,*this})
 {
 	stage1Params.SetReopenTmeEachTime(true);
 
@@ -150,9 +150,12 @@ void Params::adjustAnotherParams()
 
 void Params::readPhenotypes()
 {
-	if (!statisticsParams.differentialAnalysisPhenotypeFile.empty())
+	if (!phenotypes.correlationPhenotype.getFileName().empty())
+		phenotypes.correlationPhenotype.readPhenotype();
+
+	if (!phenotypes.differentialAnalysisPhenotype.getFileName().empty())
 	{
-		phenotypes.differentialAnalysisphenotype.readClasses();
-		phenotypes.differentialAnalysisphenotype.mapClassesToInt();
+		phenotypes.differentialAnalysisPhenotype.readPhenotype();
+		phenotypes.differentialAnalysisPhenotype.mapPhenotypeToInts();
 	}
 }

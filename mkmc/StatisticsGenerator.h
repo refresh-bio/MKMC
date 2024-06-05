@@ -34,7 +34,6 @@ class StatisticsGenerator
 
 	void fillTaskData();
 
-	void readPhenotype(std::vector<int>& phenotype);
 	template<typename T>
 	void readDump(std::vector<T>& normalizationData, std::string normalizationFileName);
 
@@ -70,7 +69,8 @@ class StatisticsGenerator
 	}
 
 	std::vector<uint8_t> normalizationData;
-	std::vector<int> phenotype;
+
+	const std::vector<int64_t>& correlationPhenotype;
 
 	void operator()();
 
@@ -79,7 +79,8 @@ public:
 		params(params),
 		tasksPool(tasksData),
 		totAllKmers(getNTotInputKmers()),
-		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : totAllKmers, "Computing statistics", std::cerr, params.mkmcParams.verbosity_level == 0)
+		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : totAllKmers, "Computing statistics", std::cerr, params.mkmcParams.verbosity_level == 0),
+		correlationPhenotype(params.phenotypes.correlationPhenotype.getPhenotype())
 	{}
 
 	void generateStatisticsParallel();

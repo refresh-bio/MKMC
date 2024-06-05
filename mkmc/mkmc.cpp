@@ -51,6 +51,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	MKMCParams& mkmcParams = params.mkmcParams;
 	FilterParams& filterParams = params.filterParams;
 	StatisticsParams& statisticsParams = params.statisticsParams;
+	Phenotypes& phenotypes = params.phenotypes;
 
 	// set KMC defaults
 	stage1Params.SetKmerLen(defaultKMCParams.k);
@@ -91,12 +92,20 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	std::map<std::string, StatisticsParams::CorrelationMethod> correlationValuesMap{ {"pearson", StatisticsParams::CorrelationMethod::Pearson }, { "spearman", StatisticsParams::CorrelationMethod::Spearman }, {"kendall", StatisticsParams::CorrelationMethod::Kendall } };
 	cor = app.add_option("--cor", statisticsParams.correlationMethods, "compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
 
-	p = app.add_option("-p", statisticsParams.phenotypeFile, "set a phenotype file (a set of the integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
+	std::function<void(const std::string&)> pCallback = [&](const std::string& fileName)
+	{
+		phenotypes.correlationPhenotype.setFileName(fileName);
+	};
+	p = app.add_option_function("-p", pCallback, "set a phenotype file (a set of the integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
 
 	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"t", StatisticsParams::DifferentialAnalysisMethod::TTest } };
 	differentialAnalysis = app.add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (T-Test)")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
 
-	c = app.add_option("-c", statisticsParams.differentialAnalysisPhenotypeFile, "set a phenotype file for differential k-mers analysis (a set of the natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
+	std::function<void(const std::string&)> cCallback = [&](const std::string& fileName)
+	{
+		phenotypes.differentialAnalysisPhenotype.setFileName(fileName);
+	};
+	c = app.add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a set of the natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
 
 	CLI::Option_group* optionalGroup = app.add_option_group("optional parameters");
 

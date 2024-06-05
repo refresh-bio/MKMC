@@ -3,7 +3,7 @@
 #include <string>
 #include <thread>
 #include <cstdint>
-#include "DifferentialAnalysisPhenotypeParser.h"
+#include "PhenotypeReaders.h"
 #include "kmc_core/kmc_runner.h"
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"
@@ -82,14 +82,10 @@ struct StatisticsParams
 
 	bool generateNormalization = false;
 	NormalizationMethod normalizationMethod;
-
-	std::string phenotypeFile;
 	std::vector<CorrelationMethod> correlationMethods;
 
 
 	enum class DifferentialAnalysisMethod { TTest };
-
-	std::string differentialAnalysisPhenotypeFile;
 	std::vector<DifferentialAnalysisMethod> classificationMethods;
 };
 
@@ -111,7 +107,8 @@ struct DefaultKMCParams
 
 struct Phenotypes
 {
-	DifferentialAnalysisPhenotypeParser differentialAnalysisphenotype;
+	PhenotypeReader<int64_t> correlationPhenotype;
+	DifferentialAnalysisPhenotypeReader differentialAnalysisPhenotype; 
 };
 
 struct Params

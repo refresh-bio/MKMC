@@ -49,7 +49,7 @@
     <ClCompile Include="StatisticsGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DifferentialAnalysisPhenotypeParser.cpp">
+    <ClCompile Include="PhenotypeReaders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -99,7 +99,7 @@
     <ClInclude Include="StatisticsGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DifferentialAnalysisPhenotypeParser.h">
+    <ClInclude Include="PhenotypeReaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

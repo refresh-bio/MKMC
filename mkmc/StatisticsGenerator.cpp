@@ -17,28 +17,6 @@ void StatisticsGenerator::fillTaskData()
 
 
 
-void StatisticsGenerator::readPhenotype(std::vector<int>& phenotype)
-{
-	std::ifstream phenotypeFile(params.statisticsParams.phenotypeFile);
-	if (!phenotypeFile.is_open())
-	{
-		std::cerr << "Error: cannot open " << params.statisticsParams.phenotypeFile << "." << std::endl;
-		exit(1);
-	}
-
-	int value;
-	while (phenotypeFile >> value)
-		phenotype.push_back(value);
-
-	if (phenotype.size() != params.mkmcParams.samples.size())
-	{
-		std::cerr << "Error: a phenotype size in a file " << params.statisticsParams.phenotypeFile  <<  " (" << phenotype.size() << ") is different than number of samples (" << params.mkmcParams.samples.size() << ")." << std::endl;
-		exit(1);
-	}
-}
-
-
-
 void StatisticsGenerator::operator()()
 {
 	TaskData taskData;
@@ -132,17 +110,17 @@ void StatisticsGenerator::operator()()
 
 			if (generatePearson)
 			{
-				const double pearson = refresh::correlation::pearson(normEntry.begin(), normEntry.end(), phenotype.begin());
+				const double pearson = refresh::correlation::pearson(normEntry.begin(), normEntry.end(), correlationPhenotype.begin());
 				putLine(pearsonFile, kmerSequence, { pearson });
 			}
 			if (generateSpearman)
 			{
-				const double spearman = correlation.spearman(normEntry.begin(), normEntry.end(), phenotype.begin());
+				const double spearman = correlation.spearman(normEntry.begin(), normEntry.end(), correlationPhenotype.begin());
 				putLine(spearmanFile, kmerSequence, { spearman });
 			}
 			if (generateKendall)
 			{
-				const double kendall = refresh::correlation::kendall_tau(normEntry.begin(), normEntry.end(), phenotype.begin());
+				const double kendall = refresh::correlation::kendall_tau(normEntry.begin(), normEntry.end(), correlationPhenotype.begin());
 				putLine(kendallFile, kmerSequence, { kendall });
 			}
 
@@ -163,9 +141,6 @@ void StatisticsGenerator::generateStatisticsParallel()
 		else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile)
 			readDump(normalizationData, params.statisticsParams.normQuantileFileTmp);
 	}
-
-	if (!params.statisticsParams.correlationMethods.empty())
-		readPhenotype(phenotype);
 
 	std::vector<std::thread> threads(params.mkmcParams.nThreads);
 	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
