@@ -54,9 +54,9 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	// set KMC defaults
 	stage1Params.SetKmerLen(defaultKMCParams.k);
-	stage2Params.SetCutoffMin(defaultKMCParams.ci);
-	stage2Params.SetCutoffMax(defaultKMCParams.cx);
-	stage2Params.SetCounterMax(defaultKMCParams.cs);
+	stage1Params.SetCutoffMin(defaultKMCParams.ci);
+	stage1Params.SetCutoffMax(defaultKMCParams.cx);
+	stage1Params.SetCounterMax(defaultKMCParams.cs);
 
 	CLI::Option* p = nullptr, * n = nullptr, * cor = nullptr;
 
@@ -111,18 +111,18 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	std::function<void(const uint32_t&)> ciCallback = [&](const uint32_t& ci) // currently 32 bits
 	{
-		stage2Params.SetCutoffMin(static_cast<uint64_t>(ci));
+		stage1Params.SetCutoffMin(static_cast<uint64_t>(ci));
 	};
 	optionalGroup->add_option_function("--ci", ciCallback, "exclude k-mers occurring less than specified number of times (if k-mer occurs less than --ci times in a sample, it gets counter 0, but for this sample only)")->check(CLI::PositiveNumber)->default_val(defaultKMCParams.ci);
 	std::function<void(const uint32_t&)> cxCallback = [&](const uint32_t& cx) // currently 32 bits
 	{
-		stage2Params.SetCutoffMax(static_cast<uint64_t>(cx));
+		stage1Params.SetCutoffMax(static_cast<uint64_t>(cx));
 	};
 	optionalGroup->add_option_function("--cx", cxCallback, "exclude counting k-mers occurring more than specified number of times (if k-mer occurs more than --cx times in a sample, it gets counter 0, but for this sample only)")->check(CLI::PositiveNumber)->default_val(static_cast<uint32_t>(defaultKMCParams.cx));
 
 	std::function<void(const uint32_t&)> csCallback = [&](const uint32_t& cs) // currently 32 bits
 	{
-		stage2Params.SetCounterMax(static_cast<uint64_t>(cs));
+		stage1Params.SetCounterMax(static_cast<uint64_t>(cs));
 	};
 	optionalGroup->add_option_function("--cs", csCallback, "maximal value of a counter")->check(CLI::Range(2U, std::numeric_limits<uint32_t>::max()))->default_val(defaultKMCParams.cs);
 

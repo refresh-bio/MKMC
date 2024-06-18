@@ -12,9 +12,9 @@ Params::Params()
 
 	stage1Params.SetSignatureSelectionScheme(KMC::SignatureSelectionScheme::min_hash);
 
-	stage2Params.SetCutoffMin(1);
-	stage2Params.SetCutoffMax(static_cast<uint64_t>(4E9));
-	stage2Params.SetCounterMax(65535);
+	stage1Params.SetCutoffMin(1);
+	stage1Params.SetCutoffMax(static_cast<uint64_t>(4E9));
+	stage1Params.SetCounterMax(65535);
 
 	static KMC::NullPercentProgressObserver nullPercentProgressObserver;
 	static KMC::NullProgressObserver nullProgressObserver;
