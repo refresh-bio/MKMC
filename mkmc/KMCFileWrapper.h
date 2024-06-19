@@ -2,52 +2,33 @@
 
 #include <string>
 #include <cstdint>
-#include "kmc_api/kmc_file.h"
+
+#include <array> //mkokot_TODO: this should be included in kmcdb, I need to update kmcdb sources
+#include "kmcdb/bin_readers.h"
 
 
-
+//mkokot_TODO: rename this class
 template<unsigned SIZE>
 class KMCFileWrapper
 {
 public:
 
 private:
-	std::unique_ptr<CKMCFile> kmc_file;
+	kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin;
 	size_t tot_kmers;
 	size_t cur_kmer_no{};
-	CKmer<SIZE> cur;
+	kmcdb::CKmer<SIZE> cur;
 	uint64_t cur_count;
-	uint32_t k;
 public:
 	KMCFileWrapper(KMCFileWrapper&&) = default;
 	KMCFileWrapper& operator=(KMCFileWrapper&&) = default;
-	KMCFileWrapper(const std::string& path, uint32_t binId);
+	KMCFileWrapper(kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
 
-	uint32_t GetK() const
-	{
-		return k;
-	}
-	uint32_t GetNBins() const
-	{
-		return kmc_file->GetNBins();
-	}
-	uint32_t GetSignatureLen() const
-	{
-		CKMCFileInfo info;
-		kmc_file->Info(info);
-		return info.signature_len;
-	}
-	auto GetSignatureSelectionScheme() const
-	{
-		CKMCFileInfo info;
-		kmc_file->Info(info);
-		return info.signature_selection_scheme;
-	}
 	bool Finished() const
 	{
 		return cur_kmer_no > tot_kmers;
 	}
-	const CKmer<SIZE>& First() const
+	const kmcdb::CKmer<SIZE>& First() const
 	{
 		return cur;
 	}
@@ -60,41 +41,13 @@ public:
 		return tot_kmers;
 	}
 	void Next();
-	~KMCFileWrapper() noexcept
-	{
-		if (kmc_file)
-			kmc_file->Close();
-	}
 };
 
-
 template<unsigned SIZE>
-KMCFileWrapper<SIZE>::KMCFileWrapper(const std::string& path, uint32_t binId)
+KMCFileWrapper<SIZE>::KMCFileWrapper(kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin) :
+	bin(bin)
 {
-	kmc_file = std::make_unique<CKMCFile>(true);
-	if (!kmc_file->OpenForListingWithBinOrder(path))
-	{
-		std::cerr << "Error: cannot open kmc database " << path << "." << std::endl;
-		exit(1);
-	}
-	kmc_file->StartBin(binId);
-	if (!kmc_file->IsKMC2())
-	{
-		std::cerr << "Error: this version requires KMC 2 database format: " << path << "." << std::endl;
-		exit(1);
-	}
-	CKMCFileInfo kmc_file_info;
-	kmc_file->Info(kmc_file_info);
-	k = kmc_file_info.kmer_length;
-
-#ifdef __APPLE__
-	uint64_t _tot_kmers;
-	kmc_file->GetNKmers(binId, _tot_kmers);
-	tot_kmers = _tot_kmers;
-#else
-	kmc_file->GetNKmers(binId, tot_kmers);
-#endif
-
+	tot_kmers = bin->GetBinMetadata().total_kmers;
 	cur.clear();
 
 	Next();
@@ -104,20 +57,8 @@ KMCFileWrapper<SIZE>::KMCFileWrapper(const std::string& path, uint32_t binId)
 template<unsigned SIZE>
 inline void KMCFileWrapper<SIZE>::Next()
 {
-	auto read_cnt = [this] {
-#ifdef __APPLE__
-		uint64 cnt;
-		bool res = kmc_file->ReadNextKmerFromBin(cur, cnt);
-		cur_count = cnt;
-		return res;
-#else
-		return kmc_file->ReadNextKmerFromBin(cur, cur_count);
-#endif
-	};
-
-	if (!read_cnt())
+	if (!bin->NextKmer(cur, &cur_count))
 	{
-		// for the last one k-mer (cur_kmer_no == tot_kmers), it is legal to call Next, but ReadNextKmer will fail
 		if (cur_kmer_no != tot_kmers)
 		{
 			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")" << std::endl;

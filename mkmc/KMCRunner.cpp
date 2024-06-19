@@ -46,7 +46,7 @@ void KMCRunner::operator()()
 		KMC::Stage1Params stage1Params = params.stage1Params;
 		stage1Params.SetInputFiles(taskData.inputFiles);
 		stage1Params.SetOutputFileName(taskData.outputFile);
-		stage1Params.SetOutputFileType(KMC::OutputFileType::KMCDB);
+		stage1Params.SetOutputFileType(KMC::OutputFileType::KMCDB); //mkokot_TODO: set also sample name!
 		stage1Params.SetTmpPath(taskData.tmpDir);
 		stage1Params.SetInputFileType(taskData.inputFileType);
 		progress_observer.reset();
