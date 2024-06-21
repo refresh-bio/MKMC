@@ -50,6 +50,8 @@ class Dump
 	std::vector<std::unique_ptr<kmcdb::MetadataReader>> samplesMetadata;
 	std::vector<std::unique_ptr<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>> samplesReaders;
 
+	std::unique_ptr<kmcdb::WriterSortedPlain<uint64_t>> kmcdbWriter;
+
 	std::unique_ptr<kmcdb::MetadataReader> sequencesToFilterMetadataReader;
 	std::unique_ptr<kmcdb::ReaderSortedWithLUTForListing<uint64_t>> sequencesToFilterReader;
 
@@ -57,7 +59,7 @@ class Dump
 
 	ProgressBar progress_bar;
 
-	bool allKAreSame();
+	bool inputIsConsistent();
 	void fillTaskData();
 	template<typename T>
 	void writeDump(const std::vector<T>& data, std::string fileName);
@@ -114,7 +116,7 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 	}
 
 	ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, tot_all_kmers / 100ull));
-	Generators_T fileGenerator(params, binId);
+	Generators_T fileGenerator(params, binId, kmcdbWriter->GetBin(binId));
 
 	std::vector<uint64_t> kMersCounts(samples.size());
 
@@ -205,13 +207,14 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 
 
 template<unsigned SIZE>
-bool Dump<SIZE>::allKAreSame()
+bool Dump<SIZE>::inputIsConsistent()
 {
 	if (samplesMetadata.empty())
 		return true;
 	uint32_t k = samplesMetadata.front()->GetConfig().kmer_len;
 	uint32_t signatureLen = samplesMetadata.front()->GetConfig().signature_len;
 	auto signatureSelectionScheme = samplesMetadata.front()->GetConfig().signature_selection_scheme;
+	auto signatureToBinMapping = samplesMetadata.front()->GetConfig().signature_to_bin_mapping;
 	auto num_bins = samplesMetadata.front()->GetConfig().num_bins;
 
 	for (const auto& sample : samplesMetadata)
@@ -221,6 +224,8 @@ bool Dump<SIZE>::allKAreSame()
 		if (signatureLen != sample->GetConfig().signature_len)
 			return false;
 		if (signatureSelectionScheme != sample->GetConfig().signature_selection_scheme)
+			return false;
+		if (signatureToBinMapping != sample->GetConfig().signature_to_bin_mapping)
 			return false;
 		if (num_bins != sample->GetConfig().num_bins)
 			return false;
@@ -272,7 +277,7 @@ inline void Dump<SIZE>::fillTaskData()
 		}
 	}
 
-	if (!allKAreSame())
+	if (!inputIsConsistent())
 	{
 		std::cerr << "Error: KMC databases are not consistent." << std::endl;
 		exit(1);
@@ -328,6 +333,34 @@ void Dump<SIZE>::dumpToFileParallel()
 		sequencesToFilterReader = std::make_unique<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>(*sequencesToFilterMetadataReader);
 	}
 
+	if (std::find(params.mkmcParams.outputFileTypes.begin(), params.mkmcParams.outputFileTypes.end(), OutputFileType::Matrix) != params.mkmcParams.outputFileTypes.end())
+	{
+		kmcdb::Config config;
+		config.num_bins = samplesMetadata.front()->GetConfig().num_bins;
+		config.signature_len = samplesMetadata.front()->GetConfig().signature_len;
+		config.signature_selection_scheme = samplesMetadata.front()->GetConfig().signature_selection_scheme;
+		config.signature_to_bin_mapping = samplesMetadata.front()->GetConfig().signature_to_bin_mapping;
+		config.kmer_len = samplesMetadata.front()->GetConfig().kmer_len;
+		config.num_samples = samplesMetadata.size();
+		config.num_bytes_single_value = samplesMetadata.front()->GetConfig().num_bytes_single_value;
+		for (size_t i = 1; i < samplesMetadata.size(); ++i)
+			if (samplesMetadata[i]->GetConfig().num_bytes_single_value > config.num_bytes_single_value)
+				config.num_bytes_single_value = samplesMetadata[i]->GetConfig().num_bytes_single_value;
+
+		kmcdb::ConfigSortedPlain representation_config{};
+
+		std::vector<std::string> sample_names{}; //mkokot_TODO: fill this!
+
+		try
+		{
+			this->kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<uint64_t>>(config, representation_config, params.mkmcParams.outputFilesTemplate, "", sample_names);
+		}
+		catch (const std::exception& ex)
+		{
+			std::cerr << "Error: " << ex.what() << "\n";
+			exit(1);
+		}
+	}
 	std::vector<std::thread> threads(params.mkmcParams.nThreads);
 	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 	{
