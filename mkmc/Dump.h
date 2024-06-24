@@ -57,7 +57,7 @@ class Dump
 
 	std::vector<uint64_t> nOutputKmersPerBin;
 
-	ProgressBar progress_bar;
+	std::unique_ptr<ProgressBar> progress_bar;
 
 	bool inputIsConsistent();
 	void fillTaskData();
@@ -65,29 +65,13 @@ class Dump
 	void writeDump(const std::vector<T>& data, std::string fileName);
 	void serializeNormalizationAndDump();
 
-	uint64_t getNTotInputKmers()
-	{
-		uint64_t res{};
-		for (const auto& x : params.mkmcParams.kmcOutputFiles)
-		{
-			CKMCFile tmp(true);
-			if (!tmp.OpenForListingWithBinOrder(x))
-			{
-				std::cerr << "Error: cannot open kmc database " << x << "." << std::endl;
-				exit(1);
-			}
-			res += tmp.KmerCount();
-		}
-		return res;
-	}
-
 	template<typename Generators_T, typename Filters_T>
 	void dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
 
 public:
 	Dump(const Params& params) :
-		params(params), tasksPool(tasksData),
-		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : getNTotInputKmers(), "Dumping", std::cerr, params.mkmcParams.verbosity_level == 0)
+		params(params), tasksPool(tasksData)//,
+		//progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : getNTotInputKmers(), "Dumping", std::cerr, params.mkmcParams.verbosity_level == 0)
 	{
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::frequency_count);
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
@@ -115,7 +99,7 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 		tot_all_kmers += db.GetTotKmers();
 	}
 
-	ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, tot_all_kmers / 100ull));
+	ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, tot_all_kmers / 100ull));
 	Generators_T fileGenerator(params, binId, kmcdbWriter->GetBin(binId));
 
 	std::vector<uint64_t> kMersCounts(samples.size());
@@ -250,6 +234,8 @@ inline void Dump<SIZE>::fillTaskData()
 	samplesMetadata.reserve(params.stage1Params.GetNBins());
 	samplesReaders.reserve(params.stage1Params.GetNBins());
 
+	uint64_t totKmersAllSamples = 0;
+
 	for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i)
 	{
 		try
@@ -262,6 +248,7 @@ inline void Dump<SIZE>::fillTaskData()
 			for (uint32_t bin_id = 0; bin_id < metadata_reader.GetConfig().num_bins; ++bin_id)
 				totKmers += reader.GetBin(bin_id)->GetBinMetadata().total_kmers;
 
+			totKmersAllSamples += totKmers;
 			if (totKmers > biggestSampleKmersCount)
 			{
 				biggestSampleKmersCount = totKmers;
@@ -282,6 +269,8 @@ inline void Dump<SIZE>::fillTaskData()
 		std::cerr << "Error: KMC databases are not consistent." << std::endl;
 		exit(1);
 	}
+
+	progress_bar = std::make_unique<ProgressBar>(params.mkmcParams.verbosity_level == 0 ? 0 : totKmersAllSamples, "Dumping", std::cerr, params.mkmcParams.verbosity_level == 0);
 
 	// sorting is performed in the following manner: first biggest bins are dumped, then smaller; but the sorting is performed basing on the biggest sample only
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return samplesBeginSize[a.binId] > samplesBeginSize[b.binId]; });
