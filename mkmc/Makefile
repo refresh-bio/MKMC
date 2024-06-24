@@ -1,7 +1,7 @@
-KMC_DIR_IN = ../$(KMC_DIR)
+KMC_DIR_IN = ../kmc
 
 CC = g++
-CFLAGS = -Wall -I$(KMC_DIR_IN) -Ilibs -O3 -std=c++20
+CFLAGS = -Wall -I$(KMC_DIR_IN) -I$(KMC_DIR_IN)/kmcdb/libs -Ilibs -O3 -std=c++20
 LIBS = $(KMC_DIR_IN)/3rd_party/cloudflare/libz.a
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
