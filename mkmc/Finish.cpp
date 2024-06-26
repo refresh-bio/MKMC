@@ -5,6 +5,7 @@
 
 void Finish::finishProcessing()
 {
+	//mkokot_TODO: tutaj chyba zrobilem niepotrzebnie zduplikowanie usuwanie jak pozbywalem sie kmc_pre i suf
 	if (!params.mkmcParams.keepTmpFiles)
 	{
 		for (const auto& kmcOutputFile : params.mkmcParams.kmcOutputFiles)

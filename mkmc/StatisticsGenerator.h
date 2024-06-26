@@ -5,7 +5,7 @@
 #include <string>
 #include "parameters.h"
 #include "TasksPool.h"
-#include "lib/statistics/lib/statistics.h"
+#include "refresh/statistics/lib/statistics.h"
 #define NOMINMAX
 #include "progress_bar.hpp"
 

@@ -24,7 +24,7 @@
 #include "Filter.h"
 #include "KmersSamplesStruct.h"
 #include "kmcdb/kmcdb.h"
-#include "lib/statistics/lib/statistics_normalization.h"
+#include "refresh/statistics/lib/statistics_normalization.h"
 
 template<unsigned SIZE>
 class Dump
@@ -240,7 +240,7 @@ inline void Dump<SIZE>::fillTaskData()
 	{
 		try
 		{
-			samplesMetadata.emplace_back(std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.kmcOutputFiles[i]));
+			samplesMetadata.emplace_back(std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.kmcOutputFiles[i], true));
 			kmcdb::MetadataReader& metadata_reader = *samplesMetadata.back();
 			samplesReaders.emplace_back(std::make_unique<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>(metadata_reader));
 			kmcdb::ReaderSortedWithLUTForListing<uint64_t>& reader = *samplesReaders.back();
@@ -303,6 +303,7 @@ void Dump<SIZE>::serializeNormalizationAndDump()
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::frequency_count, frequencyNormalizationData);
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::quantile, quantileNormalizationData);
 
+	//mkokot_TODO: to podmienic tez na jakiegos jednego archive...
 	writeDump(frequencyNormalizationData, params.statisticsParams.normFrequencyFileTmp);
 	writeDump(quantileNormalizationData, params.statisticsParams.normQuantileFileTmp);
 
@@ -318,7 +319,7 @@ void Dump<SIZE>::dumpToFileParallel()
 
 	if (params.filterParams.filterKmersSequences)
 	{
-		sequencesToFilterMetadataReader = std::make_unique<kmcdb::MetadataReader>(params.filterParams.kmersSequencesToFilterOutDB);
+		sequencesToFilterMetadataReader = std::make_unique<kmcdb::MetadataReader>(params.filterParams.kmersSequencesToFilterOutDB, true);
 		sequencesToFilterReader = std::make_unique<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>(*sequencesToFilterMetadataReader);
 	}
 

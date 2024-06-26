@@ -7,7 +7,7 @@
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"
 #undef small
-#include "lib/statistics/lib/statistics_normalization.h"
+#include "refresh/statistics/lib/statistics_normalization.h"
 
 
 
