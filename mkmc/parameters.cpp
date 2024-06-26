@@ -71,6 +71,8 @@ void Params::generateTempAndOutputFilesNames()
 		mkmcParams.outputFilesPearson.push_back(mkmcParams.outputFilesTemplate + "_pearson_" + binIdStr);
 		mkmcParams.outputFilesSpearman.push_back(mkmcParams.outputFilesTemplate + "_spearman_" + binIdStr);
 		mkmcParams.outputFilesKendall.push_back(mkmcParams.outputFilesTemplate + "_kendall_tau_" + binIdStr);
+
+		mkmcParams.outputFilesEntropy.push_back(mkmcParams.outputFilesTemplate + "_entropy_" + binIdStr);
 	}
 }
 

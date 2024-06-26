@@ -107,6 +107,8 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	c = app.add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a set of the natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
 
+	app.add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy")->default_val(statisticsParams.generateEntropy);
+
 	CLI::Option_group* optionalGroup = app.add_option_group("optional parameters");
 
 	std::map<std::string, KMC::InputFileType> inputValuesMap{ {"fa", KMC::InputFileType::FASTA }, {"fq", KMC::InputFileType::FASTQ }, { "mf", KMC::InputFileType::MULTILINE_FASTA } };

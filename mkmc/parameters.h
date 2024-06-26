@@ -42,6 +42,8 @@ struct MKMCParams
 	std::vector<std::string> outputFilesSpearman;
 	std::vector<std::string> outputFilesKendall;
 
+	std::vector<std::string> outputFilesEntropy;
+
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
 	uint32_t nKMCWorkers = 4;
 	uint32_t maxRamGB = 16;
@@ -77,16 +79,16 @@ struct StatisticsParams
 
 	std::string statsNOutputKmers = "nKmers";
 
-
-	enum class CorrelationMethod { Pearson, Spearman, Kendall };
-
 	bool generateNormalization = false;
 	NormalizationMethod normalizationMethod;
-	std::vector<CorrelationMethod> correlationMethods;
 
+	enum class CorrelationMethod { Pearson, Spearman, Kendall };
+	std::vector<CorrelationMethod> correlationMethods;
 
 	enum class DifferentialAnalysisMethod { TTest };
 	std::vector<DifferentialAnalysisMethod> classificationMethods;
+
+	bool generateEntropy = false;
 };
 
 struct MutableParams

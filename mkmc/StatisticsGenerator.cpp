@@ -37,6 +37,8 @@ void StatisticsGenerator::operator()()
 		}
 
 		bool generatePearson = false, generateSpearman = false, generateKendall = false;
+		bool generateEntropy = false;
+
 		for (auto method : params.statisticsParams.correlationMethods)
 		{
 			if (method == StatisticsParams::CorrelationMethod::Pearson)
@@ -46,12 +48,14 @@ void StatisticsGenerator::operator()()
 			else if (method == StatisticsParams::CorrelationMethod::Kendall)
 				generateKendall = true;
 		}
+		generateEntropy = params.statisticsParams.generateEntropy;
 
 		std::string header;
 		std::getline(matrixFile, header);
 		normFile << header << '\n';
 
 		std::ofstream pearsonFile, spearmanFile, kendallFile;
+		std::ofstream entropyFile;
 		if (generatePearson)
 		{
 			pearsonFile.open(params.mkmcParams.outputFilesPearson[taskData.binId]);
@@ -82,6 +86,16 @@ void StatisticsGenerator::operator()()
 			}
 			kendallFile << "k-mer\tcorrelation\n";
 		}
+		if (generateEntropy)
+		{
+			entropyFile.open(params.mkmcParams.outputFilesEntropy[taskData.binId]);
+			if (!entropyFile.is_open())
+			{
+				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesEntropy[taskData.binId] << "." << std::endl;
+				exit(1);
+			}
+			kendallFile << "k-mer\tentropy\n";
+		}
 
 		refresh::normalization_work<uint64_t, double> normalization;
 		normalization.register_method(params.statisticsParams.normalizationMethod);
@@ -91,6 +105,7 @@ void StatisticsGenerator::operator()()
 		normalization.initialize();
 
 		refresh::correlation correlation;
+		refresh::statistics_entropy entropyObj;
 
 		std::string kmerSequence;
 		std::vector<uint64_t> matrixEntry;
@@ -122,6 +137,11 @@ void StatisticsGenerator::operator()()
 			{
 				const double kendall = refresh::correlation::kendall_tau(normEntry.begin(), normEntry.end(), correlationPhenotype.begin());
 				putLine(kendallFile, kmerSequence, { kendall });
+			}
+			if (generateEntropy)
+			{
+				const double entropy = entropyObj.entropy(matrixEntry.begin(), matrixEntry.end());
+				putLine(entropyFile, kmerSequence, { entropy });
 			}
 
 			++progress_bar_updater;

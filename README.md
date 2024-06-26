@@ -31,6 +31,7 @@ Options:
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a set of the integers, one in each line)
  - `--diff ENUM:value in {t}` Needs: `-c` - perform differential k-mers analysis (T-Test)
  - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a set of the natural numbers or text labels, one in each line)
+ - `--entropy` - generate k-mers counts entropy
 
 [Option Group: optional parameters]
   Options:	
