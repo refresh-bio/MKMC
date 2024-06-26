@@ -32,6 +32,10 @@ class StatisticsGenerator
 	std::unique_ptr<kmcdb::MetadataReader> matrixMetadataReader;
 	std::unique_ptr<kmcdb::ReaderSortedPlainForListing<uint64_t>> matrixReader;
 
+	using out_kmcdb_value_type = double;
+
+	std::unique_ptr<kmcdb::WriterSortedPlain<out_kmcdb_value_type>> kmcdbWriter;
+
 	uint64_t totAllKmers;
 	ProgressBar progress_bar;
 

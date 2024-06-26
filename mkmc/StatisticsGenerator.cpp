@@ -9,6 +9,29 @@ void StatisticsGenerator::fillTaskData()
 	{
 		matrixMetadataReader = std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.outputFilesTemplate, false);
 		matrixReader = std::make_unique<kmcdb::ReaderSortedPlainForListing<uint64_t>>(*matrixMetadataReader);
+
+		kmcdb::Config config;
+		config.num_bins = matrixMetadataReader->GetConfig().num_bins;
+		config.signature_len = matrixMetadataReader->GetConfig().signature_len;
+		config.signature_selection_scheme = matrixMetadataReader->GetConfig().signature_selection_scheme;
+		config.signature_to_bin_mapping = matrixMetadataReader->GetConfig().signature_to_bin_mapping;
+		config.kmer_len = matrixMetadataReader->GetConfig().kmer_len;
+		config.num_samples = matrixMetadataReader->GetConfig().num_samples;
+		config.num_bytes_single_value = { sizeof(out_kmcdb_value_type) };
+
+		config.num_samples += params.statisticsParams.correlationMethods.size(); //I will add this correlations as a new columns
+		//this make sense because those all of the same type (currently double), mkokot_TODO: remember to set appropriate col names!
+
+		kmcdb::ConfigSortedPlain representation_config{};
+
+		std::vector<std::string> sample_names{}; //mkokot_TODO: fill this!
+
+		kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<double>>(
+			config,
+			representation_config,
+			params.mkmcParams.outputFilesTemplate + "_norm+cor.kmcdb",
+			params.mkmcParams.outputFilesTemplate,
+			sample_names);
 	}
 	catch (const std::runtime_error& ex)
 	{
@@ -55,6 +78,7 @@ void StatisticsGenerator::operator()()
 	while (tasksPool.getTask(taskData))
 	{
 		auto bin = matrixReader->GetBin(taskData.binId);
+		auto out_bin = kmcdbWriter->GetBin(taskData.binId);
 
 		std::ofstream normFile(params.mkmcParams.outputFilesNorm[taskData.binId]);
 		if (!normFile.is_open())
@@ -83,36 +107,6 @@ void StatisticsGenerator::operator()()
 		normFile << '\n';
 
 		std::ofstream pearsonFile, spearmanFile, kendallFile;
-		if (generatePearson)
-		{
-			pearsonFile.open(params.mkmcParams.outputFilesPearson[taskData.binId]);
-			if (!pearsonFile.is_open())
-			{
-				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesPearson[taskData.binId] << "." << std::endl;
-				exit(1);
-			}
-			pearsonFile << "k-mer\tcorrelation\n";
-		}
-		if (generateSpearman)
-		{
-			spearmanFile.open(params.mkmcParams.outputFilesSpearman[taskData.binId]);
-			if (!spearmanFile.is_open())
-			{
-				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesSpearman[taskData.binId] << "." << std::endl;
-				exit(1);
-			}
-			spearmanFile << "k-mer\tcorrelation\n";
-		}
-		if (generateKendall)
-		{
-			kendallFile.open(params.mkmcParams.outputFilesKendall[taskData.binId]);
-			if (!kendallFile.is_open())
-			{
-				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesKendall[taskData.binId] << "." << std::endl;
-				exit(1);
-			}
-			kendallFile << "k-mer\tcorrelation\n";
-		}
 
 		refresh::normalization_work<uint64_t, double> normalization;
 		normalization.register_method(params.statisticsParams.normalizationMethod);
@@ -124,9 +118,10 @@ void StatisticsGenerator::operator()()
 		refresh::correlation correlation;
 
 		std::vector<uint64_t> matrixEntry;
-		std::vector<double> normEntry;
-		matrixEntry.resize(params.mkmcParams.samples.size());
-		normEntry.resize(params.mkmcParams.samples.size());
+		std::vector<double> outEntry;
+		std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
+		matrixEntry.resize(num_samples);
+		outEntry.resize(num_samples);
 
 		ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, totAllKmers / 100ull));
 
@@ -138,26 +133,39 @@ void StatisticsGenerator::operator()()
 			while (bin->NextKmer(kmer, matrixEntry.data()))
 			{
 				kmer.to_string(kmer_len, kmerSequence.data());
-				normalization.norm_entry(params.statisticsParams.normalizationMethod, matrixEntry, normEntry);
-				putLine(normFile, kmerSequence, normEntry);
+				normalization.norm_entry(params.statisticsParams.normalizationMethod, matrixEntry, outEntry);
 
 				if (generatePearson)
 				{
-					const double pearson = refresh::correlation::pearson(normEntry.begin(), normEntry.end(), phenotype.begin());
-					putLine(pearsonFile, kmerSequence, { pearson });
+					const double pearson = refresh::correlation::pearson(
+						outEntry.begin(),
+						outEntry.begin() + num_samples,
+						phenotype.begin());
+
+					outEntry.push_back(pearson);
 				}
 				if (generateSpearman)
 				{
-					const double spearman = correlation.spearman(normEntry.begin(), normEntry.end(), phenotype.begin());
-					putLine(spearmanFile, kmerSequence, { spearman });
+					const double spearman = correlation.spearman(
+						outEntry.begin(),
+						outEntry.begin() + num_samples,
+						phenotype.begin());
+
+					outEntry.push_back(spearman);
 				}
 				if (generateKendall)
 				{
-					const double kendall = refresh::correlation::kendall_tau(normEntry.begin(), normEntry.end(), phenotype.begin());
-					putLine(kendallFile, kmerSequence, { kendall });
+					const double kendall = refresh::correlation::kendall_tau(
+						outEntry.begin(),
+						outEntry.begin() + num_samples,
+						phenotype.begin());
+
+					outEntry.push_back(kendall);
 				}
 
 				++progress_bar_updater;
+
+				out_bin->AddKmer(kmer, outEntry.data());
 			}
 		});
 	}

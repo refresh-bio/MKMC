@@ -343,7 +343,12 @@ void Dump<SIZE>::dumpToFileParallel()
 
 		try
 		{
-			this->kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<uint64_t>>(config, representation_config, params.mkmcParams.outputFilesTemplate, "", sample_names);
+			this->kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<uint64_t>>(
+				config,
+				representation_config,
+				params.mkmcParams.outputFilesTemplate, //mkokot_TODO: maybe I should keep this approach that this is only template, and append kmcdb extensiton, hm
+				"",
+				sample_names);
 		}
 		catch (const std::exception& ex)
 		{
