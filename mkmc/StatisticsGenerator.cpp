@@ -80,13 +80,6 @@ void StatisticsGenerator::operator()()
 		auto bin = matrixReader->GetBin(taskData.binId);
 		auto out_bin = kmcdbWriter->GetBin(taskData.binId);
 
-		std::ofstream normFile(params.mkmcParams.outputFilesNorm[taskData.binId]);
-		if (!normFile.is_open())
-		{
-			std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesNorm[taskData.binId] << "." << std::endl;
-			exit(1);
-		}
-
 		bool generatePearson = false, generateSpearman = false, generateKendall = false;
 		for (auto method : params.statisticsParams.correlationMethods)
 		{
@@ -97,15 +90,6 @@ void StatisticsGenerator::operator()()
 			else if (method == StatisticsParams::CorrelationMethod::Kendall)
 				generateKendall = true;
 		}
-
-		//mkokot_TODO: ok, for now I will just generate text file, but later i will write to a common kmcdb
-		//instead of norm file etc, so sample names will be taken directly from input kmcdb
-		normFile << "k-mer\t";
-		for (const Sample& sample : params.mkmcParams.samples)
-			normFile << sample.name << '\t';
-
-		normFile << '\n';
-
 		std::ofstream pearsonFile, spearmanFile, kendallFile;
 
 		refresh::normalization_work<uint64_t, double> normalization;
