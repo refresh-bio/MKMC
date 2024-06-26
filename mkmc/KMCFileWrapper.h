@@ -3,7 +3,6 @@
 #include <string>
 #include <cstdint>
 #include <iostream>
-#include <array> //mkokot_TODO: this should be included in kmcdb, I need to update kmcdb sources
 #include "kmcdb/bin_readers.h"
 
 

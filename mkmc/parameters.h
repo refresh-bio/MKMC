@@ -31,7 +31,7 @@ struct MKMCParams
 
 	std::string outputFilesTemplate;
 	std::vector<std::string> outputFASTAFiles;
-	std::vector<std::string> outputMatrixFiles;
+	std::vector<std::string> outputMatrixFiles; //mkokot_TODO: this will be probably to be removed
 	std::vector<OutputFileType> outputFileTypes = { OutputFileType::Matrix }; // also default "matrix" value in input parameters
 
 

@@ -5,6 +5,16 @@
 
 void StatisticsGenerator::fillTaskData()
 {
+	try
+	{
+		matrixMetadataReader = std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.outputFilesTemplate, false);
+		matrixReader = std::make_unique<kmcdb::ReaderSortedPlainForListing<uint64_t>>(*matrixMetadataReader);
+	}
+	catch (const std::runtime_error& ex)
+	{
+		std::cerr << "Error: " << ex.what() << std::endl;
+		exit(1);
+	}
 	tasksData.reserve(params.stage1Params.GetNBins());
 	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
 	{
@@ -44,12 +54,7 @@ void StatisticsGenerator::operator()()
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
 	{
-		std::ifstream matrixFile(params.mkmcParams.outputMatrixFiles[taskData.binId]);
-		if (!matrixFile.is_open())
-		{
-			std::cerr << "Error: cannot open " << params.mkmcParams.outputMatrixFiles[taskData.binId] << "." << std::endl;
-			exit(1);
-		}
+		auto bin = matrixReader->GetBin(taskData.binId);
 
 		std::ofstream normFile(params.mkmcParams.outputFilesNorm[taskData.binId]);
 		if (!normFile.is_open())
@@ -69,9 +74,13 @@ void StatisticsGenerator::operator()()
 				generateKendall = true;
 		}
 
-		std::string header;
-		std::getline(matrixFile, header);
-		normFile << header << '\n';
+		//mkokot_TODO: ok, for now I will just generate text file, but later i will write to a common kmcdb
+		//instead of norm file etc, so sample names will be taken directly from input kmcdb
+		normFile << "k-mer\t";
+		for (const Sample& sample : params.mkmcParams.samples)
+			normFile << sample.name << '\t';
+
+		normFile << '\n';
 
 		std::ofstream pearsonFile, spearmanFile, kendallFile;
 		if (generatePearson)
@@ -114,7 +123,6 @@ void StatisticsGenerator::operator()()
 
 		refresh::correlation correlation;
 
-		std::string kmerSequence;
 		std::vector<uint64_t> matrixEntry;
 		std::vector<double> normEntry;
 		matrixEntry.resize(params.mkmcParams.samples.size());
@@ -122,32 +130,36 @@ void StatisticsGenerator::operator()()
 
 		ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, totAllKmers / 100ull));
 
-		while (true)
-		{
-			if (!getLine(matrixFile, kmerSequence, matrixEntry))
-				break;
+		auto kmer_len = params.stage1Params.GetKmerLen();
+		std::string kmerSequence(kmer_len, ' ');
 
-			normalization.norm_entry(params.statisticsParams.normalizationMethod, matrixEntry, normEntry);
-			putLine(normFile, kmerSequence, normEntry);
+		kmcdb::DispatchKmerSize<MAX_K>(kmer_len, [&](auto SIZE) {
+			kmcdb::CKmer<SIZE> kmer;
+			while (bin->NextKmer(kmer, matrixEntry.data()))
+			{
+				kmer.to_string(kmer_len, kmerSequence.data());
+				normalization.norm_entry(params.statisticsParams.normalizationMethod, matrixEntry, normEntry);
+				putLine(normFile, kmerSequence, normEntry);
 
-			if (generatePearson)
-			{
-				const double pearson = refresh::correlation::pearson(normEntry.begin(), normEntry.end(), phenotype.begin());
-				putLine(pearsonFile, kmerSequence, { pearson });
-			}
-			if (generateSpearman)
-			{
-				const double spearman = correlation.spearman(normEntry.begin(), normEntry.end(), phenotype.begin());
-				putLine(spearmanFile, kmerSequence, { spearman });
-			}
-			if (generateKendall)
-			{
-				const double kendall = refresh::correlation::kendall_tau(normEntry.begin(), normEntry.end(), phenotype.begin());
-				putLine(kendallFile, kmerSequence, { kendall });
-			}
+				if (generatePearson)
+				{
+					const double pearson = refresh::correlation::pearson(normEntry.begin(), normEntry.end(), phenotype.begin());
+					putLine(pearsonFile, kmerSequence, { pearson });
+				}
+				if (generateSpearman)
+				{
+					const double spearman = correlation.spearman(normEntry.begin(), normEntry.end(), phenotype.begin());
+					putLine(spearmanFile, kmerSequence, { spearman });
+				}
+				if (generateKendall)
+				{
+					const double kendall = refresh::correlation::kendall_tau(normEntry.begin(), normEntry.end(), phenotype.begin());
+					putLine(kendallFile, kmerSequence, { kendall });
+				}
 
-			++progress_bar_updater;
-		}
+				++progress_bar_updater;
+			}
+		});
 	}
 }
 

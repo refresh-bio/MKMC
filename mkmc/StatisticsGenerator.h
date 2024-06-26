@@ -8,7 +8,7 @@
 #include "refresh/statistics/lib/statistics.h"
 #define NOMINMAX
 #include "progress_bar.hpp"
-
+#include "kmcdb/kmcdb.h"
 
 
 class StatisticsGenerator
@@ -28,6 +28,9 @@ class StatisticsGenerator
 	};
 	std::vector<TaskData> tasksData;
 	TasksPool<TaskData> tasksPool;
+
+	std::unique_ptr<kmcdb::MetadataReader> matrixMetadataReader;
+	std::unique_ptr<kmcdb::ReaderSortedPlainForListing<uint64_t>> matrixReader;
 
 	uint64_t totAllKmers;
 	ProgressBar progress_bar;
