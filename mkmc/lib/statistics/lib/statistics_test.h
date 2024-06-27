@@ -10,34 +10,14 @@
 
 namespace refresh
 {
-	// *************************************************************************************
-	// 
-	// *************************************************************************************
-	class statistical_test
+	namespace stats_details
 	{
-	public:
-		struct t_test_t
+		struct mean_sd_t
 		{
-			double statistic;
-			double p_value;
-			double df;
+			double avg;
+			double sd;
+			size_t n;
 		};
-
-		struct mann_whitney_t
-		{
-			double statistic_U1;
-			double statistic_U2;
-			double p_value;
-		};
-
-		struct snr_t
-		{
-			double ratio;
-			double p_value;
-		};
-
-	private:
-		std::vector<std::pair<double, int>> mem_mann_whitney;
 
 		static double pow2(size_t x)
 		{
@@ -65,7 +45,7 @@ namespace refresh
 			if (n == 0)
 				return 0;
 
-			return std::accumulate(first, first + n, (double)0.0) / (double) n;
+			return std::accumulate(first, first + n, (double)0.0) / (double)n;
 		}
 
 		template<typename Iter>
@@ -82,43 +62,111 @@ namespace refresh
 			return sqrt(res / (double)(n - 1));
 		}
 
+		template<typename X_Iter, typename C_Iter>
+		static bool mean_std_dev(X_Iter X_first, C_Iter C_first, size_t n_X, std::vector<mean_sd_t>& mean_sd)
+		{
+			size_t n_class = mean_sd.size();
+
+			if (n_X == 0 || n_class == 0)
+				return true;
+
+			for (size_t i = 0; i < n_class; ++i)
+			{
+				mean_sd[i].avg = 0.0;
+				mean_sd[i].sd = 0.0;
+				mean_sd[i].n = 0;
+			}
+
+			// Calculate mean
+			auto p_X = X_first;
+			auto p_C = C_first;
+
+			for (size_t i = 0; i < n_X; ++i, ++p_X, ++p_C)
+			{
+				mean_sd[*p_C].avg += *p_X;
+				mean_sd[*p_C].n++;
+			}
+
+			for (size_t i = 0; i < n_class; ++i)
+				mean_sd[i].avg /= (double)mean_sd[i].n;
+
+			// Calculate std.dev.
+			p_X = X_first;
+			p_C = C_first;
+
+			for (size_t i = 0; i < n_X; ++i, ++p_X, ++p_C)
+				mean_sd[*p_C].sd += pow2(*p_X - mean_sd[*p_C].avg);
+
+			for (size_t i = 0; i < n_class; ++i)
+				if (mean_sd[i].n > 1)
+					mean_sd[i].sd = sqrt(mean_sd[i].sd / (double)(mean_sd[i].n - 1));
+
+			return true;
+		}
+	}
+
+	// *************************************************************************************
+	// 
+	// *************************************************************************************
+	class statistical_test
+	{
+	public:
+		struct t_test_t
+		{
+			double statistic;
+			double p_value;
+			double df;
+		};
+
+		struct mann_whitney_t
+		{
+			double statistic_U1;
+			double statistic_U2;
+			double p_value;
+		};
+
+	private:
+		std::vector<std::pair<double, int>> mem_mann_whitney;
+		std::vector<stats_details::mean_sd_t> mem_mean_sd;
+
 	public:
 		statistical_test() = default;
 
 		// *************************************************************************************
 		template<typename Iter1, typename Iter2>
-		static t_test_t t_test(Iter1 X_first, Iter1 X_last, Iter2 Y_first, bool equal_var = true)
+		t_test_t t_test(Iter1 X_first, Iter1 X_last, Iter2 C_first, bool equal_var = true)
 		{
-			return t_test_n(X_first, Y_first, std::distance(X_first, X_last), equal_var);
+			return t_test_n(X_first, C_first, std::distance(X_first, X_last), equal_var);
 		}
 
 		// *************************************************************************************
 		template<typename Iter1, typename Iter2>
-		static t_test_t t_test_n(Iter1 X_first, Iter2 Y_first, size_t n, bool equal_var = true)
+		t_test_t t_test_n(Iter1 X_first, Iter2 C_first, size_t n, bool equal_var = true)
 		{
 			t_test_t ret;
 
-			double m1 = mean(X_first, n);
-			double m2 = mean(Y_first, n);
-			double sd1 = std_dev(m1, X_first, n);
-			double sd2 = std_dev(m2, Y_first, n);
+			auto& mean_sd = mem_mean_sd;
+
+			mean_sd.resize(2);
+
+			stats_details::mean_std_dev(X_first, C_first, n, mean_sd);
 
 			if (equal_var)
 			{
-				double sp = sqrt((pow2(sd1) + pow2(sd2)) / 2.0);
+				double sp = sqrt(((mean_sd[0].n - 1) * stats_details::pow2(mean_sd[0].sd) + (mean_sd[1].n - 1) * stats_details::pow2(mean_sd[1].sd)) / (double) (n - 2));
 
-				ret.statistic = (m1 - m2) / (sp * sqrt(2.0 / n));
-				ret.df = 2.0 * n - 2.0;
+				ret.statistic = (mean_sd[0].avg - mean_sd[1].avg) / (sp * sqrt(1.0 / mean_sd[0].n + 1.0 / mean_sd[1].n));
+				ret.df = (double) n - 2.0;
 			}
 			else
 			{
-				double s_delta = sqrt(pow2(sd1) / (double)n + pow2(sd2) / (double)n);
-				ret.statistic = (m1 - m2) / s_delta;
+				double s_delta = sqrt(stats_details::pow2(mean_sd[0].sd) / (double) mean_sd[0].n + stats_details::pow2(mean_sd[1].sd) / (double)mean_sd[1].n);
+				ret.statistic = (mean_sd[0].avg - mean_sd[1].avg) / s_delta;
 
-				double a1 = pow2(sd1) / n;
-				double a2 = pow2(sd2) / n;
+				double a0 = stats_details::pow2(mean_sd[0].sd) / mean_sd[0].n;
+				double a1 = stats_details::pow2(mean_sd[1].sd) / mean_sd[1].n;
 
-				ret.df = pow2(a1 + a2) / (pow2(a1) / (n - 1) + pow2(a2) / (n - 1));
+				ret.df = stats_details::pow2(a0 + a1) / (stats_details::pow2(a0) / (mean_sd[0].n - 1) + stats_details::pow2(a1) / (mean_sd[1].n - 1));
 			}
 
 			ret.p_value = std::clamp<double>(2.0 * (1.0 - stats::pt(ret.statistic, ret.df, false)), 0, 1);
@@ -127,15 +175,15 @@ namespace refresh
 		}
 
 		// *************************************************************************************
-		template<typename Iter1, typename Iter2>
-		mann_whitney_t mann_whitney_U_test(Iter1 X_first, Iter1 X_last, Iter2 Y_first)
+		template<typename X_Iter, typename C_Iter>
+		mann_whitney_t mann_whitney_U_test(X_Iter X_first, X_Iter X_last, C_Iter C_first)
 		{
-			return mann_whitney_U_test_n(X_first, Y_first, std::distance(X_first, X_last));
+			return mann_whitney_U_test_n(X_first, C_first, std::distance(X_first, X_last));
 		}
 
 		// *************************************************************************************
-		template<typename Iter1, typename Iter2>
-		mann_whitney_t mann_whitney_U_test_n(Iter1 X_first, Iter2 Y_first, size_t n)
+		template<typename X_Iter, typename C_Iter>
+		mann_whitney_t mann_whitney_U_test_n(X_Iter X_first, C_Iter C_first, size_t n)
 		{
 //			const size_t approx_method_thr = 8;		// as in SciPy
 			const size_t approx_method_thr = 0;
@@ -143,52 +191,50 @@ namespace refresh
 			mann_whitney_t ret;
 
 			mem_mann_whitney.clear();
-			mem_mann_whitney.resize(2*n);
+			mem_mann_whitney.resize(n);
+
+			size_t nc[2] = { 0, 0 };
 
 			for (size_t i = 0; i < n; ++i)
-				mem_mann_whitney[i] = std::make_pair(*X_first++, 1);
-			for (size_t i = 0; i < n; ++i)
-				mem_mann_whitney[n+i] = std::make_pair(*Y_first++, 2);
+			{
+				nc[*C_first]++;
+				mem_mann_whitney[i] = std::make_pair(*X_first++, *C_first++);
+			}
 
 			std::sort(mem_mann_whitney.begin(), mem_mann_whitney.end());
 
-			double R1 = 0;
-			double R2 = 0;
+			double R[2] = { 0, 0 };
 
 			double tie_corr = 0;
 
-			for (size_t i = 0; i < 2 * n;)
+			for (size_t i = 0; i < n;)
 			{
 				size_t j;
-				for (j = i + 1; j < 2 * n; ++j)
+				for (j = i + 1; j < n; ++j)
 					if (mem_mann_whitney[j].first != mem_mann_whitney[i].first)
 						break;
 
 				double adder = 1.0 + (double)(i + j - 1) / 2.0;
 
-				for(size_t k = i; k < j; ++k)
-					if (mem_mann_whitney[k].second == 2)
-						R2 += adder;
-					else
-						R1 += adder;
+				for (size_t k = i; k < j; ++k)
+					R[mem_mann_whitney[k].second] += adder;
 
 				if (j > i + 1)
 				{
 					double t = (double) (j - i);
-					tie_corr += pow3(t) - (t);
+					tie_corr += stats_details::pow3(t) - (t);
 				}
 
 				i = j;
 			}
 
-			double V = pow2(n) + n * (n + 1) / 2.0;
-			ret.statistic_U1 = V - R2;
-			ret.statistic_U2 = V - R1;
+			ret.statistic_U1 = R[0] - (double) nc[0] * (nc[0] + 1) / 2.0;
+			ret.statistic_U2 = (double)nc[0] * nc[1] - ret.statistic_U1;
 
 			if (n > approx_method_thr)
 			{
-				double m_u = pow2(n) / 2.0;
-				double s_u = sqrt(pow2(n) / 12.0 * ((2*n + 1) - tie_corr / (2 * n * (2 * n - 1))));
+				double m_u = (double) nc[0] * nc[1] / 2.0;
+				double s_u = sqrt(m_u / 6.0 * ((n + 1) - tie_corr / (n * (n - 1))));
 
 				double cont_term = 0.5;
 
@@ -204,28 +250,26 @@ namespace refresh
 		}
 
 		// *************************************************************************************
-		template<typename Iter1, typename Iter2>
-		static snr_t SNR_test(Iter1 X_first, Iter1 X_last, Iter2 Y_first)
+		template<typename X_Iter, typename C_Iter>
+		double SNR_test(X_Iter X_first, X_Iter X_last, C_Iter C_first)
 		{
-			return SNR_test_n(X_first, Y_first, std::distance(X_first, X_last));
+			return SNR_test_n(X_first, C_first, std::distance(X_first, X_last));
 		}
 
 		// *************************************************************************************
-		template<typename Iter1, typename Iter2>
-		static snr_t SNR_test_n(Iter1 X_first, Iter2 Y_first, size_t n)
+		template<typename X_Iter, typename C_Iter>
+		double SNR_test_n(X_Iter X_first, C_Iter C_first, size_t n)
 		{
-			snr_t ret;
+			auto& mean_sd = mem_mean_sd;
 
-			double m1 = mean(X_first, n);
-			double m2 = mean(Y_first, n);
-			double sd1 = std_dev(m1, X_first, n);
-			double sd2 = std_dev(m2, Y_first, n);
+			mean_sd.resize(2);
 
-			ret.ratio = (m1 - m2) / (sd1 + sd2);
+			stats_details::mean_std_dev(X_first, C_first, n, mean_sd);
 
-			ret.p_value = -1;			// !!! TODO
+			if (mean_sd[0].sd == 0 || mean_sd[1].sd == 0)
+				return 0;
 
-			return ret;
+			return (mean_sd[0].avg - mean_sd[1].avg) / (mean_sd[0].sd + mean_sd[1].sd);
 		}
 	};
 

@@ -86,7 +86,6 @@ namespace refresh
 			template<size_t N_BYTES>
 			using UnsignedInt = typename UnsignedIntImpl<N_BYTES>::type;
 
-
 			//callback must be compatibile with void store_byte(uint8_t byte);
 			template<typename T, typename STORE_BYTE_CALLBACK>
 			void read_bytes_little_endian_impl(const T& value, const STORE_BYTE_CALLBACK& store_byte)
@@ -94,7 +93,20 @@ namespace refresh
 				static_assert(std::is_unsigned<T>::value, "This only works for unsigned");
 				for (uint32_t i = 0; i < sizeof(value); ++i)
 				{
-					uint8_t byte = value >> (8 * i);
+					uint8_t byte = static_cast<uint8_t>(value >> (8 * i));
+					store_byte(byte);
+				}
+			}
+
+			//callback must be compatibile with void store_byte(uint8_t byte);
+			template<typename T, typename STORE_BYTE_CALLBACK>
+			void read_bytes_little_endian_impl(const T& value, const STORE_BYTE_CALLBACK& store_byte, size_t only_num_bytes)
+			{
+				assert(only_num_bytes <= sizeof(value));
+				static_assert(std::is_unsigned<T>::value, "This only works for unsigned");
+				for (uint32_t i = 0; i < only_num_bytes; ++i)
+				{
+					uint8_t byte = static_cast<uint8_t>(value >> (8 * i));
 					store_byte(byte);
 				}
 			}
@@ -106,6 +118,20 @@ namespace refresh
 				static_assert(std::is_unsigned<T>::value, "This only works for unsigned");
 				value = T{};
 				for (uint32_t i = 0; i < sizeof(value); ++i)
+				{
+					T byte = read_byte();
+					value |= byte << (8 * i);
+				}
+			}
+
+			//callback must be compatibile with uint8_t read_byte();
+			template<typename T, typename READ_BYTE_CALLBACK>
+			void write_bytes_little_endian_impl(T& value, const READ_BYTE_CALLBACK& read_byte, size_t serialized_size_bytes)
+			{
+				assert(serialized_size_bytes <= sizeof(T));
+				static_assert(std::is_unsigned<T>::value, "This only works for unsigned");
+				value = T{};
+				for (uint32_t i = 0; i < serialized_size_bytes; ++i)
 				{
 					T byte = read_byte();
 					value |= byte << (8 * i);
@@ -135,6 +161,20 @@ namespace refresh
 				}
 			}
 
+			//callback must be compatibile with void store_byte(uint8_t byte);
+			template<typename T, typename STORE_BYTE_CALLBACK>
+			void read_bytes_little_endian(const T& value, const STORE_BYTE_CALLBACK& store_byte, size_t only_num_bytes)
+			{
+				if constexpr (std::is_unsigned_v<T>)
+					detail::read_bytes_little_endian_impl(value, store_byte, only_num_bytes);
+				else
+				{
+					using unsigned_type = detail::UnsignedInt<sizeof(T)>;
+					auto converted_val = detail::change_type<unsigned_type>(value);
+					detail::read_bytes_little_endian_impl(converted_val, store_byte, only_num_bytes);
+				}
+			}
+
 			//callback must be compatibile with uint8_t read_byte();
 			template<typename T, typename READ_BYTE_CALLBACK>
 			void write_bytes_little_endian(T& value, const READ_BYTE_CALLBACK& read_byte)
@@ -149,8 +189,22 @@ namespace refresh
 					value = detail::change_type<T>(res);
 				}
 			}
-		} // namespace detail
 
+			//callback must be compatibile with uint8_t read_byte();
+			template<typename T, typename READ_BYTE_CALLBACK>
+			void write_bytes_little_endian(T& value, const READ_BYTE_CALLBACK& read_byte, size_t serialized_size_bytes)
+			{
+				if constexpr (std::is_unsigned_v<T>)
+					detail::write_bytes_little_endian_impl(value, read_byte, serialized_size_bytes);
+				else
+				{
+					using unsigned_type = detail::UnsignedInt<sizeof(T)>;
+					unsigned_type res;
+					detail::write_bytes_little_endian_impl(res, read_byte, serialized_size_bytes);
+					value = detail::change_type<T>(res);
+				}
+			}
+		} // namespace detail
 
 		//single value
 		template<typename T>
@@ -162,11 +216,38 @@ namespace refresh
 		}
 
 		template<typename T>
+		void serialize_little_endian(const T& value, uint8_t*& out)
+		{
+			detail::read_bytes_little_endian(value, [&out](uint8_t byte) {
+				*out++ = byte;
+				});
+		}
+
+		template<typename T>
+		void serialize_little_endian(const T& value, uint8_t*& out, size_t only_num_bytes)
+		{
+			assert(only_num_bytes <= sizeof(T));
+			detail::read_bytes_little_endian(value, [&out](uint8_t byte) {
+				*out++ = byte;
+				}, only_num_bytes);
+		}
+
+		template<typename T>
 		void serialize_little_endian(const T& value, std::vector<uint8_t>& out)
 		{
 			detail::read_bytes_little_endian(value, [&out](uint8_t byte) {
 				out.push_back(byte);
 			});
+		}
+
+		inline void serialize_string_no_len(const std::string& str, std::vector<uint8_t>& out) {
+			out.insert(out.end(), str.begin(), str.end());
+		}
+
+		inline void serialize_string_with_len(const std::string& str, std::vector<uint8_t>& out) {
+			size_t len = str.length();
+			serialize_little_endian(len, out);
+			serialize_string_no_len(str, out);
 		}
 
 		template<typename T>
@@ -181,11 +262,19 @@ namespace refresh
 		}
 
 		template<typename T>
-		void load_little_endian(T& value, uint8_t* &in)
+		void load_little_endian(T& value, const uint8_t* &in)
 		{
 			detail::write_bytes_little_endian(value, [&in]() {
 				return *in++;
 			});
+		}
+
+		template<typename T>
+		void load_little_endian(T& value, const uint8_t*& in, size_t serialized_size_bytes)
+		{
+			detail::write_bytes_little_endian(value, [&in]() {
+				return *in++;
+				}, serialized_size_bytes);
 		}
 
 		template<typename T>
@@ -194,6 +283,32 @@ namespace refresh
 			detail::write_bytes_little_endian(value, [&in, &pos]() {
 				return in[pos++];
 				});
+		}
+
+		template<typename T>
+		void load_little_endian(T& value, const std::vector<uint8_t>& in, size_t& pos, size_t serialized_size_bytes)
+		{
+			detail::write_bytes_little_endian(value, [&in, &pos]() {
+				return in[pos++];
+				}, serialized_size_bytes);
+		}
+
+		inline void load_string(std::string& data, size_t len, const std::vector<uint8_t>& in, size_t& pos) {
+			data.clear();
+			data.insert(data.end(), in.begin() + pos, in.begin() + pos + len);
+			pos += len;
+		}
+
+		inline void load_string(std::string& data, const std::vector<uint8_t>& in, size_t& pos) {
+			size_t len;
+			load_little_endian(len, in, pos);
+			load_string(data, len, in, pos);
+		}
+
+		inline std::string load_string(const std::vector<uint8_t>& in, size_t& pos) {
+			std::string res;
+			load_string(res, in, pos);
+			return res;
 		}
 
 		//std::pair
@@ -249,7 +364,7 @@ namespace refresh
 		}
 
 		template<typename T>
-		void load_little_endian(std::vector<T>& recs, uint8_t*& in)
+		void load_little_endian(std::vector<T>& recs, const uint8_t*& in)
 		{
 			uint64_t size;
 			load_little_endian(size, in);
@@ -258,6 +373,31 @@ namespace refresh
 				load_little_endian(rec, in);
 		}
 
+		inline uint64_t bswap_uint64(uint64_t val)
+		{
+#ifdef _MSC_VER
+			return _byteswap_uint64(val);
+#elif defined(__GNUC__) || defined(__clang__)
+			return __builtin_bswap64(val);
+#else //unknown. Use the fastest "standard" way I've found
+		val = ((val << 8) & 0xFF00FF00FF00FF00ULL) + ((val >> 8) & 0x00FF00FF00FF00FFULL);
+		val = ((val << 16) & 0xFFFF0000FFFF0000ULL) + ((val >> 16) & 0x0000FFFF0000FFFFULL);
+		val = (val << 32) + (val >> 32);
+		return val;
+#endif
+		}
+
+		inline uint32_t bswap_uint32(uint32_t val)
+		{
+#ifdef _MSC_VER
+			return _byteswap_ulong(val);
+#elif defined(__GNUC__) || defined(__clang__)
+			return __builtin_bswap32(val);
+#else //unknown. Use the fastest "standard" way I've found
+			val = (val<<24) | ((val<<8) & 0x00ff0000) | ((val >> 8) & 0x0000ff00) | (val >> 24);
+			return val;
+#endif
+		}
 	} // namespace serialization
 } // namespace refresh
 
