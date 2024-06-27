@@ -19,11 +19,6 @@ void Finish::finishProcessing()
 			}
 			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB);
 		}
-		if (params.statisticsParams.generateNormalization)
-		{
-			std::filesystem::remove(params.statisticsParams.normFrequencyFileTmp);
-			std::filesystem::remove(params.statisticsParams.normQuantileFileTmp);
-		}
 	}
 	if (params.mutableParams.tmpDirCreated)
 	{

@@ -53,9 +53,6 @@ void Params::generateTempAndOutputFilesNames()
 	filterParams.kmersSequencesToFilterOutDB = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter";
 	mutableParams.kmersSequencesToFilterOut = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter.fa";
 
-	statisticsParams.normFrequencyFileTmp = tmpFilesTemplate + statisticsParams.normFrequencyFileTmp;
-	statisticsParams.normQuantileFileTmp = tmpFilesTemplate + statisticsParams.normQuantileFileTmp;
-
 	const uint32_t nBinsDigits = static_cast<uint32_t>(std::log10(static_cast<double>(stage1Params.GetNBins()))) + 1;
 	for (uint32_t binId = 0; binId < stage1Params.GetNBins(); ++binId) {
 		std::ostringstream sstreamOutput;

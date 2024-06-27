@@ -180,6 +180,7 @@
     <ClInclude Include="HeapMerge.h" />
     <ClInclude Include="KMCFileWrapper.h" />
     <ClInclude Include="KMCRunner.h" />
+    <ClInclude Include="MatrixStats.h" />
     <ClInclude Include="SequenceFilterInit.h" />
     <ClInclude Include="KmersSamplesStruct.h" />
     <ClInclude Include="parameters.h" />

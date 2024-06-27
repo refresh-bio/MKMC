@@ -96,5 +96,8 @@
     <ClInclude Include="StatisticsGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MatrixStats.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

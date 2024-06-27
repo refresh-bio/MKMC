@@ -78,9 +78,8 @@ struct StatisticsParams
 	std::string phenotypeFile;
 	std::vector<CorrelationMethod> correlationMethods;
 
-	std::string normFrequencyFileTmp = "frequencyDump";
-	std::string normQuantileFileTmp = "quantileDump";
-
+	inline const static std::string normFrequencyStreamName = "norm_frequency";
+	inline const static std::string normQuantileStreamName = "norm_quantile";
 };
 
 struct MutableParams

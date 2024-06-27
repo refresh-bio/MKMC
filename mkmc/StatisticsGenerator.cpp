@@ -1,4 +1,5 @@
 #include "StatisticsGenerator.h"
+#include "MatrixStats.h"
 #include <algorithm>
 
 
@@ -188,10 +189,18 @@ void StatisticsGenerator::generateStatisticsParallel()
 
 	if (params.statisticsParams.generateNormalization)
 	{
+		MatrixStatsReader stats_reader(params.mkmcParams.outputFilesTemplate + ".stats");
+		bool success = false;
 		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::frequency_count)
-			readDump(normalizationData, params.statisticsParams.normFrequencyFileTmp);
+			success = stats_reader.Get(params.statisticsParams.normFrequencyStreamName, normalizationData);
 		else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile)
-			readDump(normalizationData, params.statisticsParams.normQuantileFileTmp);
+			success = stats_reader.Get(params.statisticsParams.normQuantileStreamName, normalizationData);
+
+		if (!success)
+		{
+			std::cerr << "Error: cannot read normalization data\n";
+			exit(1);
+		}
 	}
 
 	if (!params.statisticsParams.correlationMethods.empty())

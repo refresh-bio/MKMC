@@ -22,6 +22,7 @@
 #include "progress_bar.hpp"
 #include "Dump.h"
 #include "Filter.h"
+#include "MatrixStats.h"
 #include "KmersSamplesStruct.h"
 #include "kmcdb/kmcdb.h"
 #include "refresh/statistics/lib/statistics_normalization.h"
@@ -59,8 +60,6 @@ class Dump
 
 	bool inputIsConsistent();
 	void fillTaskData();
-	template<typename T>
-	void writeDump(const std::vector<T>& data, std::string fileName);
 	void serializeNormalizationAndDump();
 
 	template<typename Generators_T, typename Filters_T>
@@ -68,9 +67,12 @@ class Dump
 
 public:
 	Dump(const Params& params) :
-		params(params), tasksPool(tasksData)//,
-		//progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : getNTotInputKmers(), "Dumping", std::cerr, params.mkmcParams.verbosity_level == 0)
+		params(params), tasksPool(tasksData)
 	{
+		//mkokot_TODO: zapytac macka czy zawsze potrzebujemy zbierac obie te rzeczy
+		//to moze miec sens bo potencjalnei mozemy chciec wiele nowych przeksztalcen, tj. statystyk liczyc
+		// z drugiej strony kazde przyciecie macierzy powinno sobie nowe takie generowac statystyki
+		// jeszcze jest taka kwestia, ze nie wiem jak kosztowne sa te obliczenia
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::frequency_count);
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
 		normalizationLearning.set_no_series(params.mkmcParams.samples.size());
@@ -269,39 +271,18 @@ inline void Dump<SIZE>::fillTaskData()
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return samplesBeginSize[a.binId] > samplesBeginSize[b.binId]; });
 }
 
-
-
-template<unsigned SIZE>
-template<typename T>
-void Dump<SIZE>::writeDump(const std::vector<T>& normalizationData, std::string normalizationFileName)
-{
-	std::ofstream file(normalizationFileName, std::ios::binary);
-	if (!file.is_open())
-	{
-		std::cerr << "Error: cannot open " << normalizationFileName << "." << std::endl;
-		exit(1);
-	}
-
-	size_t nElements = normalizationData.size();
-	file.write(reinterpret_cast<char*>(&nElements), sizeof(size_t));
-	file.write(const_cast<char*>(reinterpret_cast<const char*>(normalizationData.data())), normalizationData.size() * sizeof(T));
-}
-
-
-
 template<unsigned SIZE>
 void Dump<SIZE>::serializeNormalizationAndDump()
 {
 	std::vector<uint8_t> frequencyNormalizationData, quantileNormalizationData;
+
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::frequency_count, frequencyNormalizationData);
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::quantile, quantileNormalizationData);
 
-	//mkokot_TODO: to podmienic tez na jakiegos jednego archive...
-	writeDump(frequencyNormalizationData, params.statisticsParams.normFrequencyFileTmp);
-	writeDump(quantileNormalizationData, params.statisticsParams.normQuantileFileTmp);
+	MatrixStatsWriter stats_writer(params.mkmcParams.outputFilesTemplate + ".stats");
+	stats_writer.Add(params.statisticsParams.normFrequencyStreamName, frequencyNormalizationData);
+	stats_writer.Add(params.statisticsParams.normQuantileStreamName, quantileNormalizationData);
 }
-
-
 
 template<unsigned SIZE>
 void Dump<SIZE>::dumpToFileParallel()
