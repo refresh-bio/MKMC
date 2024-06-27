@@ -70,45 +70,54 @@ killifishretina2 kfB.fastq.gz`
 
 #### Results example
 Lets assume following FASTQ files:
- - `1.fq`:
+ - `1_1.fq`:
 ```
 @Common k-mers
 ACGTACGTGGGTTAAAACCCAGGGGT
 +
 IIIIIIIIIIIIIIIIIIIIIIIIII
+```
+ - `1_2.fq`:
+```
 @k-mers in 1 and 2
 ATCTGTTTATCTGTTTGTGTGTTTTA
 +
 IIIIIIIIIIIIIIIIIIIIIIIIII
 ```
- - `2.fq`:
+ - `2_1.fq`:
 ```
 @Common k-mers
 ACGTACGTGGGTTAAAACCCAGGGGT
 +
 IIIIIIIIIIIIIIIIIIIIIIIIII
+```
+- `2_2.fq`:
+```
 @k-mers in 1 and 2
 ATCTGTTTATCTGTTTGTGTGTTTTA
 +
 IIIIIIIIIIIIIIIIIIIIIIIIII
 ```
- - `3.fq`:
+ - `3_1.fq`:
 ```
-@Common k-mers
-ACGTACGTGGGTTAAAACCCAGGGGT
-+
-IIIIIIIIIIIIIIIIIIIIIIIIII
 @k-mers only in 3
 ACGTAGGTGGGTTAATTCCCAGGGGT
++
+IIIIIIIIIIIIIIIIIIIIIIIIII
+```
+- `3_2.fq`:
+```
+@Common k-mers
+ACGTACGTGGGTTAAAACCCAGGGGT
 +
 IIIIIIIIIIIIIIIIIIIIIIIIII
 ```
 
 And file `files.txt` containng:
 ```
-sample1 1.fq
-sample2 2.fq
-sample3 3.fq
+sample1 1_1.fq 1_2.fq
+sample2 2_1.fq 2_2.fq
+sample3 3_1.fq 3_2.fq
 ```
 All the samples are stored in single, unpaired files. To have k-mers that were present in each input sample one may use:
 ```
