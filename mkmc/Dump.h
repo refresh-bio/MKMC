@@ -339,7 +339,11 @@ void Dump<SIZE>::dumpToFileParallel()
 
 		kmcdb::ConfigSortedPlain representation_config{};
 
-		std::vector<std::string> sample_names{}; //mkokot_TODO: fill this!
+		std::vector<std::string> sample_names{};
+		sample_names.reserve(params.mkmcParams.samples.size());
+
+		for (const auto& sample : params.mkmcParams.samples)
+			sample_names.push_back(sample.name);
 
 		try
 		{

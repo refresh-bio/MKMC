@@ -45,27 +45,6 @@ class StatisticsGenerator
 	template<typename T>
 	void readDump(std::vector<T>& normalizationData, std::string normalizationFileName);
 
-	bool getLine(std::ifstream& stream, std::string& kmerSequence, std::vector<uint64_t>& counts)
-	{
-		stream >> kmerSequence;
-		if (stream.eof())
-			return false;
-		for (auto& count : counts)
-		{
-			stream >> count;
-		}
-		return true;
-	}
-	void putLine(std::ofstream& stream, std::string& kmerSequence, const std::vector<double>& counts)
-	{
-		stream << kmerSequence << '\t';
-		for (auto count : counts)
-		{
-			stream << count << '\t';
-		}
-		stream << '\n';
-	}
-
 	uint64_t getNTotInputKmers()
 	{
 		std::vector<uint64_t> nOutputKmersPerBin;
@@ -91,8 +70,6 @@ public:
 
 	void generateStatisticsParallel();
 };
-
-
 
 template<typename T>
 void StatisticsGenerator::readDump(std::vector<T>& data, std::string fileName)

@@ -24,7 +24,24 @@ void StatisticsGenerator::fillTaskData()
 
 		kmcdb::ConfigSortedPlain representation_config{};
 
-		std::vector<std::string> sample_names{}; //mkokot_TODO: fill this!
+		std::vector<std::string> sample_names;
+		matrixReader->GetSampleNames(sample_names);
+		assert(!sample_names.empty());
+
+		auto is_method = [&](StatisticsParams::CorrelationMethod method)
+			{
+				const auto& corMeths = params.statisticsParams.correlationMethods;
+				return std::find(corMeths.begin(), corMeths.end(), method) != corMeths.end();
+			};
+
+		if (is_method(StatisticsParams::CorrelationMethod::Pearson))
+			sample_names.emplace_back("pearson_cor");
+
+		if (is_method(StatisticsParams::CorrelationMethod::Spearman))
+			sample_names.emplace_back("spearman_cor");
+
+		if (is_method(StatisticsParams::CorrelationMethod::Kendall))
+			sample_names.emplace_back("kendall_cor");
 
 		kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<double>>(
 			config,

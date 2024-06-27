@@ -219,7 +219,6 @@ int main(int argc, char** argv)
 
 		if (params.statisticsParams.generateNormalization)
 		{
-			//mkokot_TODO: w tym miejscu jest odczyt macierzy i robienie roznych rzeczy
 			std::cerr << "\nStarting normalizing and computing correlation...\n";
 			StatisticsGenerator statisticsGenerator(params);
 			statistics_timer.startTimer();
