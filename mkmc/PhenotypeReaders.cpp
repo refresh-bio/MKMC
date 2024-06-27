@@ -26,13 +26,13 @@ bool DifferentialAnalysisPhenotypeReader::verifyClassesSense()
 		mapToInt.clear();
 		mapToClass.clear();
 
-		for (uint32_t i = 0; i < maximal; ++i)
+		for (uint32_t i = 0; i <= maximal; ++i)
 		{
 			std::string classStr = std::to_string(i);
 			mapToInt[classStr] = i;
 			mapToClass.push_back(classStr);
 		}
-		for (uint32_t i = 0; i < maximal; ++i)
+		for (uint32_t i = 0; i <= maximal; ++i)
 		{
 			mappedPhenotype[i] = mapToInt[getPhenotype()[i]];
 		}
