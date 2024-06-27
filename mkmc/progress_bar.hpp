@@ -22,6 +22,7 @@ class ProgressBar {
 
     ~ProgressBar();
 
+    uint64_t GetTotal() const { return total_; }
     void SetFrequencyUpdate(uint64_t frequency_update_);
     void SetStyle(char unit_bar, char unit_space);
 

@@ -81,7 +81,6 @@ struct StatisticsParams
 	std::string normFrequencyFileTmp = "frequencyDump";
 	std::string normQuantileFileTmp = "quantileDump";
 
-	std::string statsNOutputKmers = "nKmers";
 };
 
 struct MutableParams

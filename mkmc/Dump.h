@@ -55,8 +55,6 @@ class Dump
 	std::unique_ptr<kmcdb::MetadataReader> sequencesToFilterMetadataReader;
 	std::unique_ptr<kmcdb::ReaderSortedWithLUTForListing<uint64_t>> sequencesToFilterReader;
 
-	std::vector<uint64_t> nOutputKmersPerBin;
-
 	std::unique_ptr<ProgressBar> progress_bar;
 
 	bool inputIsConsistent();
@@ -149,7 +147,6 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 		return;
 
 	kmcdb::CKmer<SIZE> minKmer;
-	uint64_t nOutputKmers = 0;
 
 	heap.ProcessElem(do_with_elem_if_exists, [&](size_t elem, size_t id)
 		{
@@ -169,7 +166,6 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 					{
 						fileGenerator.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 						normalizationLearning.add_entry(kMersCounts);
-						++nOutputKmers;
 					}
 
 					minKmer = curKmer;
@@ -184,9 +180,7 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 	{
 		fileGenerator.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 		normalizationLearning.add_entry(kMersCounts);
-		++nOutputKmers;
 	}
-	nOutputKmersPerBin[binId] = nOutputKmers;
 }
 
 
@@ -225,7 +219,6 @@ inline void Dump<SIZE>::fillTaskData()
 	{
 		tasksData.push_back(TaskData{ i });
 	}
-	nOutputKmersPerBin.resize(params.stage1Params.GetNBins(), 0);
 
 	uint64_t biggestSampleKmersCount = 0;
 
@@ -306,8 +299,6 @@ void Dump<SIZE>::serializeNormalizationAndDump()
 	//mkokot_TODO: to podmienic tez na jakiegos jednego archive...
 	writeDump(frequencyNormalizationData, params.statisticsParams.normFrequencyFileTmp);
 	writeDump(quantileNormalizationData, params.statisticsParams.normQuantileFileTmp);
-
-	writeDump(nOutputKmersPerBin, params.statisticsParams.statsNOutputKmers);
 }
 
 

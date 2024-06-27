@@ -23,7 +23,6 @@ void Finish::finishProcessing()
 		{
 			std::filesystem::remove(params.statisticsParams.normFrequencyFileTmp);
 			std::filesystem::remove(params.statisticsParams.normQuantileFileTmp);
-			std::filesystem::remove(params.statisticsParams.statsNOutputKmers);
 		}
 	}
 	if (params.mutableParams.tmpDirCreated)

@@ -47,7 +47,7 @@ void StatisticsGenerator::fillTaskData()
 			config,
 			representation_config,
 			params.mkmcParams.outputFilesTemplate + "_norm+cor.kmcdb",
-			params.mkmcParams.outputFilesTemplate,
+			params.mkmcParams.outputFilesTemplate + ".kmcdb",
 			sample_names);
 	}
 	catch (const std::runtime_error& ex)
@@ -56,25 +56,21 @@ void StatisticsGenerator::fillTaskData()
 		exit(1);
 	}
 	tasksData.reserve(params.stage1Params.GetNBins());
-	std::vector<uint64_t> nKmersPerBin;
-	nKmersPerBin.reserve(params.stage1Params.GetNBins());
+	std::vector<uint64_t> nOutputKmersPerBin;
+	nOutputKmersPerBin.reserve(params.stage1Params.GetNBins());
+	
 	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
 	{
 		tasksData.push_back(TaskData{ i });
-		nKmersPerBin.push_back(matrixReader->GetBin(i)->GetBinMetadata().total_kmers);
+		nOutputKmersPerBin.push_back(matrixReader->GetBin(i)->GetBinMetadata().total_kmers);
 	}
-	std::vector<uint64_t> nOutputKmersPerBin; //mkokot_TODO: to tego chyba nie trzeba serializowac i tutaj deserializowac bo to jest przeciez w kmcdb
-	readDump(nOutputKmersPerBin, params.statisticsParams.statsNOutputKmers);
 
-	if (nOutputKmersPerBin != nKmersPerBin)
-	{
-		std::cerr << "Error: nOutputKmersPerBin != nKmersPerBin\n";
-		exit(1);
-	}
-	else
-	{
-		std::cerr << "OK: nOutputKmersPerBin == nKmersPerBin\n";
-	}
+	progress_bar = std::make_unique<ProgressBar>(
+		params.mkmcParams.verbosity_level == 0 ? 0 : std::accumulate(nOutputKmersPerBin.begin(), nOutputKmersPerBin.end(), 0ull),
+		"Computing statistics",
+		std::cerr,
+		params.mkmcParams.verbosity_level == 0);
+
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return nOutputKmersPerBin[a.binId] > nOutputKmersPerBin[b.binId]; });
 }
 
@@ -137,7 +133,7 @@ void StatisticsGenerator::operator()()
 		matrixEntry.resize(num_samples);
 		outEntry.resize(num_samples);
 
-		ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, totAllKmers / 100ull));
+		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
 		auto kmer_len = params.stage1Params.GetKmerLen();
 		std::string kmerSequence(kmer_len, ' ');

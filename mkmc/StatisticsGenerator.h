@@ -36,24 +36,13 @@ class StatisticsGenerator
 
 	std::unique_ptr<kmcdb::WriterSortedPlain<out_kmcdb_value_type>> kmcdbWriter;
 
-	uint64_t totAllKmers;
-	ProgressBar progress_bar;
+	std::unique_ptr<ProgressBar> progress_bar;
 
 	void fillTaskData();
 
 	void readPhenotype(std::vector<int>& phenotype);
 	template<typename T>
 	void readDump(std::vector<T>& normalizationData, std::string normalizationFileName);
-
-	uint64_t getNTotInputKmers()
-	{
-		std::vector<uint64_t> nOutputKmersPerBin;
-		readDump(nOutputKmersPerBin, params.statisticsParams.statsNOutputKmers);
-		uint64_t nKmers = 0;
-		for (auto a : nOutputKmersPerBin)
-			nKmers += a;
-		return nKmers;
-	}
 
 	std::vector<uint8_t> normalizationData;
 	std::vector<int> phenotype;
@@ -63,9 +52,7 @@ class StatisticsGenerator
 public:
 	StatisticsGenerator(Params& params) :
 		params(params),
-		tasksPool(tasksData),
-		totAllKmers(getNTotInputKmers()),
-		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : totAllKmers, "Computing statistics", std::cerr, params.mkmcParams.verbosity_level == 0)
+		tasksPool(tasksData)
 	{}
 
 	void generateStatisticsParallel();
