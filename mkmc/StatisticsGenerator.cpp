@@ -56,12 +56,25 @@ void StatisticsGenerator::fillTaskData()
 		exit(1);
 	}
 	tasksData.reserve(params.stage1Params.GetNBins());
+	std::vector<uint64_t> nKmersPerBin;
+	nKmersPerBin.reserve(params.stage1Params.GetNBins());
 	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
 	{
 		tasksData.push_back(TaskData{ i });
+		nKmersPerBin.push_back(matrixReader->GetBin(i)->GetBinMetadata().total_kmers);
 	}
-	std::vector<uint64_t> nOutputKmersPerBin;
+	std::vector<uint64_t> nOutputKmersPerBin; //mkokot_TODO: to tego chyba nie trzeba serializowac i tutaj deserializowac bo to jest przeciez w kmcdb
 	readDump(nOutputKmersPerBin, params.statisticsParams.statsNOutputKmers);
+
+	if (nOutputKmersPerBin != nKmersPerBin)
+	{
+		std::cerr << "Error: nOutputKmersPerBin != nKmersPerBin\n";
+		exit(1);
+	}
+	else
+	{
+		std::cerr << "OK: nOutputKmersPerBin == nKmersPerBin\n";
+	}
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return nOutputKmersPerBin[a.binId] > nOutputKmersPerBin[b.binId]; });
 }
 
