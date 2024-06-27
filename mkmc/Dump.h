@@ -350,7 +350,7 @@ void Dump<SIZE>::dumpToFileParallel()
 			this->kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<uint64_t>>(
 				config,
 				representation_config,
-				params.mkmcParams.outputFilesTemplate, //mkokot_TODO: maybe I should keep this approach that this is only template, and append kmcdb extensiton, hm
+				params.mkmcParams.outputFilesTemplate + ".kmcdb",
 				"",
 				sample_names);
 		}
