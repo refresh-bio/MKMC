@@ -5,12 +5,10 @@
 
 void Finish::finishProcessing()
 {
-	//mkokot_TODO: tutaj chyba zrobilem niepotrzebnie zduplikowanie usuwanie jak pozbywalem sie kmc_pre i suf
 	if (!params.mkmcParams.keepTmpFiles)
 	{
 		for (const auto& kmcOutputFile : params.mkmcParams.kmcOutputFiles)
 		{
-			std::filesystem::remove(kmcOutputFile);
 			std::filesystem::remove(kmcOutputFile);
 		}
 		if (params.filterParams.filterKmersSequences)
@@ -19,7 +17,6 @@ void Finish::finishProcessing()
 			{
 				std::filesystem::remove(params.mutableParams.kmersSequencesToFilterOut);
 			}
-			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB);
 			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB);
 		}
 		if (params.statisticsParams.generateNormalization)
