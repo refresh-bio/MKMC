@@ -71,6 +71,8 @@ class StatisticsGenerator
 	std::vector<uint8_t> normalizationData;
 
 	const std::vector<int64_t>& correlationPhenotype;
+	const std::vector<uint32_t>& differentialAnalysisPhenotype;
+	size_t differentialAnalysisClasses;
 
 	void operator()();
 
@@ -80,7 +82,9 @@ public:
 		tasksPool(tasksData),
 		totAllKmers(getNTotInputKmers()),
 		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : totAllKmers, "Computing statistics", std::cerr, params.mkmcParams.verbosity_level == 0),
-		correlationPhenotype(params.phenotypes.correlationPhenotype.getPhenotype())
+		correlationPhenotype(params.phenotypes.correlationPhenotype.getPhenotype()),
+		differentialAnalysisPhenotype(params.phenotypes.differentialAnalysisPhenotype.getMappedPhenotype()),
+		differentialAnalysisClasses(params.phenotypes.differentialAnalysisPhenotype.getClassesNumber())
 	{}
 
 	void generateStatisticsParallel();

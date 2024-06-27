@@ -29,7 +29,7 @@ Options:
  - `-n ENUM:value in {freq,q}` - generate normalized counts (frequency count/quantile normalization)
  - `--cor ENUM:value in {kendall,pearson,spearman}` Needs: `-n` `-p` - compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a set of the integers, one in each line)
- - `--diff ENUM:value in {t}` Needs: `-c` - perform differential k-mers analysis (T-Test)
+ - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` Needs: `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))
  - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a set of the natural numbers or text labels, one in each line)
  - `--entropy` - generate k-mers counts entropy
 

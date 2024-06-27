@@ -64,6 +64,7 @@ public:
 	void mapPhenotypeToInts();
 
 	const std::vector<uint32_t>& getMappedPhenotype() const { return mappedPhenotype; }
+	size_t getClassesNumber() const { return mapToInt.size(); };
 };
 
 

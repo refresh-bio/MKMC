@@ -73,6 +73,12 @@ void Params::generateTempAndOutputFilesNames()
 		mkmcParams.outputFilesKendall.push_back(mkmcParams.outputFilesTemplate + "_kendall_tau_" + binIdStr);
 
 		mkmcParams.outputFilesEntropy.push_back(mkmcParams.outputFilesTemplate + "_entropy_" + binIdStr);
+
+		mkmcParams.outputFilesTTest.push_back(mkmcParams.outputFilesTemplate + "_ttest_" + binIdStr);
+		mkmcParams.outputFilesSNR.push_back(mkmcParams.outputFilesTemplate + "_snr_" + binIdStr);
+		mkmcParams.outputFilesWilcoxonRankSum.push_back(mkmcParams.outputFilesTemplate + "_wrs_" + binIdStr);
+		mkmcParams.outputFilesDIDS.push_back(mkmcParams.outputFilesTemplate + "_dids_" + binIdStr);
+		mkmcParams.outputFilesANOVA.push_back(mkmcParams.outputFilesTemplate + "_anova_" + binIdStr);
 	}
 }
 
@@ -159,5 +165,24 @@ void Params::readPhenotypes()
 	{
 		phenotypes.differentialAnalysisPhenotype.readPhenotype();
 		phenotypes.differentialAnalysisPhenotype.mapPhenotypeToInts();
+
+		for (auto method : statisticsParams.classificationMethods)
+		{
+			if (method == StatisticsParams::DifferentialAnalysisMethod::TTest && phenotypes.differentialAnalysisPhenotype.getClassesNumber() > 2)
+			{
+				std::cerr << "Error: number of distinct classes in a file " << phenotypes.differentialAnalysisPhenotype.getFileName() << " for T-Test must equal to 2." << std::endl;
+				exit(1);
+			}
+			else if (method == StatisticsParams::DifferentialAnalysisMethod::SNR && phenotypes.differentialAnalysisPhenotype.getClassesNumber() > 2)
+			{
+				std::cerr << "Error: number of distinct classes in a file " << phenotypes.differentialAnalysisPhenotype.getFileName() << " for Signal to Noise ratio determination must equal to 2." << std::endl;
+				exit(1);
+			}
+			else if (method == StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum && phenotypes.differentialAnalysisPhenotype.getClassesNumber() > 2)
+			{
+				std::cerr << "Error: number of distinct classes in a file " << phenotypes.differentialAnalysisPhenotype.getFileName() << " for Wilcoxon-rank sum determination must equal to 2." << std::endl;
+				exit(1);
+			}
+		}
 	}
 }

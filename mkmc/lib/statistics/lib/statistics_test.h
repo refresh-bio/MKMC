@@ -21,7 +21,7 @@ namespace refresh
 
 		static double pow2(size_t x)
 		{
-			return pow2((double)x);
+			return x * x;
 		}
 
 		static double pow2(double x)
@@ -31,7 +31,7 @@ namespace refresh
 
 		static double pow3(size_t x)
 		{
-			return pow3((double)x);
+			return x * x * x;
 		}
 
 		static double pow3(double x)

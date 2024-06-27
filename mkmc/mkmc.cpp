@@ -98,8 +98,9 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	p = app.add_option_function("-p", pCallback, "set a phenotype file (a set of the integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
 
-	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"t", StatisticsParams::DifferentialAnalysisMethod::TTest } };
-	differentialAnalysis = app.add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (T-Test)")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
+	typedef StatisticsParams::DifferentialAnalysisMethod DAMethod;
+	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"ttest", DAMethod::TTest }, {"snr", DAMethod::SNR }, {"wrs", DAMethod::WilcoxonRankSum }, {"dids", DAMethod::DIDS }, {"anova", DAMethod::ANOVA } };
+	differentialAnalysis = app.add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
 
 	std::function<void(const std::string&)> cCallback = [&](const std::string& fileName)
 	{
@@ -235,7 +236,7 @@ int main(int argc, char** argv)
 		DumpRunner dump_runner(params, dump_timer);
 		DispatchKmerSize(params.stage1Params.GetKmerLen(), dump_runner);
 
-		if (params.statisticsParams.generateNormalization)
+		if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
 		{
 			std::cerr << "\nStarting normalizing and computing correlation...\n";
 			StatisticsGenerator statisticsGenerator(params);

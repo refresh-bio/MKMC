@@ -44,6 +44,12 @@ struct MKMCParams
 
 	std::vector<std::string> outputFilesEntropy;
 
+	std::vector<std::string> outputFilesTTest;
+	std::vector<std::string> outputFilesSNR;
+	std::vector<std::string> outputFilesWilcoxonRankSum;
+	std::vector<std::string> outputFilesDIDS;
+	std::vector<std::string> outputFilesANOVA;
+
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
 	uint32_t nKMCWorkers = 4;
 	uint32_t maxRamGB = 16;
@@ -85,7 +91,7 @@ struct StatisticsParams
 	enum class CorrelationMethod { Pearson, Spearman, Kendall };
 	std::vector<CorrelationMethod> correlationMethods;
 
-	enum class DifferentialAnalysisMethod { TTest };
+	enum class DifferentialAnalysisMethod { TTest, SNR, WilcoxonRankSum, DIDS, ANOVA };
 	std::vector<DifferentialAnalysisMethod> classificationMethods;
 
 	bool generateEntropy = false;

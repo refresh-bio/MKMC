@@ -331,7 +331,7 @@ void Dump<SIZE>::dumpToFileParallel()
 		thread.join();
 	}
 
-	if (params.statisticsParams.generateNormalization)
+	if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
 		serializeNormalizationAndDump();
 }
 

@@ -38,6 +38,7 @@ void StatisticsGenerator::operator()()
 
 		bool generatePearson = false, generateSpearman = false, generateKendall = false;
 		bool generateEntropy = false;
+		bool generateStatistics = false, generateTTest = false, generateSNR = false, generateWilcoxonRankSum = false, generateDIDS = false, generateANOVA = false;
 
 		for (auto method : params.statisticsParams.correlationMethods)
 		{
@@ -49,6 +50,20 @@ void StatisticsGenerator::operator()()
 				generateKendall = true;
 		}
 		generateEntropy = params.statisticsParams.generateEntropy;
+		generateStatistics = !params.statisticsParams.classificationMethods.empty();
+		for (auto method : params.statisticsParams.classificationMethods)
+		{
+			if (method == StatisticsParams::DifferentialAnalysisMethod::TTest)
+				generateTTest = true;
+			else if (method == StatisticsParams::DifferentialAnalysisMethod::SNR)
+				generateSNR = true;
+			else if (method == StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum)
+				generateWilcoxonRankSum = true;
+			else if (method == StatisticsParams::DifferentialAnalysisMethod::DIDS)
+				generateDIDS = true;
+			else if (method == StatisticsParams::DifferentialAnalysisMethod::ANOVA)
+				generateANOVA = true;
+		}
 
 		std::string header;
 		std::getline(matrixFile, header);
@@ -56,6 +71,7 @@ void StatisticsGenerator::operator()()
 
 		std::ofstream pearsonFile, spearmanFile, kendallFile;
 		std::ofstream entropyFile;
+		std::ofstream tTestFile, SNRFile, wilcoxonRankSumFile, DIDSFile, ANOVAFile;
 		if (generatePearson)
 		{
 			pearsonFile.open(params.mkmcParams.outputFilesPearson[taskData.binId]);
@@ -96,16 +112,74 @@ void StatisticsGenerator::operator()()
 			}
 			kendallFile << "k-mer\tentropy\n";
 		}
+		if (generateStatistics)
+		{
+			if (generateTTest)
+			{
+				tTestFile.open(params.mkmcParams.outputFilesTTest[taskData.binId]);
+				if (!tTestFile.is_open())
+				{
+					std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesTTest[taskData.binId] << "." << std::endl;
+					exit(1);
+				}
+				tTestFile << "k-mer\tp-value\n";
+			}
+			if (generateSNR)
+			{
+				SNRFile.open(params.mkmcParams.outputFilesSNR[taskData.binId]);
+				if (!SNRFile.is_open())
+				{
+					std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesSNR[taskData.binId] << "." << std::endl;
+					exit(1);
+				}
+				SNRFile << "k-mer\Signal to Noise ratio\n";
+			}
+			if (generateWilcoxonRankSum)
+			{
+				wilcoxonRankSumFile.open(params.mkmcParams.outputFilesWilcoxonRankSum[taskData.binId]);
+				if (!wilcoxonRankSumFile.is_open())
+				{
+					std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesWilcoxonRankSum[taskData.binId] << "." << std::endl;
+					exit(1);
+				}
+				wilcoxonRankSumFile << "k-mer\tp-value\n";
+			}
+			if (generateDIDS)
+			{
+				DIDSFile.open(params.mkmcParams.outputFilesDIDS[taskData.binId]);
+				if (!DIDSFile.is_open())
+				{
+					std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesDIDS[taskData.binId] << "." << std::endl;
+					exit(1);
+				}
+				DIDSFile << "k-mer\tDIDS\n";
+			}
+			if (generateANOVA)
+			{
+				ANOVAFile.open(params.mkmcParams.outputFilesANOVA[taskData.binId]);
+				if (!ANOVAFile.is_open())
+				{
+					std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesANOVA[taskData.binId] << "." << std::endl;
+					exit(1);
+				}
+				ANOVAFile << "k-mer\tp-value\n";
+			}
+		}
 
 		refresh::normalization_work<uint64_t, double> normalization;
-		normalization.register_method(params.statisticsParams.normalizationMethod);
-		normalization.set_no_series(params.mkmcParams.samples.size());
-		normalization.deserialize(params.statisticsParams.normalizationMethod, normalizationData);
+		if (params.statisticsParams.generateNormalization)
+		{
+			normalization.register_method(params.statisticsParams.normalizationMethod);
+			normalization.set_no_series(params.mkmcParams.samples.size());
+			normalization.deserialize(params.statisticsParams.normalizationMethod, normalizationData);
 
-		normalization.initialize();
+			normalization.initialize();
+		}
 
 		refresh::correlation correlation;
 		refresh::statistics_entropy entropyObj;
+		refresh::statistical_test statistics;
+		refresh::scorers scorer;
 
 		std::string kmerSequence;
 		std::vector<uint64_t> matrixEntry;
@@ -142,6 +216,34 @@ void StatisticsGenerator::operator()()
 			{
 				const double entropy = entropyObj.entropy(matrixEntry.begin(), matrixEntry.end());
 				putLine(entropyFile, kmerSequence, { entropy });
+			}
+			if (generateStatistics)
+			{
+				if (generateTTest)
+				{
+					const double tTestPValue = statistics.t_test(matrixEntry.begin(), matrixEntry.end(), differentialAnalysisPhenotype.begin()).p_value;
+					putLine(tTestFile, kmerSequence, { tTestPValue });
+				}
+				if (generateSNR)
+				{
+					const double SNRPValue = statistics.SNR_test(matrixEntry.begin(), matrixEntry.end(), differentialAnalysisPhenotype.begin());
+					putLine(SNRFile, kmerSequence, { SNRPValue });
+				}
+				if (generateWilcoxonRankSum)
+				{
+					const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test(matrixEntry.begin(), matrixEntry.end(), differentialAnalysisPhenotype.begin()).p_value;
+					putLine(wilcoxonRankSumFile, kmerSequence, { wilcoxonRankSumPValue });
+				}
+				if (generateDIDS)
+				{
+					const double dids = scorer.dids(matrixEntry.begin(), matrixEntry.end(), differentialAnalysisPhenotype.begin(), differentialAnalysisClasses);
+					putLine(DIDSFile, kmerSequence, { dids });
+				}
+				if (generateANOVA)
+				{
+					const double anova = scorer.anova(matrixEntry.begin(), matrixEntry.end(), differentialAnalysisPhenotype.begin(), differentialAnalysisClasses).p_value;
+					putLine(ANOVAFile, kmerSequence, { anova });
+				}
 			}
 
 			++progress_bar_updater;
