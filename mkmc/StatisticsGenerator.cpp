@@ -110,7 +110,7 @@ void StatisticsGenerator::operator()()
 				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesEntropy[taskData.binId] << "." << std::endl;
 				exit(1);
 			}
-			kendallFile << "k-mer\tentropy\n";
+			entropyFile << "k-mer\tentropy\n";
 		}
 		if (generateStatistics)
 		{
