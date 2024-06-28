@@ -160,6 +160,7 @@ ACGTAGGTGGGTTAATTCCCAGGGG	0	0	1
 TAAAACACACAAACAGATAAACAGA	1	1	0
 ```
 
+**Important remark:** in fact there is, currently, not just a single file but instead the result is distributed to many bins, so the files are `present-in-any.txt_matrix_<bin_id>`.
 #### Current performance
 This is an initial version of code with limited optimizations and parallelism.
 
