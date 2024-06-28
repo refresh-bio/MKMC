@@ -122,7 +122,7 @@ sample3 3_1.fq 3_2.fq
 All the samples are stored in single, unpaired files. To have k-mers that were present in each input sample one may use:
 ```
 mkdir -p tmp
-./mkmc -k25 -f fq -thr_rat 1 files.txt present-in-all.txt tmp
+./mkmc -k25 -f fq --thr_rat 1 files.txt present-in-all.txt tmp
 ```
 The output (`present-in-all.txt`) is then:
 ```
@@ -133,7 +133,7 @@ ACGTACGTGGGTTAAAACCCAGGGG	1	1	1
 To have k-mers that were present in at least half of the samples one may use the following:
 ```
 mkdir -p tmp
-./mkmc -k 25 -f fq -thr_rat 0.5 files.txt present-in-at-least-half-files.txt tmp
+./mkmc -k 25 -f fq --thr_rat 0.5 files.txt present-in-at-least-half-files.txt tmp
 ```
 The output (`present-in-at-least-half-files.txt`) is then:
 ```
@@ -147,7 +147,7 @@ TAAAACACACAAACAGATAAACAGA	1	1	0
 To have k-mers that were present in any of the samples one may use the following:
 ```
 mkdir -p tmp
-./mkmc -k 25 -f fq -thr_rat 0.0 files.txt present-in-any.txt tmp
+./mkmc -k 25 -f fq --thr_rat 0 files.txt present-in-any.txt tmp
 ```
 The output (`present-in-any.txt`) is then:
 ```
