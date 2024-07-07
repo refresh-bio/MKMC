@@ -45,7 +45,7 @@ class StatisticsGenerator
 
 	const std::vector<int64_t>& correlationPhenotype;
 	const std::vector<uint32_t>& differentialAnalysisPhenotype;
-	size_t differentialAnalysisClasses;
+	size_t differentialAnalysisNClasses;
 
 	void operator()();
 
@@ -55,7 +55,7 @@ public:
 		tasksPool(tasksData),
 		correlationPhenotype(params.phenotypes.correlationPhenotype.getPhenotype()),
 		differentialAnalysisPhenotype(params.phenotypes.differentialAnalysisPhenotype.getMappedPhenotype()),
-		differentialAnalysisClasses(params.phenotypes.differentialAnalysisPhenotype.getClassesNumber())
+		differentialAnalysisNClasses(params.phenotypes.differentialAnalysisPhenotype.getClassesNumber())
 	{}
 
 	void generateStatisticsParallel();

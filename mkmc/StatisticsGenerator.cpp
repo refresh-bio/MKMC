@@ -175,37 +175,37 @@ void StatisticsGenerator::operator()()
 
 				if (generatePearson)
 				{
-					const double pearson = refresh::correlation::pearson(
+					const double pearson = refresh::correlation::pearson_n(
 						outEntry.begin(),
-						outEntry.begin() + num_samples,
-						correlationPhenotype.begin());
+						correlationPhenotype.begin(),
+						num_samples);
 
 					outEntry.push_back(pearson);
 				}
 				if (generateSpearman)
 				{
-					const double spearman = correlation.spearman(
+					const double spearman = correlation.spearman_n(
 						outEntry.begin(),
-						outEntry.begin() + num_samples,
-						correlationPhenotype.begin());
+						correlationPhenotype.begin(),
+						num_samples);
 
 					outEntry.push_back(spearman);
 				}
 				if (generateKendall)
 				{
-					const double kendall = refresh::correlation::kendall_tau(
+					const double kendall = refresh::correlation::kendall_tau_n(
 						outEntry.begin(),
-						outEntry.begin() + num_samples,
-						correlationPhenotype.begin());
+						correlationPhenotype.begin(),
+						num_samples);
 
 					outEntry.push_back(kendall);
 				}
 
 				if (generateEntropy)
 				{
-					const double entropy = entropyObj.entropy(
+					const double entropy = entropyObj.entropy_n(
 						outEntry.begin(),
-						outEntry.begin() + num_samples);
+						num_samples);
 
 					outEntry.push_back(entropy);
 				}
@@ -213,45 +213,50 @@ void StatisticsGenerator::operator()()
 				{
 					if (generateTTest)
 					{
-						const double tTestPValue = statistics.t_test(outEntry.begin(),
-							outEntry.begin() + num_samples,
-							differentialAnalysisPhenotype.begin()).p_value;
+						const double tTestPValue = statistics.t_test_n(
+							outEntry.begin(),
+							differentialAnalysisPhenotype.begin(),
+							num_samples).p_value;
 
 						outEntry.push_back(tTestPValue);
 					}
 					if (generateSNR)
 					{
-						const double SNRPValue = statistics.SNR_test(outEntry.begin(),
-							outEntry.begin() + num_samples,
-							differentialAnalysisPhenotype.begin());
+						const double SNRPValue = statistics.SNR_test_n(
+							outEntry.begin(),
+							differentialAnalysisPhenotype.begin(),
+							num_samples);
 
 						outEntry.push_back(SNRPValue);
 					}
 					if (generateWilcoxonRankSum)
 					{
-						const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test(outEntry.begin(),
-							outEntry.begin() + num_samples,
-							differentialAnalysisPhenotype.begin()).p_value;
+						const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test_n(
+							outEntry.begin(),
+							differentialAnalysisPhenotype.begin(),
+							num_samples).p_value;
 
 						outEntry.push_back(wilcoxonRankSumPValue);
 					}
 					if (generateDIDS)
 					{
-						const double dids = scorer.dids(outEntry.begin(),
-							outEntry.begin() + num_samples,
+						const double dids = scorer.dids_n(
+							outEntry.begin(),
 							differentialAnalysisPhenotype.begin(),
-							differentialAnalysisClasses);
+							differentialAnalysisNClasses,
+							num_samples);
 
 						outEntry.push_back(dids);
 					}
 					if (generateANOVA)
 					{
-						const double anova = scorer.anova(outEntry.begin(),
-							outEntry.begin() + num_samples,
+						const double anovaPValue = scorer.anova_n(
+							outEntry.begin(),
 							differentialAnalysisPhenotype.begin(),
-							differentialAnalysisClasses).p_value;
+							differentialAnalysisNClasses,
+							num_samples).p_value;
 
-						outEntry.push_back(anova);
+						outEntry.push_back(anovaPValue);
 					}
 				}
 

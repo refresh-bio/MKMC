@@ -96,7 +96,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	{
 		phenotypes.correlationPhenotype.setFileName(fileName);
 	};
-	p = app.add_option_function("-p", pCallback, "set a phenotype file (a set of the integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
+	p = app.add_option_function("-p", pCallback, "set a phenotype file (a set of integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
 
 	typedef StatisticsParams::DifferentialAnalysisMethod DAMethod;
 	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"ttest", DAMethod::TTest }, {"snr", DAMethod::SNR }, {"wrs", DAMethod::WilcoxonRankSum }, {"dids", DAMethod::DIDS }, {"anova", DAMethod::ANOVA } };
@@ -106,7 +106,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	{
 		phenotypes.differentialAnalysisPhenotype.setFileName(fileName);
 	};
-	c = app.add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a set of the natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
+	c = app.add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
 
 	app.add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy")->default_val(statisticsParams.generateEntropy);
 

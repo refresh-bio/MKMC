@@ -79,9 +79,6 @@ struct StatisticsParams
 	using NormalizationMethod = refresh::normalization_base<uint64_t, double>::method_t;
 	using NormalizationLearning = refresh::normalization_learn<uint64_t, double>;
 
-	std::string normFrequencyFileTmp = "frequencyDump";
-	std::string normQuantileFileTmp = "quantileDump";
-
 	bool generateNormalization = false;
 	NormalizationMethod normalizationMethod;
 

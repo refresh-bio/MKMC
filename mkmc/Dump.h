@@ -11,7 +11,6 @@
 #include <vector>
 #include <mutex>
 #include "parameters.h"
-//#include "kmc_api/kmc_file.h"
 #include "kmc_dump/nc_utils.h"
 #include "KMCFileWrapper.h"
 #include "HeapMerge.h"
@@ -69,10 +68,6 @@ public:
 	Dump(const Params& params) :
 		params(params), tasksPool(tasksData)
 	{
-		//mkokot_TODO: zapytac macka czy zawsze potrzebujemy zbierac obie te rzeczy
-		//to moze miec sens bo potencjalnei mozemy chciec wiele nowych przeksztalcen, tj. statystyk liczyc
-		// z drugiej strony kazde przyciecie macierzy powinno sobie nowe takie generowac statystyki
-		// jeszcze jest taka kwestia, ze nie wiem jak kosztowne sa te obliczenia
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::frequency_count);
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
 		normalizationLearning.set_no_series(params.mkmcParams.samples.size());
