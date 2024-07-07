@@ -8,7 +8,7 @@
 #include <tuple>
 #include <bit>
 
-#include "../../serialization/lib/serialization.h"
+#include "refresh/serialization/lib/serialization.h"
 #include "statistics/helper_structures.h"
 #include "statistics/norm_frequency_count.h"
 #include "statistics/norm_quantile.h"

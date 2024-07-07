@@ -8,17 +8,14 @@
 #include "kmc_dump/nc_utils.h"
 #include "KmersSamplesStruct.h"
 #include "parameters.h"
-
+#include "kmcdb/bin_writers.h"
 
 
 class MatrixFileGenerator
 {
-	std::unique_ptr<char[]> str_kmer_buff;
-	std::ofstream file;
-	uint32_t k;
-
+	kmcdb::BinWriterSortedPlain<uint64_t>* bin;
 public:
-	MatrixFileGenerator(const Params& params, uint32_t binId);
+	MatrixFileGenerator(const Params& params, uint32_t binId, kmcdb::BinWriterSortedPlain<uint64_t>* bin);
 
 	template<typename KmersSamplesData_T>
 	void writeKmer(const KmersSamplesData_T& kmersData);
@@ -33,7 +30,7 @@ class FASTAFileGenerator
 	uint32_t k;
 
 public:
-	FASTAFileGenerator(const Params& params, uint32_t binId);
+	FASTAFileGenerator(const Params& params, uint32_t binId, kmcdb::BinWriterSortedPlain<uint64_t>* /*bin*/);
 
 	template<typename KmersSamplesData_T>
 	void writeKmer(const KmersSamplesData_T& kmersData);
@@ -47,9 +44,9 @@ class PerformGenerate
 	Generator_T generator;
 	PerformGenerate<NextGenerators_T...> nextPerformGenerate;
 public:
-	PerformGenerate(const Params& params, uint32_t binId) :
-		generator(params, binId),
-		nextPerformGenerate(params, binId)
+	PerformGenerate(const Params& params, uint32_t binId, kmcdb::BinWriterSortedPlain<uint64_t>* bin) :
+		generator(params, binId, bin),
+		nextPerformGenerate(params, binId, bin)
 	{}
 
 	template<typename KmersSamplesData_T>
@@ -67,8 +64,8 @@ class PerformGenerate<Generator_T>
 {
 	Generator_T generator;
 public:
-	PerformGenerate(const Params& params, uint32_t binId) :
-		generator(params, binId)
+	PerformGenerate(const Params& params, uint32_t binId, kmcdb::BinWriterSortedPlain<uint64_t>* bin) :
+		generator(params, binId, bin)
 	{}
 
 	template<typename KmersSamplesData_T>
@@ -83,20 +80,7 @@ public:
 template<typename KmersSamplesData_T>
 void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
-	kmersData.minKmer.to_string(k, str_kmer_buff.get());
-	uint32_t pos = k;
-	for (uint64_t count : kmersData.kMersCounts)
-	{
-		str_kmer_buff[pos++] = '\t';
-		uint32_t shift = CNumericConversions::Int2PChar(count, reinterpret_cast<uchar*>(str_kmer_buff.get()) + pos);
-		pos += shift;
-	}
-
-	str_kmer_buff[pos] = '\n';
-	str_kmer_buff[pos + 1] = '\0';
-	file << str_kmer_buff.get();
-
-	// pos - number of written symbols
+	bin->AddKmer(kmersData.minKmer, kmersData.kMersCounts.data());
 }
 
 

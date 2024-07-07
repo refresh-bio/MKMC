@@ -9,8 +9,7 @@ void Finish::finishProcessing()
 	{
 		for (const auto& kmcOutputFile : params.mkmcParams.kmcOutputFiles)
 		{
-			std::filesystem::remove(kmcOutputFile + ".kmc_pre");
-			std::filesystem::remove(kmcOutputFile + ".kmc_suf");
+			std::filesystem::remove(kmcOutputFile);
 		}
 		if (params.filterParams.filterKmersSequences)
 		{
@@ -18,16 +17,11 @@ void Finish::finishProcessing()
 			{
 				std::filesystem::remove(params.mutableParams.kmersSequencesToFilterOut);
 			}
-			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB + ".kmc_pre");
-			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB + ".kmc_suf");
-		}
-		if (params.statisticsParams.generateNormalization)
-		{
-			std::filesystem::remove(params.statisticsParams.normFrequencyFileTmp);
-			std::filesystem::remove(params.statisticsParams.normQuantileFileTmp);
-			std::filesystem::remove(params.statisticsParams.statsNOutputKmers);
+			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB);
 		}
 	}
 	if (params.mutableParams.tmpDirCreated)
+	{
 		std::filesystem::remove_all(params.mkmcParams.tmpPath);
+	}
 }

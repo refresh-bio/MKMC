@@ -1,17 +1,103 @@
 #include "StatisticsGenerator.h"
+#include "MatrixStats.h"
 #include <algorithm>
 
 
 
 void StatisticsGenerator::fillTaskData()
 {
+	try
+	{
+		matrixMetadataReader = std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.outputFilesTemplate + ".kmcdb", false);
+		matrixReader = std::make_unique<kmcdb::ReaderSortedPlainForListing<uint64_t>>(*matrixMetadataReader);
+
+		kmcdb::Config config;
+		config.num_bins = matrixMetadataReader->GetConfig().num_bins;
+		config.signature_len = matrixMetadataReader->GetConfig().signature_len;
+		config.signature_selection_scheme = matrixMetadataReader->GetConfig().signature_selection_scheme;
+		config.signature_to_bin_mapping = matrixMetadataReader->GetConfig().signature_to_bin_mapping;
+		config.kmer_len = matrixMetadataReader->GetConfig().kmer_len;
+		config.num_samples = matrixMetadataReader->GetConfig().num_samples;
+		config.num_bytes_single_value = { sizeof(out_kmcdb_value_type) };
+
+		config.num_samples += params.statisticsParams.correlationMethods.size(); //I will add this correlations as a new columns
+		config.num_samples += params.statisticsParams.generateEntropy ? 1 : 0;
+		config.num_samples += params.statisticsParams.classificationMethods.size();
+		//this make sense because those all of the same type (currently double)
+
+		kmcdb::ConfigSortedPlain representation_config{};
+
+		std::vector<std::string> sample_names;
+		matrixReader->GetSampleNames(sample_names);
+		assert(!sample_names.empty());
+
+		auto is_correlation_method = [&](StatisticsParams::CorrelationMethod method)
+			{
+				const auto& corMeths = params.statisticsParams.correlationMethods;
+				return std::find(corMeths.begin(), corMeths.end(), method) != corMeths.end();
+			};
+
+		auto is_differential_analysis_method = [&](StatisticsParams::DifferentialAnalysisMethod method)
+			{
+				const auto& analysisMeths = params.statisticsParams.classificationMethods;
+				return std::find(analysisMeths.begin(), analysisMeths.end(), method) != analysisMeths.end();
+			};
+
+		if (is_correlation_method(StatisticsParams::CorrelationMethod::Pearson))
+			sample_names.emplace_back("pearson_cor");
+
+		if (is_correlation_method(StatisticsParams::CorrelationMethod::Spearman))
+			sample_names.emplace_back("spearman_cor");
+
+		if (is_correlation_method(StatisticsParams::CorrelationMethod::Kendall))
+			sample_names.emplace_back("kendall_cor");
+
+		if (params.statisticsParams.generateEntropy)
+			sample_names.emplace_back("entropy");
+
+		if (is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::TTest))
+			sample_names.emplace_back("ttest_analysis");
+
+		if (is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::SNR))
+			sample_names.emplace_back("snr_analysis");
+
+		if (is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum))
+			sample_names.emplace_back("wrs_analysis");
+
+		if (is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::DIDS))
+			sample_names.emplace_back("dids_analysis");
+
+		if (is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::ANOVA))
+			sample_names.emplace_back("dids_analysis");
+
+		kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<double>>(
+			config,
+			representation_config,
+			params.mkmcParams.outputFilesTemplate + "_norm+cor.kmcdb",
+			params.mkmcParams.outputFilesTemplate + ".kmcdb",
+			sample_names);
+	}
+	catch (const std::runtime_error& ex)
+	{
+		std::cerr << "Error: " << ex.what() << std::endl;
+		exit(1);
+	}
 	tasksData.reserve(params.stage1Params.GetNBins());
+	std::vector<uint64_t> nOutputKmersPerBin;
+	nOutputKmersPerBin.reserve(params.stage1Params.GetNBins());
+	
 	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
 	{
 		tasksData.push_back(TaskData{ i });
+		nOutputKmersPerBin.push_back(matrixReader->GetBin(i)->GetBinMetadata().total_kmers);
 	}
-	std::vector<uint64_t> nOutputKmersPerBin;
-	readDump(nOutputKmersPerBin, params.statisticsParams.statsNOutputKmers);
+
+	progress_bar = std::make_unique<ProgressBar>(
+		params.mkmcParams.verbosity_level == 0 ? 0 : std::accumulate(nOutputKmersPerBin.begin(), nOutputKmersPerBin.end(), 0ull),
+		"Computing statistics",
+		std::cerr,
+		params.mkmcParams.verbosity_level == 0);
+
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return nOutputKmersPerBin[a.binId] > nOutputKmersPerBin[b.binId]; });
 }
 
@@ -22,19 +108,8 @@ void StatisticsGenerator::operator()()
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
 	{
-		std::ifstream matrixFile(params.mkmcParams.outputMatrixFiles[taskData.binId]);
-		if (!matrixFile.is_open())
-		{
-			std::cerr << "Error: cannot open " << params.mkmcParams.outputMatrixFiles[taskData.binId] << "." << std::endl;
-			exit(1);
-		}
-
-		std::ofstream normFile(params.mkmcParams.outputFilesNorm[taskData.binId]);
-		if (!normFile.is_open())
-		{
-			std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesNorm[taskData.binId] << "." << std::endl;
-			exit(1);
-		}
+		auto bin = matrixReader->GetBin(taskData.binId);
+		auto out_bin = kmcdbWriter->GetBin(taskData.binId);
 
 		bool generatePearson = false, generateSpearman = false, generateKendall = false;
 		bool generateEntropy = false;
@@ -65,107 +140,6 @@ void StatisticsGenerator::operator()()
 				generateANOVA = true;
 		}
 
-		std::string header;
-		std::getline(matrixFile, header);
-		normFile << header << '\n';
-
-		std::ofstream pearsonFile, spearmanFile, kendallFile;
-		std::ofstream entropyFile;
-		std::ofstream tTestFile, SNRFile, wilcoxonRankSumFile, DIDSFile, ANOVAFile;
-		if (generatePearson)
-		{
-			pearsonFile.open(params.mkmcParams.outputFilesPearson[taskData.binId]);
-			if (!pearsonFile.is_open())
-			{
-				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesPearson[taskData.binId] << "." << std::endl;
-				exit(1);
-			}
-			pearsonFile << "k-mer\tcorrelation\n";
-		}
-		if (generateSpearman)
-		{
-			spearmanFile.open(params.mkmcParams.outputFilesSpearman[taskData.binId]);
-			if (!spearmanFile.is_open())
-			{
-				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesSpearman[taskData.binId] << "." << std::endl;
-				exit(1);
-			}
-			spearmanFile << "k-mer\tcorrelation\n";
-		}
-		if (generateKendall)
-		{
-			kendallFile.open(params.mkmcParams.outputFilesKendall[taskData.binId]);
-			if (!kendallFile.is_open())
-			{
-				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesKendall[taskData.binId] << "." << std::endl;
-				exit(1);
-			}
-			kendallFile << "k-mer\tcorrelation\n";
-		}
-		if (generateEntropy)
-		{
-			entropyFile.open(params.mkmcParams.outputFilesEntropy[taskData.binId]);
-			if (!entropyFile.is_open())
-			{
-				std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesEntropy[taskData.binId] << "." << std::endl;
-				exit(1);
-			}
-			entropyFile << "k-mer\tentropy\n";
-		}
-		if (generateStatistics)
-		{
-			if (generateTTest)
-			{
-				tTestFile.open(params.mkmcParams.outputFilesTTest[taskData.binId]);
-				if (!tTestFile.is_open())
-				{
-					std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesTTest[taskData.binId] << "." << std::endl;
-					exit(1);
-				}
-				tTestFile << "k-mer\tp-value\n";
-			}
-			if (generateSNR)
-			{
-				SNRFile.open(params.mkmcParams.outputFilesSNR[taskData.binId]);
-				if (!SNRFile.is_open())
-				{
-					std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesSNR[taskData.binId] << "." << std::endl;
-					exit(1);
-				}
-				SNRFile << "k-mer\Signal to Noise ratio\n";
-			}
-			if (generateWilcoxonRankSum)
-			{
-				wilcoxonRankSumFile.open(params.mkmcParams.outputFilesWilcoxonRankSum[taskData.binId]);
-				if (!wilcoxonRankSumFile.is_open())
-				{
-					std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesWilcoxonRankSum[taskData.binId] << "." << std::endl;
-					exit(1);
-				}
-				wilcoxonRankSumFile << "k-mer\tp-value\n";
-			}
-			if (generateDIDS)
-			{
-				DIDSFile.open(params.mkmcParams.outputFilesDIDS[taskData.binId]);
-				if (!DIDSFile.is_open())
-				{
-					std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesDIDS[taskData.binId] << "." << std::endl;
-					exit(1);
-				}
-				DIDSFile << "k-mer\tDIDS\n";
-			}
-			if (generateANOVA)
-			{
-				ANOVAFile.open(params.mkmcParams.outputFilesANOVA[taskData.binId]);
-				if (!ANOVAFile.is_open())
-				{
-					std::cerr << "Error: cannot open " << params.mkmcParams.outputFilesANOVA[taskData.binId] << "." << std::endl;
-					exit(1);
-				}
-				ANOVAFile << "k-mer\tp-value\n";
-			}
-		}
-
 		refresh::normalization_work<uint64_t, double> normalization;
 		if (params.statisticsParams.generateNormalization)
 		{
@@ -181,73 +155,111 @@ void StatisticsGenerator::operator()()
 		refresh::statistical_test statistics;
 		refresh::scorers scorer;
 
-		std::string kmerSequence;
 		std::vector<uint64_t> matrixEntry;
-		std::vector<double> normEntry;
-		matrixEntry.resize(params.mkmcParams.samples.size());
-		normEntry.resize(params.mkmcParams.samples.size());
+		std::vector<double> outEntry;
+		std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
+		matrixEntry.resize(num_samples);
+		outEntry.resize(num_samples);
 
-		ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, totAllKmers / 100ull));
+		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
-		while (true)
-		{
-			if (!getLine(matrixFile, kmerSequence, matrixEntry))
-				break;
+		auto kmer_len = params.stage1Params.GetKmerLen();
+		std::string kmerSequence(kmer_len, ' ');
 
-			normalization.norm_entry(params.statisticsParams.normalizationMethod, matrixEntry, normEntry);
-			putLine(normFile, kmerSequence, normEntry);
+		kmcdb::DispatchKmerSize<MAX_K>(kmer_len, [&](auto SIZE) {
+			kmcdb::CKmer<SIZE> kmer;
+			while (bin->NextKmer(kmer, matrixEntry.data()))
+			{
+				kmer.to_string(kmer_len, kmerSequence.data());
+				normalization.norm_entry(params.statisticsParams.normalizationMethod, matrixEntry, outEntry);
 
-			if (generatePearson)
-			{
-				const double pearson = refresh::correlation::pearson(normEntry.begin(), normEntry.end(), correlationPhenotype.begin());
-				putLine(pearsonFile, kmerSequence, { pearson });
-			}
-			if (generateSpearman)
-			{
-				const double spearman = correlation.spearman(normEntry.begin(), normEntry.end(), correlationPhenotype.begin());
-				putLine(spearmanFile, kmerSequence, { spearman });
-			}
-			if (generateKendall)
-			{
-				const double kendall = refresh::correlation::kendall_tau(normEntry.begin(), normEntry.end(), correlationPhenotype.begin());
-				putLine(kendallFile, kmerSequence, { kendall });
-			}
-			if (generateEntropy)
-			{
-				const double entropy = entropyObj.entropy(matrixEntry.begin(), matrixEntry.end());
-				putLine(entropyFile, kmerSequence, { entropy });
-			}
-			if (generateStatistics)
-			{
-				if (generateTTest)
+				if (generatePearson)
 				{
-					const double tTestPValue = statistics.t_test(matrixEntry.begin(), matrixEntry.end(), differentialAnalysisPhenotype.begin()).p_value;
-					putLine(tTestFile, kmerSequence, { tTestPValue });
-				}
-				if (generateSNR)
-				{
-					const double SNRPValue = statistics.SNR_test(matrixEntry.begin(), matrixEntry.end(), differentialAnalysisPhenotype.begin());
-					putLine(SNRFile, kmerSequence, { SNRPValue });
-				}
-				if (generateWilcoxonRankSum)
-				{
-					const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test(matrixEntry.begin(), matrixEntry.end(), differentialAnalysisPhenotype.begin()).p_value;
-					putLine(wilcoxonRankSumFile, kmerSequence, { wilcoxonRankSumPValue });
-				}
-				if (generateDIDS)
-				{
-					const double dids = scorer.dids(matrixEntry.begin(), matrixEntry.end(), differentialAnalysisPhenotype.begin(), differentialAnalysisClasses);
-					putLine(DIDSFile, kmerSequence, { dids });
-				}
-				if (generateANOVA)
-				{
-					const double anova = scorer.anova(matrixEntry.begin(), matrixEntry.end(), differentialAnalysisPhenotype.begin(), differentialAnalysisClasses).p_value;
-					putLine(ANOVAFile, kmerSequence, { anova });
-				}
-			}
+					const double pearson = refresh::correlation::pearson(
+						outEntry.begin(),
+						outEntry.begin() + num_samples,
+						correlationPhenotype.begin());
 
-			++progress_bar_updater;
-		}
+					outEntry.push_back(pearson);
+				}
+				if (generateSpearman)
+				{
+					const double spearman = correlation.spearman(
+						outEntry.begin(),
+						outEntry.begin() + num_samples,
+						correlationPhenotype.begin());
+
+					outEntry.push_back(spearman);
+				}
+				if (generateKendall)
+				{
+					const double kendall = refresh::correlation::kendall_tau(
+						outEntry.begin(),
+						outEntry.begin() + num_samples,
+						correlationPhenotype.begin());
+
+					outEntry.push_back(kendall);
+				}
+
+				if (generateEntropy)
+				{
+					const double entropy = entropyObj.entropy(
+						outEntry.begin(),
+						outEntry.begin() + num_samples);
+
+					outEntry.push_back(entropy);
+				}
+				if (generateStatistics)
+				{
+					if (generateTTest)
+					{
+						const double tTestPValue = statistics.t_test(outEntry.begin(),
+							outEntry.begin() + num_samples,
+							differentialAnalysisPhenotype.begin()).p_value;
+
+						outEntry.push_back(tTestPValue);
+					}
+					if (generateSNR)
+					{
+						const double SNRPValue = statistics.SNR_test(outEntry.begin(),
+							outEntry.begin() + num_samples,
+							differentialAnalysisPhenotype.begin());
+
+						outEntry.push_back(SNRPValue);
+					}
+					if (generateWilcoxonRankSum)
+					{
+						const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test(outEntry.begin(),
+							outEntry.begin() + num_samples,
+							differentialAnalysisPhenotype.begin()).p_value;
+
+						outEntry.push_back(wilcoxonRankSumPValue);
+					}
+					if (generateDIDS)
+					{
+						const double dids = scorer.dids(outEntry.begin(),
+							outEntry.begin() + num_samples,
+							differentialAnalysisPhenotype.begin(),
+							differentialAnalysisClasses);
+
+						outEntry.push_back(dids);
+					}
+					if (generateANOVA)
+					{
+						const double anova = scorer.anova(outEntry.begin(),
+							outEntry.begin() + num_samples,
+							differentialAnalysisPhenotype.begin(),
+							differentialAnalysisClasses).p_value;
+
+						outEntry.push_back(anova);
+					}
+				}
+
+				++progress_bar_updater;
+
+				out_bin->AddKmer(kmer, outEntry.data());
+			}
+		});
 	}
 }
 
@@ -258,10 +270,18 @@ void StatisticsGenerator::generateStatisticsParallel()
 
 	if (params.statisticsParams.generateNormalization)
 	{
+		MatrixStatsReader stats_reader(params.mkmcParams.outputFilesTemplate + ".stats");
+		bool success = false;
 		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::frequency_count)
-			readDump(normalizationData, params.statisticsParams.normFrequencyFileTmp);
+			success = stats_reader.Get(params.statisticsParams.normFrequencyStreamName, normalizationData);
 		else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile)
-			readDump(normalizationData, params.statisticsParams.normQuantileFileTmp);
+			success = stats_reader.Get(params.statisticsParams.normQuantileStreamName, normalizationData);
+
+		if (!success)
+		{
+			std::cerr << "Error: cannot read normalization data\n";
+			exit(1);
+		}
 	}
 
 	std::vector<std::thread> threads(params.mkmcParams.nThreads);

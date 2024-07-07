@@ -13,9 +13,9 @@ Params::Params() :
 
 	stage1Params.SetSignatureSelectionScheme(KMC::SignatureSelectionScheme::min_hash);
 
-	stage2Params.SetCutoffMin(1);
-	stage2Params.SetCutoffMax(static_cast<uint64_t>(4E9));
-	stage2Params.SetCounterMax(65535);
+	stage1Params.SetCutoffMin(1);
+	stage1Params.SetCutoffMax(static_cast<uint64_t>(4E9));
+	stage1Params.SetCounterMax(65535);
 
 	static KMC::NullPercentProgressObserver nullPercentProgressObserver;
 	static KMC::NullProgressObserver nullProgressObserver;
@@ -53,9 +53,6 @@ void Params::generateTempAndOutputFilesNames()
 
 	filterParams.kmersSequencesToFilterOutDB = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter";
 	mutableParams.kmersSequencesToFilterOut = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter.fa";
-
-	statisticsParams.normFrequencyFileTmp = tmpFilesTemplate + statisticsParams.normFrequencyFileTmp;
-	statisticsParams.normQuantileFileTmp = tmpFilesTemplate + statisticsParams.normQuantileFileTmp;
 
 	const uint32_t nBinsDigits = static_cast<uint32_t>(std::log10(static_cast<double>(stage1Params.GetNBins()))) + 1;
 	for (uint32_t binId = 0; binId < stage1Params.GetNBins(); ++binId) {

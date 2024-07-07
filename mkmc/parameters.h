@@ -8,7 +8,7 @@
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"
 #undef small
-#include "lib/statistics/lib/statistics_normalization.h"
+#include "refresh/statistics/lib/statistics_normalization.h"
 
 
 
@@ -32,12 +32,11 @@ struct MKMCParams
 
 	std::string outputFilesTemplate;
 	std::vector<std::string> outputFASTAFiles;
-	std::vector<std::string> outputMatrixFiles;
+	std::vector<std::string> outputMatrixFiles; //mkokot_TODO: this will be probably to be removed
 	std::vector<OutputFileType> outputFileTypes = { OutputFileType::Matrix }; // also default "matrix" value in input parameters
 
-
+	//mkokot_TODO: to be removed probably
 	std::vector<std::string> outputFilesNorm;
-
 	std::vector<std::string> outputFilesPearson;
 	std::vector<std::string> outputFilesSpearman;
 	std::vector<std::string> outputFilesKendall;
@@ -83,8 +82,6 @@ struct StatisticsParams
 	std::string normFrequencyFileTmp = "frequencyDump";
 	std::string normQuantileFileTmp = "quantileDump";
 
-	std::string statsNOutputKmers = "nKmers";
-
 	bool generateNormalization = false;
 	NormalizationMethod normalizationMethod;
 
@@ -95,6 +92,8 @@ struct StatisticsParams
 	std::vector<DifferentialAnalysisMethod> classificationMethods;
 
 	bool generateEntropy = false;
+	inline const static std::string normFrequencyStreamName = "norm_frequency";
+	inline const static std::string normQuantileStreamName = "norm_quantile";
 };
 
 struct MutableParams

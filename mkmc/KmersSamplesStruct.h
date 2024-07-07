@@ -9,6 +9,6 @@ struct KmersSamplesStruct
 {
 	static const unsigned SIZE = _SIZE;
 
-	CKmer<_SIZE> minKmer;
+	kmcdb::CKmer<_SIZE> minKmer;
 	const std::vector<uint64_t>& kMersCounts;
 };

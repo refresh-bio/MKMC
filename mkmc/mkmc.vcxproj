@@ -77,10 +77,10 @@
     <IncludePath>../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>lib;../kmc;../kmc/kmcdb/libs;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>lib;../kmc;../kmc/kmcdb/libs;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnabled>false</VcpkgEnabled>
@@ -182,6 +182,7 @@
     <ClInclude Include="KMCFileWrapper.h" />
     <ClInclude Include="KMCRunner.h" />
     <ClInclude Include="PhenotypeReaders.h" />
+    <ClInclude Include="MatrixStats.h" />
     <ClInclude Include="SequenceFilterInit.h" />
     <ClInclude Include="KmersSamplesStruct.h" />
     <ClInclude Include="parameters.h" />
