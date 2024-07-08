@@ -63,7 +63,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	app.add_option("input_samples_file", mkmcParams.inputFileName, "file with a list of samples names with input files names in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
 	app.add_option("output_files", mkmcParams.outputFilesTemplate, "file where the matrix of k-mers counts or FASTA file will be dumped")->required();
-	app.add_option("temp_dir", mkmcParams.tmpPath, "a directory where temporary files will be stored")->required()->check(CLI::ExistingDirectory);
+	app.add_option("temp_dir", mkmcParams.tmpPath, "a directory where temporary files will be stored")->required();
 
 	std::function<void(const uint32_t&)> kCallback = [&](const uint32_t& k)
 	{
