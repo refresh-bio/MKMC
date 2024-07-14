@@ -135,7 +135,7 @@ class FASTAFileGenerator
 	uint64_t kmerLength;
 public:
 	FASTAFileGenerator(const Params& params) :
-		outputBuffer(*dumpWriter, kmerLength),
+		outputBuffer(*dumpWriter, params.stage1Params.GetKmerLen()),
 		kmerLength(params.stage1Params.GetKmerLen())
 	{}
 
