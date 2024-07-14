@@ -1,5 +1,6 @@
 #pragma once
 
+#include "FileGenerators.h"
 #include <vector>
 #include <cstdint>
 #include <fstream>
@@ -14,12 +15,10 @@
 #include "kmc_dump/nc_utils.h"
 #include "KMCFileWrapper.h"
 #include "HeapMerge.h"
-#include "FileGenerators.h"
 #include "TasksPool.h"
 #include "Logger.h"
 #define NOMINMAX
 #include "progress_bar.hpp"
-#include "Dump.h"
 #include "Filter.h"
 #include "MatrixStats.h"
 #include "KmersSamplesStruct.h"
@@ -50,8 +49,6 @@ class Dump
 	std::vector<std::unique_ptr<kmcdb::MetadataReader>> samplesMetadata;
 	std::vector<std::unique_ptr<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>> samplesReaders;
 
-	std::unique_ptr<kmcdb::WriterSortedPlain<uint64_t>> kmcdbWriter;
-
 	std::unique_ptr<kmcdb::MetadataReader> sequencesToFilterMetadataReader;
 	std::unique_ptr<kmcdb::ReaderSortedWithLUTForListing<uint64_t>> sequencesToFilterReader;
 
@@ -62,7 +59,7 @@ class Dump
 	void serializeNormalizationAndDump();
 
 	template<typename Generators_T, typename Filters_T>
-	void dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
+	void dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
 
 public:
 	Dump(const Params& params) :
@@ -76,6 +73,7 @@ public:
 
 	void dumpToFileParallel();
 
+	template<typename Generators_T>
 	void operator()();
 };
 
@@ -83,7 +81,7 @@ public:
 
 template<unsigned SIZE>
 template<typename Generators_T, typename Filters_T>
-void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
+void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
 {
 	std::vector<KMCFileWrapper<SIZE>> samples;
 	for (size_t sample_id = 0; sample_id < params.mkmcParams.kmcOutputFiles.size(); ++sample_id)
@@ -95,7 +93,6 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 	}
 
 	ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, tot_all_kmers / 100ull));
-	Generators_T fileGenerator(params, binId, kmcdbWriter->GetBin(binId));
 
 	std::vector<uint64_t> kMersCounts(samples.size());
 
@@ -161,7 +158,7 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 				{
 					if (filter.keepKMer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts }))
 					{
-						fileGenerator.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
+						fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 						normalizationLearning.add_entry(kMersCounts);
 					}
 
@@ -175,7 +172,7 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 
 	if (filter.keepKMer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts }))
 	{
-		fileGenerator.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
+		fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 		normalizationLearning.add_entry(kMersCounts);
 	}
 }
@@ -290,9 +287,8 @@ void Dump<SIZE>::dumpToFileParallel()
 		sequencesToFilterReader = std::make_unique<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>(*sequencesToFilterMetadataReader);
 	}
 
-	if (std::find(params.mkmcParams.outputFileTypes.begin(), params.mkmcParams.outputFileTypes.end(), OutputFileType::Matrix) != params.mkmcParams.outputFileTypes.end())
+	kmcdb::Config config;
 	{
-		kmcdb::Config config;
 		config.num_bins = samplesMetadata.front()->GetConfig().num_bins;
 		config.signature_len = samplesMetadata.front()->GetConfig().signature_len;
 		config.signature_selection_scheme = samplesMetadata.front()->GetConfig().signature_selection_scheme;
@@ -312,30 +308,69 @@ void Dump<SIZE>::dumpToFileParallel()
 		for (const auto& sample : params.mkmcParams.samples)
 			sample_names.push_back(sample.name);
 
-		try
-		{
-			this->kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<uint64_t>>(
-				config,
-				representation_config,
-				params.mkmcParams.outputFilesTemplate + ".kmcdb",
-				"",
-				sample_names);
-		}
-		catch (const std::exception& ex)
-		{
-			std::cerr << "Error: " << ex.what() << "\n";
-			exit(1);
-		}
-	}
-	std::vector<std::thread> threads(params.mkmcParams.nThreads);
-	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
-	{
-		threads[i_thred] = std::thread([this] { (*this)(); });
 	}
 
-	for (std::thread& thread : threads)
+	std::vector<std::thread> threads(params.mkmcParams.nThreads);
+
+	if (params.mkmcParams.outputFileTypes.empty())
 	{
-		thread.join();
+		using Generators_T = PerformGenerate<BinFileGenerator>;
+		Generators_T::initWriters(params, config);
+		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+		{
+			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+		}
+
+		for (std::thread& thread : threads)
+		{
+			thread.join();
+		}
+		Generators_T::closeWriters();
+	}
+	else if (params.mkmcParams.outputFileTypes.size() == 2)
+	{
+		using Generators_T = PerformGenerate<BinFileGenerator, MatrixFileGenerator, FASTAFileGenerator>;
+		Generators_T::initWriters(params, config);
+		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+		{
+			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+		}
+
+		for (std::thread& thread : threads)
+		{
+			thread.join();
+		}
+		Generators_T::closeWriters();
+	}
+	else if (params.mkmcParams.outputFileTypes.front() == OutputFileType::Matrix)
+	{
+		using Generators_T = PerformGenerate<BinFileGenerator, MatrixFileGenerator>;
+		Generators_T::initWriters(params, config);
+		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+		{
+			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+		}
+
+		for (std::thread& thread : threads)
+		{
+			thread.join();
+		}
+		Generators_T::closeWriters();
+	}
+	else
+	{
+		using Generators_T = PerformGenerate<BinFileGenerator, FASTAFileGenerator>;
+		Generators_T::initWriters(params, config);
+		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+		{
+			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+		}
+		
+		for (std::thread& thread : threads)
+		{
+			thread.join();
+		}
+		Generators_T::closeWriters();
 	}
 
 	if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
@@ -344,8 +379,10 @@ void Dump<SIZE>::dumpToFileParallel()
 
 
 template<unsigned SIZE>
+template<typename Generators_T>
 void Dump<SIZE>::operator()()
 {
+	Generators_T fileGenerators(params);
 	TaskData taskData;
 	using ParameterizedKmersSamplesStruct = KmersSamplesStruct<SIZE>;
 
@@ -357,44 +394,18 @@ void Dump<SIZE>::operator()()
 		currentBinNormalizationLearnings.set_no_series(params.mkmcParams.samples.size());
 		currentBinNormalizationLearnings.initialize();
 
+		fileGenerators.setBinId(taskData.binId);
+
 		if (params.filterParams.filterKmersSequences)
 		{
 			assert(sequencesToFilterReader);
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
-			if (params.mkmcParams.outputFileTypes.size() == 2)
-			{
-				using Generators_T = PerformGenerate<MatrixFileGenerator, FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, sequencesToFilterReader->GetBin(taskData.binId));
-			}
-			else if (params.mkmcParams.outputFileTypes.front() == OutputFileType::Matrix)
-			{
-				using Generators_T = PerformGenerate<MatrixFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, sequencesToFilterReader->GetBin(taskData.binId));
-			}
-			else
-			{
-				using Generators_T = PerformGenerate<FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, sequencesToFilterReader->GetBin(taskData.binId));
-			}
+			dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, fileGenerators, sequencesToFilterReader->GetBin(taskData.binId));
 		}
 		else
 		{
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
-			if (params.mkmcParams.outputFileTypes.size() == 2)
-			{
-				using Generators_T = PerformGenerate<MatrixFileGenerator, FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, nullptr);
-			}
-			else if (params.mkmcParams.outputFileTypes.front() == OutputFileType::Matrix)
-			{
-				using Generators_T = PerformGenerate<MatrixFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, nullptr);
-			}
-			else
-			{
-				using Generators_T = PerformGenerate<FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, nullptr);
-			}
+			dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, fileGenerators, nullptr);
 		}
 		normalizationLearningMutex.lock();
 		normalizationLearning.merge_with(&currentBinNormalizationLearnings, &currentBinNormalizationLearnings + 1);

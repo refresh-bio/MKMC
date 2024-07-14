@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\kmc\kmc_dump\nc_utils.cpp" />
+    <ClCompile Include="DumpWriter.cpp" />
     <ClCompile Include="FileGenerators.cpp" />
     <ClCompile Include="Finish.cpp" />
     <ClCompile Include="KMCRunner.cpp" />
@@ -175,6 +176,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dump.h" />
+    <ClInclude Include="DumpWriter.h" />
     <ClInclude Include="FileGenerators.h" />
     <ClInclude Include="Filter.h" />
     <ClInclude Include="Finish.h" />

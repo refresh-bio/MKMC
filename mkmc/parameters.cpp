@@ -60,9 +60,6 @@ void Params::generateTempAndOutputFilesNames()
 		sstreamOutput << std::setfill('0') << std::setw(nBinsDigits) << binId;
 		const std::string binIdStr = sstreamOutput.str();
 
-		mkmcParams.outputMatrixFiles.push_back(mkmcParams.outputFilesTemplate + "_matrix_" + binIdStr);
-		mkmcParams.outputFASTAFiles.push_back(mkmcParams.outputFilesTemplate + +"_" + binIdStr + ".fa");
-
 		mkmcParams.outputFilesNorm.push_back(mkmcParams.outputFilesTemplate + "_norm_" + binIdStr);
 
 		mkmcParams.outputFilesPearson.push_back(mkmcParams.outputFilesTemplate + "_pearson_" + binIdStr);
@@ -77,6 +74,9 @@ void Params::generateTempAndOutputFilesNames()
 		mkmcParams.outputFilesDIDS.push_back(mkmcParams.outputFilesTemplate + "_dids_" + binIdStr);
 		mkmcParams.outputFilesANOVA.push_back(mkmcParams.outputFilesTemplate + "_anova_" + binIdStr);
 	}
+	mkmcParams.outputBinFile = mkmcParams.outputFilesTemplate + ".kmcdb";
+	mkmcParams.outputMatrixFile = mkmcParams.outputFilesTemplate + "_matrix";
+	mkmcParams.outputFASTAFile = mkmcParams.outputFilesTemplate + ".fa";
 }
 
 

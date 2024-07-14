@@ -116,7 +116,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	optionalGroup->add_option("-f", mkmcParams.inputFileType, "input format (FASTA, FASTQ or multi-FASTA); mixing files is not supported")->transform(CLI::CheckedTransformer(inputValuesMap, CLI::ignore_case))->default_val(mkmcParams.inputFileType)->default_str("fq");
 
 	std::map<std::string, OutputFileType> outputValuesMap{ {"fa", OutputFileType::FASTA }, {"matrix", OutputFileType::Matrix } };
-	optionalGroup->add_option("-o", mkmcParams.outputFileTypes, "output format (FASTA or matrix)")->transform(CLI::CheckedTransformer(outputValuesMap, CLI::ignore_case))->default_val(mkmcParams.outputFileTypes)->default_str("matrix");
+	optionalGroup->add_option("-o", mkmcParams.outputFileTypes, "output format (FASTA or matrix)")->transform(CLI::CheckedTransformer(outputValuesMap, CLI::ignore_case));
 
 	optionalGroup->add_option("--on", mkmcParams.nKMCBins, "number of output files, reduce carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 
