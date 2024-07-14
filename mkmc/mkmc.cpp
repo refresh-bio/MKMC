@@ -47,7 +47,6 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 {
 	DefaultKMCParams& defaultKMCParams = params.defaultKMCParams;
 	KMC::Stage1Params& stage1Params = params.stage1Params;
-	KMC::Stage2Params& stage2Params = params.stage2Params;
 	MKMCParams& mkmcParams = params.mkmcParams;
 	FilterParams& filterParams = params.filterParams;
 	StatisticsParams& statisticsParams = params.statisticsParams;

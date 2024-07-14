@@ -238,7 +238,7 @@ template<typename KmersSamplesData_T>
 void BinFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
 	assert(kmcBinDBWriter != nullptr);
-	kmcBinDBWriter->AddKmer(kmersData.minKmer, kmersData.kMersCounts.data());
+	kmcBinDBWriter->AddKmer(kmersData.kmer, kmersData.kMersCounts.data());
 }
 
 
@@ -274,7 +274,7 @@ void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 		return res;
 	};
 
-	outputBuffer.StoreKmer(kmersData.minKmer, kmerLength, kmersData.kMersCounts, storeMethod);
+	outputBuffer.StoreKmer(kmersData.kmer, kmerLength, kmersData.kMersCounts, storeMethod);
 }
 
 
@@ -296,5 +296,5 @@ void FASTAFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 		return res;
 	};
 
-	outputBuffer.StoreKmer(kmersData.minKmer, kmerLength, kmersData.kMersCounts, storeMethod);
+	outputBuffer.StoreKmer(kmersData.kmer, kmerLength, kmersData.kMersCounts, storeMethod);
 }

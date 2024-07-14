@@ -184,7 +184,7 @@ bool Dump<SIZE>::inputIsConsistent()
 	if (samplesMetadata.empty())
 		return true;
 	uint32_t k = samplesMetadata.front()->GetConfig().kmer_len;
-	uint32_t signatureLen = samplesMetadata.front()->GetConfig().signature_len;
+	uint64_t signatureLen = samplesMetadata.front()->GetConfig().signature_len;
 	auto signatureSelectionScheme = samplesMetadata.front()->GetConfig().signature_selection_scheme;
 	auto signatureToBinMapping = samplesMetadata.front()->GetConfig().signature_to_bin_mapping;
 	auto num_bins = samplesMetadata.front()->GetConfig().num_bins;
@@ -299,15 +299,6 @@ void Dump<SIZE>::dumpToFileParallel()
 		for (size_t i = 1; i < samplesMetadata.size(); ++i)
 			if (samplesMetadata[i]->GetConfig().num_bytes_single_value > config.num_bytes_single_value)
 				config.num_bytes_single_value = samplesMetadata[i]->GetConfig().num_bytes_single_value;
-
-		kmcdb::ConfigSortedPlain representation_config{};
-
-		std::vector<std::string> sample_names{};
-		sample_names.reserve(params.mkmcParams.samples.size());
-
-		for (const auto& sample : params.mkmcParams.samples)
-			sample_names.push_back(sample.name);
-
 	}
 
 	std::vector<std::thread> threads(params.mkmcParams.nThreads);

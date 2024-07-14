@@ -105,7 +105,7 @@ bool FilterSequences<KmersSamplesData_T>::keepKMer(const KmersSamplesData_T& kme
 	}
 
 	//assert(!(kmcFile.First() < kmersData.minKmer));
-	if (kmersData.minKmer < kmcFile.First())
+	if (kmersData.kmer < kmcFile.First())
 	{
 		return false;
 	}
