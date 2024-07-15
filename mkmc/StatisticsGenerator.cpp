@@ -69,7 +69,7 @@ void StatisticsGenerator::fillTaskData()
 			sample_names.emplace_back("dids_analysis");
 
 		if (is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::ANOVA))
-			sample_names.emplace_back("dids_analysis");
+			sample_names.emplace_back("anova_analysis");
 
 		kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<double>>(
 			config,
