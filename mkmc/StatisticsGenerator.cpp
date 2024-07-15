@@ -1,5 +1,6 @@
 #include "StatisticsGenerator.h"
 #include "MatrixStats.h"
+#include "DumpWriter.h"
 #include <algorithm>
 
 
@@ -73,8 +74,8 @@ void StatisticsGenerator::fillTaskData()
 		kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<double>>(
 			config,
 			representation_config,
-			params.mkmcParams.outputFilesTemplate + "_norm+cor.kmcdb",
-			params.mkmcParams.outputFilesTemplate + ".kmcdb",
+			params.mkmcParams.outputStatsBinFile,
+			params.mkmcParams.outputBinFile,
 			sample_names);
 	}
 	catch (const std::runtime_error& ex)
@@ -103,6 +104,44 @@ void StatisticsGenerator::fillTaskData()
 
 
 
+StatisticsGenerator::StatisticsGenerator(Params& params) :
+	params(params),
+	tasksPool(tasksData),
+	correlationPhenotype(params.phenotypes.correlationPhenotype.getPhenotype()),
+	differentialAnalysisPhenotype(params.phenotypes.differentialAnalysisPhenotype.getMappedPhenotype()),
+	differentialAnalysisNClasses(params.phenotypes.differentialAnalysisPhenotype.getClassesNumber())
+{
+
+	auto is_correlation_method = [&](StatisticsParams::CorrelationMethod method)
+	{
+		const auto& corMeths = params.statisticsParams.correlationMethods;
+		return std::find(corMeths.begin(), corMeths.end(), method) != corMeths.end();
+	};
+
+	auto is_differential_analysis_method = [&](StatisticsParams::DifferentialAnalysisMethod method)
+	{
+		const auto& analysisMeths = params.statisticsParams.classificationMethods;
+		return std::find(analysisMeths.begin(), analysisMeths.end(), method) != analysisMeths.end();
+	};
+
+	statisticsToGeneration.pearson = is_correlation_method(StatisticsParams::CorrelationMethod::Pearson);
+	statisticsToGeneration.spearman = is_correlation_method(StatisticsParams::CorrelationMethod::Spearman);
+	statisticsToGeneration.kendall = is_correlation_method(StatisticsParams::CorrelationMethod::Kendall);
+
+	statisticsToGeneration.entropy = params.statisticsParams.generateEntropy;
+
+	statisticsToGeneration.tTest = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::TTest);
+	statisticsToGeneration.snr = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::SNR);
+	statisticsToGeneration.wilcoxonRankSum = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum);
+
+	statisticsToGeneration.dids = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::DIDS);
+	statisticsToGeneration.anova = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::ANOVA);
+
+	statisticsToGeneration.differentialAnalysis = statisticsToGeneration.tTest || statisticsToGeneration.snr || statisticsToGeneration.wilcoxonRankSum || statisticsToGeneration.dids || statisticsToGeneration.anova;
+}
+
+
+
 void StatisticsGenerator::operator()()
 {
 	TaskData taskData;
@@ -110,35 +149,6 @@ void StatisticsGenerator::operator()()
 	{
 		auto bin = matrixReader->GetBin(taskData.binId);
 		auto out_bin = kmcdbWriter->GetBin(taskData.binId);
-
-		bool generatePearson = false, generateSpearman = false, generateKendall = false;
-		bool generateEntropy = false;
-		bool generateStatistics = false, generateTTest = false, generateSNR = false, generateWilcoxonRankSum = false, generateDIDS = false, generateANOVA = false;
-
-		for (auto method : params.statisticsParams.correlationMethods)
-		{
-			if (method == StatisticsParams::CorrelationMethod::Pearson)
-				generatePearson = true;
-			else if (method == StatisticsParams::CorrelationMethod::Spearman)
-				generateSpearman = true;
-			else if (method == StatisticsParams::CorrelationMethod::Kendall)
-				generateKendall = true;
-		}
-		generateEntropy = params.statisticsParams.generateEntropy;
-		generateStatistics = !params.statisticsParams.classificationMethods.empty();
-		for (auto method : params.statisticsParams.classificationMethods)
-		{
-			if (method == StatisticsParams::DifferentialAnalysisMethod::TTest)
-				generateTTest = true;
-			else if (method == StatisticsParams::DifferentialAnalysisMethod::SNR)
-				generateSNR = true;
-			else if (method == StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum)
-				generateWilcoxonRankSum = true;
-			else if (method == StatisticsParams::DifferentialAnalysisMethod::DIDS)
-				generateDIDS = true;
-			else if (method == StatisticsParams::DifferentialAnalysisMethod::ANOVA)
-				generateANOVA = true;
-		}
 
 		refresh::normalization_work<uint64_t, double> normalization;
 		if (params.statisticsParams.generateNormalization)
@@ -161,6 +171,91 @@ void StatisticsGenerator::operator()()
 		matrixEntry.resize(num_samples);
 		outEntry.resize(num_samples);
 
+		const uint32_t kmerLength = params.stage1Params.GetKmerLen();
+
+		std::unique_ptr<OutputBuffer> pearsonOutputBuffer, spearmanOutputBuffer, kendallOutputBuffer;
+		std::unique_ptr<OutputBuffer> entropyOutputBuffer;
+		std::unique_ptr<OutputBuffer> tTestOutputBuffer, snrOutputBuffer, wilcoxonRankSumOutputBuffer;
+		std::unique_ptr<OutputBuffer> didsOutputBuffer, anovaOutputBuffer;
+		if (statisticsToGeneration.pearson)
+			pearsonOutputBuffer = std::make_unique<OutputBuffer>(*writers.pearson, kmerLength);
+		if (statisticsToGeneration.spearman)
+			spearmanOutputBuffer = std::make_unique<OutputBuffer>(*writers.spearman, kmerLength);
+		if (statisticsToGeneration.kendall)
+			kendallOutputBuffer = std::make_unique<OutputBuffer>(*writers.kendall, kmerLength);
+
+		if (statisticsToGeneration.entropy)
+			entropyOutputBuffer = std::make_unique<OutputBuffer>(*writers.entropy, kmerLength);
+
+		if (statisticsToGeneration.tTest)
+			tTestOutputBuffer = std::make_unique<OutputBuffer>(*writers.tTest, kmerLength);
+		if (statisticsToGeneration.snr)
+			snrOutputBuffer = std::make_unique<OutputBuffer>(*writers.snr, kmerLength);
+		if (statisticsToGeneration.wilcoxonRankSum)
+			wilcoxonRankSumOutputBuffer = std::make_unique<OutputBuffer>(*writers.wilcoxonRankSum, kmerLength);
+
+		if (statisticsToGeneration.dids)
+			didsOutputBuffer = std::make_unique<OutputBuffer>(*writers.dids, kmerLength);
+		if (statisticsToGeneration.anova)
+			anovaOutputBuffer = std::make_unique<OutputBuffer>(*writers.anova, kmerLength);
+		
+		auto storeMethod = []<unsigned SIZE, typename VALUE_T>(const kmcdb::CKmer<SIZE>&kmer, uint64_t kmer_len, const VALUE_T cnt, char* out) -> size_t
+		{
+			kmer.to_string(kmer_len, out, '\t');
+			size_t res = kmer_len + 1;
+			out += kmer_len + 1;
+
+			auto store_single_value = [&](const VALUE_T& val, char term)
+			{
+				size_t r{};
+				if constexpr (std::is_integral_v<VALUE_T>)
+					r = refresh::int_to_pchar(val, out, term);
+				else if constexpr (std::is_floating_point_v<VALUE_T>)
+				{
+					if (std::isnan(val))
+					{
+						out[0] = 'n';
+						out[1] = 'a';
+						out[2] = 'n';
+						out[3] = term;
+						r = 4;
+					}
+					else if (std::isinf(val))
+					{
+						if (val < static_cast<VALUE_T>(0)) {
+							out[0] = '-';
+							out[1] = 'i';
+							out[2] = 'n';
+							out[3] = 'f';
+							out[4] = term;
+							r = 5;
+						}
+						else
+						{
+							out[0] = 'i';
+							out[1] = 'n';
+							out[2] = 'f';
+							out[3] = term;
+							r = 4;
+						}
+					}
+					else
+						r = refresh::real_to_pchar(val, out, 6, term);
+
+				}
+				else
+				{
+					static_assert(!sizeof(VALUE_T), "Unsupported type");
+				}
+				out += r;
+				res += r;
+			};
+
+			store_single_value(cnt, '\n');
+
+			return res;
+		};
+
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
 		auto kmer_len = params.stage1Params.GetKmerLen();
@@ -173,7 +268,7 @@ void StatisticsGenerator::operator()()
 				kmer.to_string(kmer_len, kmerSequence.data());
 				normalization.norm_entry(params.statisticsParams.normalizationMethod, matrixEntry, outEntry);
 
-				if (generatePearson)
+				if (statisticsToGeneration.pearson)
 				{
 					const double pearson = refresh::correlation::pearson_n(
 						outEntry.begin(),
@@ -181,8 +276,9 @@ void StatisticsGenerator::operator()()
 						num_samples);
 
 					outEntry.push_back(pearson);
+					pearsonOutputBuffer->StoreKmer(kmer, kmerLength, pearson, storeMethod);
 				}
-				if (generateSpearman)
+				if (statisticsToGeneration.spearman)
 				{
 					const double spearman = correlation.spearman_n(
 						outEntry.begin(),
@@ -190,8 +286,9 @@ void StatisticsGenerator::operator()()
 						num_samples);
 
 					outEntry.push_back(spearman);
+					spearmanOutputBuffer->StoreKmer(kmer, kmerLength, spearman, storeMethod);
 				}
-				if (generateKendall)
+				if (statisticsToGeneration.kendall)
 				{
 					const double kendall = refresh::correlation::kendall_tau_n(
 						outEntry.begin(),
@@ -199,19 +296,21 @@ void StatisticsGenerator::operator()()
 						num_samples);
 
 					outEntry.push_back(kendall);
+					kendallOutputBuffer->StoreKmer(kmer, kmerLength, kendall, storeMethod);
 				}
 
-				if (generateEntropy)
+				if (statisticsToGeneration.entropy)
 				{
 					const double entropy = entropyObj.entropy_n(
 						outEntry.begin(),
 						num_samples);
 
 					outEntry.push_back(entropy);
+					entropyOutputBuffer->StoreKmer(kmer, kmerLength, entropy, storeMethod);
 				}
-				if (generateStatistics)
+				if (statisticsToGeneration.differentialAnalysis)
 				{
-					if (generateTTest)
+					if (statisticsToGeneration.tTest)
 					{
 						const double tTestPValue = statistics.t_test_n(
 							outEntry.begin(),
@@ -219,17 +318,19 @@ void StatisticsGenerator::operator()()
 							num_samples).p_value;
 
 						outEntry.push_back(tTestPValue);
+						tTestOutputBuffer->StoreKmer(kmer, kmerLength, tTestPValue, storeMethod);
 					}
-					if (generateSNR)
+					if (statisticsToGeneration.snr)
 					{
-						const double SNRPValue = statistics.SNR_test_n(
+						const double snr = statistics.SNR_test_n(
 							outEntry.begin(),
 							differentialAnalysisPhenotype.begin(),
 							num_samples);
 
-						outEntry.push_back(SNRPValue);
+						outEntry.push_back(snr);
+						snrOutputBuffer->StoreKmer(kmer, kmerLength, snr, storeMethod);
 					}
-					if (generateWilcoxonRankSum)
+					if (statisticsToGeneration.wilcoxonRankSum)
 					{
 						const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test_n(
 							outEntry.begin(),
@@ -237,8 +338,9 @@ void StatisticsGenerator::operator()()
 							num_samples).p_value;
 
 						outEntry.push_back(wilcoxonRankSumPValue);
+						wilcoxonRankSumOutputBuffer->StoreKmer(kmer, kmerLength, wilcoxonRankSumPValue, storeMethod);
 					}
-					if (generateDIDS)
+					if (statisticsToGeneration.dids)
 					{
 						const double dids = scorer.dids_n(
 							outEntry.begin(),
@@ -247,8 +349,9 @@ void StatisticsGenerator::operator()()
 							num_samples);
 
 						outEntry.push_back(dids);
+						didsOutputBuffer->StoreKmer(kmer, kmerLength, dids, storeMethod);
 					}
-					if (generateANOVA)
+					if (statisticsToGeneration.anova)
 					{
 						const double anovaPValue = scorer.anova_n(
 							outEntry.begin(),
@@ -257,6 +360,7 @@ void StatisticsGenerator::operator()()
 							num_samples).p_value;
 
 						outEntry.push_back(anovaPValue);
+						anovaOutputBuffer->StoreKmer(kmer, kmerLength, anovaPValue, storeMethod);
 					}
 				}
 
@@ -287,6 +391,55 @@ void StatisticsGenerator::generateStatisticsParallel()
 			std::cerr << "Error: cannot read normalization data\n";
 			exit(1);
 		}
+	}
+
+
+	const bool multiThreadedGeneration = params.mkmcParams.nThreads > 1;
+
+	if (statisticsToGeneration.pearson)
+	{
+		writers.pearson = std::make_unique<DumpWriter>(params.mkmcParams.outputFilePearson, multiThreadedGeneration);
+		writers.pearson->StoreHeader({ "pearson_cor" });
+	}
+	if (statisticsToGeneration.spearman)
+	{
+		writers.spearman = std::make_unique<DumpWriter>(params.mkmcParams.outputFileSpearman, multiThreadedGeneration);
+		writers.spearman->StoreHeader({ "spearman_cor" });
+	}
+	if (statisticsToGeneration.kendall)
+	{
+		writers.kendall = std::make_unique<DumpWriter>(params.mkmcParams.outputFileKendall, multiThreadedGeneration);
+		writers.kendall->StoreHeader({ "kendall_cor" });
+	}
+	if (statisticsToGeneration.entropy)
+	{
+		writers.entropy = std::make_unique<DumpWriter>(params.mkmcParams.outputFileEntropy, multiThreadedGeneration);
+		writers.entropy->StoreHeader({ "entropy" });
+	}
+	if (statisticsToGeneration.tTest)
+	{
+		writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTest, multiThreadedGeneration);
+		writers.tTest->StoreHeader({ "ttest_analysis_p_val" });
+	}
+	if (statisticsToGeneration.snr)
+	{
+		writers.snr = std::make_unique<DumpWriter>(params.mkmcParams.outputFileSNR, multiThreadedGeneration);
+		writers.snr->StoreHeader({ "snr_analysis" });
+	}
+	if (statisticsToGeneration.wilcoxonRankSum)
+	{
+		writers.wilcoxonRankSum = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSum, multiThreadedGeneration);
+		writers.wilcoxonRankSum->StoreHeader({ "wrs_analysis_p_val" });
+	}
+	if (statisticsToGeneration.dids)
+	{
+		writers.dids = std::make_unique<DumpWriter>(params.mkmcParams.outputFileDIDS, multiThreadedGeneration);
+		writers.dids->StoreHeader({ "dids_analysis" });
+	}
+	if (statisticsToGeneration.anova)
+	{
+		writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVA, multiThreadedGeneration);
+		writers.anova->StoreHeader({ "anova_analysis_p_val" });
 	}
 
 	std::vector<std::thread> threads(params.mkmcParams.nThreads);

@@ -3,12 +3,14 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <memory>
 #include "parameters.h"
 #include "TasksPool.h"
 #include "refresh/statistics/lib/statistics.h"
 #define NOMINMAX
 #include "progress_bar.hpp"
 #include "kmcdb/kmcdb.h"
+#include "DumpWriter.h"
 
 
 class StatisticsGenerator
@@ -49,14 +51,42 @@ class StatisticsGenerator
 
 	void operator()();
 
+	struct
+	{
+		bool pearson = false;
+		bool spearman = false;
+		bool kendall = false;
+
+		bool entropy = false;
+
+		bool differentialAnalysis = false; // logical sum of the following ones
+
+		bool tTest = false;
+		bool snr = false;
+		bool wilcoxonRankSum = false;
+
+		bool dids = false;
+		bool anova = false;
+	} statisticsToGeneration;
+
+	struct
+	{
+		std::unique_ptr<DumpWriter> pearson;
+		std::unique_ptr<DumpWriter> spearman;
+		std::unique_ptr<DumpWriter> kendall;
+
+		std::unique_ptr<DumpWriter> entropy;
+
+		std::unique_ptr<DumpWriter> tTest;
+		std::unique_ptr<DumpWriter> snr;
+		std::unique_ptr<DumpWriter> wilcoxonRankSum;
+
+		std::unique_ptr<DumpWriter> dids;
+		std::unique_ptr<DumpWriter> anova;
+	} writers;
+
 public:
-	StatisticsGenerator(Params& params) :
-		params(params),
-		tasksPool(tasksData),
-		correlationPhenotype(params.phenotypes.correlationPhenotype.getPhenotype()),
-		differentialAnalysisPhenotype(params.phenotypes.differentialAnalysisPhenotype.getMappedPhenotype()),
-		differentialAnalysisNClasses(params.phenotypes.differentialAnalysisPhenotype.getClassesNumber())
-	{}
+	StatisticsGenerator(Params& params);
 
 	void generateStatisticsParallel();
 };

@@ -32,23 +32,23 @@ struct MKMCParams
 
 	std::string outputFilesTemplate;
 	std::string outputBinFile;
+	std::string outputStatsBinFile;
 	std::string outputFASTAFile;
 	std::string outputMatrixFile;
 	std::vector<OutputFileType> outputFileTypes;
 
-	//mkokot_TODO: to be removed probably
-	std::vector<std::string> outputFilesNorm;
-	std::vector<std::string> outputFilesPearson;
-	std::vector<std::string> outputFilesSpearman;
-	std::vector<std::string> outputFilesKendall;
+	std::string outputFileNorm;
+	std::string outputFilePearson;
+	std::string outputFileSpearman;
+	std::string outputFileKendall;
 
-	std::vector<std::string> outputFilesEntropy;
+	std::string outputFileEntropy;
 
-	std::vector<std::string> outputFilesTTest;
-	std::vector<std::string> outputFilesSNR;
-	std::vector<std::string> outputFilesWilcoxonRankSum;
-	std::vector<std::string> outputFilesDIDS;
-	std::vector<std::string> outputFilesANOVA;
+	std::string outputFileTTest;
+	std::string outputFileSNR;
+	std::string outputFileWilcoxonRankSum;
+	std::string outputFileDIDS;
+	std::string outputFileANOVA;
 
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
 	uint32_t nKMCWorkers = 4;

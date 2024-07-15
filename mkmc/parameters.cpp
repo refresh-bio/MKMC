@@ -54,29 +54,24 @@ void Params::generateTempAndOutputFilesNames()
 	filterParams.kmersSequencesToFilterOutDB = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter";
 	mutableParams.kmersSequencesToFilterOut = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter.fa";
 
-	const uint32_t nBinsDigits = static_cast<uint32_t>(std::log10(static_cast<double>(stage1Params.GetNBins()))) + 1;
-	for (uint32_t binId = 0; binId < stage1Params.GetNBins(); ++binId) {
-		std::ostringstream sstreamOutput;
-		sstreamOutput << std::setfill('0') << std::setw(nBinsDigits) << binId;
-		const std::string binIdStr = sstreamOutput.str();
-
-		mkmcParams.outputFilesNorm.push_back(mkmcParams.outputFilesTemplate + "_norm_" + binIdStr);
-
-		mkmcParams.outputFilesPearson.push_back(mkmcParams.outputFilesTemplate + "_pearson_" + binIdStr);
-		mkmcParams.outputFilesSpearman.push_back(mkmcParams.outputFilesTemplate + "_spearman_" + binIdStr);
-		mkmcParams.outputFilesKendall.push_back(mkmcParams.outputFilesTemplate + "_kendall_tau_" + binIdStr);
-
-		mkmcParams.outputFilesEntropy.push_back(mkmcParams.outputFilesTemplate + "_entropy_" + binIdStr);
-
-		mkmcParams.outputFilesTTest.push_back(mkmcParams.outputFilesTemplate + "_ttest_" + binIdStr);
-		mkmcParams.outputFilesSNR.push_back(mkmcParams.outputFilesTemplate + "_snr_" + binIdStr);
-		mkmcParams.outputFilesWilcoxonRankSum.push_back(mkmcParams.outputFilesTemplate + "_wrs_" + binIdStr);
-		mkmcParams.outputFilesDIDS.push_back(mkmcParams.outputFilesTemplate + "_dids_" + binIdStr);
-		mkmcParams.outputFilesANOVA.push_back(mkmcParams.outputFilesTemplate + "_anova_" + binIdStr);
-	}
 	mkmcParams.outputBinFile = mkmcParams.outputFilesTemplate + ".kmcdb";
+	mkmcParams.outputStatsBinFile = mkmcParams.outputFilesTemplate + "_norm+cor.kmcdb"; 
 	mkmcParams.outputMatrixFile = mkmcParams.outputFilesTemplate + "_matrix";
 	mkmcParams.outputFASTAFile = mkmcParams.outputFilesTemplate + ".fa";
+
+	mkmcParams.outputFileNorm = mkmcParams.outputFilesTemplate + "_norm";
+
+	mkmcParams.outputFilePearson = mkmcParams.outputFilesTemplate + "_pearson";
+	mkmcParams.outputFileSpearman = mkmcParams.outputFilesTemplate + "_spearman";
+	mkmcParams.outputFileKendall = mkmcParams.outputFilesTemplate + "_kendall_tau";
+
+	mkmcParams.outputFileEntropy = mkmcParams.outputFilesTemplate + "_entropy";
+
+	mkmcParams.outputFileTTest = mkmcParams.outputFilesTemplate + "_ttest";
+	mkmcParams.outputFileSNR = mkmcParams.outputFilesTemplate + "_snr";
+	mkmcParams.outputFileWilcoxonRankSum = mkmcParams.outputFilesTemplate + "_wrs";
+	mkmcParams.outputFileDIDS = mkmcParams.outputFilesTemplate + "_dids";
+	mkmcParams.outputFileANOVA = mkmcParams.outputFilesTemplate + "_anova";
 }
 
 
