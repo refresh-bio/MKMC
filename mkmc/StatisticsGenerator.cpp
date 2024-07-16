@@ -379,7 +379,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 
 	if (params.statisticsParams.generateNormalization)
 	{
-		MatrixStatsReader stats_reader(params.mkmcParams.outputFilesTemplate + ".stats");
+		MatrixStatsReader stats_reader(params.mkmcParams.normStatsBinFile);
 		bool success = false;
 		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::frequency_count)
 			success = stats_reader.Get(params.statisticsParams.normFrequencyStreamName, normalizationData);

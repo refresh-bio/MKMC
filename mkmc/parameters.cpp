@@ -59,7 +59,7 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputMatrixFile = mkmcParams.outputFilesTemplate + "_matrix";
 	mkmcParams.outputFASTAFile = mkmcParams.outputFilesTemplate + ".fa";
 
-	mkmcParams.outputFileNorm = mkmcParams.outputFilesTemplate + "_norm";
+	mkmcParams.normStatsBinFile = mkmcParams.outputFilesTemplate + ".stats";
 
 	mkmcParams.outputFilePearson = mkmcParams.outputFilesTemplate + "_pearson";
 	mkmcParams.outputFileSpearman = mkmcParams.outputFilesTemplate + "_spearman";

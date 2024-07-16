@@ -271,7 +271,7 @@ void Dump<SIZE>::serializeNormalizationAndDump()
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::frequency_count, frequencyNormalizationData);
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::quantile, quantileNormalizationData);
 
-	MatrixStatsWriter stats_writer(params.mkmcParams.outputFilesTemplate + ".stats");
+	MatrixStatsWriter stats_writer(params.mkmcParams.normStatsBinFile);
 	stats_writer.Add(params.statisticsParams.normFrequencyStreamName, frequencyNormalizationData);
 	stats_writer.Add(params.statisticsParams.normQuantileStreamName, quantileNormalizationData);
 }
