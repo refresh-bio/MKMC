@@ -32,43 +32,31 @@ void StatisticsGenerator::fillTaskData()
 		matrixReader->GetSampleNames(sample_names);
 		assert(!sample_names.empty());
 
-		auto is_correlation_method = [&](StatisticsParams::CorrelationMethod method)
-			{
-				const auto& corMeths = params.statisticsParams.correlationMethods;
-				return std::find(corMeths.begin(), corMeths.end(), method) != corMeths.end();
-			};
-
-		auto is_differential_analysis_method = [&](StatisticsParams::DifferentialAnalysisMethod method)
-			{
-				const auto& analysisMeths = params.statisticsParams.classificationMethods;
-				return std::find(analysisMeths.begin(), analysisMeths.end(), method) != analysisMeths.end();
-			};
-
-		if (is_correlation_method(StatisticsParams::CorrelationMethod::Pearson))
+		if (statisticsToGeneration.pearson)
 			sample_names.emplace_back("pearson_cor");
 
-		if (is_correlation_method(StatisticsParams::CorrelationMethod::Spearman))
+		if (statisticsToGeneration.spearman)
 			sample_names.emplace_back("spearman_cor");
 
-		if (is_correlation_method(StatisticsParams::CorrelationMethod::Kendall))
+		if (statisticsToGeneration.kendall)
 			sample_names.emplace_back("kendall_cor");
 
-		if (params.statisticsParams.generateEntropy)
+		if (statisticsToGeneration.entropy)
 			sample_names.emplace_back("entropy");
 
-		if (is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::TTest))
+		if (statisticsToGeneration.tTest)
 			sample_names.emplace_back("ttest_analysis");
 
-		if (is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::SNR))
+		if (statisticsToGeneration.snr)
 			sample_names.emplace_back("snr_analysis");
 
-		if (is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum))
+		if (statisticsToGeneration.wilcoxonRankSum)
 			sample_names.emplace_back("wrs_analysis");
 
-		if (is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::DIDS))
+		if (statisticsToGeneration.dids)
 			sample_names.emplace_back("dids_analysis");
 
-		if (is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::ANOVA))
+		if (statisticsToGeneration.anova)
 			sample_names.emplace_back("anova_analysis");
 
 		kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<double>>(
