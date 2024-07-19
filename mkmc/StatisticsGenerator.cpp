@@ -9,7 +9,7 @@ void StatisticsGenerator::fillTaskData()
 {
 	try
 	{
-		matrixMetadataReader = std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.outputFilesTemplate + ".kmcdb", false);
+		matrixMetadataReader = std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.outputBinFile, false);
 		matrixReader = std::make_unique<kmcdb::ReaderSortedPlainForListing<uint64_t>>(*matrixMetadataReader);
 	}
 	catch (const std::runtime_error& ex)
@@ -112,7 +112,7 @@ void StatisticsGenerator::operator()()
 		refresh::scorers scorer;
 
 		std::vector<uint64_t> inMatrixEntry;
-		std::vector<double> outNormMatrixEntry;
+		std::vector<out_kmcdb_value_type> outNormMatrixEntry;
 		std::vector<out_kmcdb_value_type> outStatsEntry;
 		std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
 
