@@ -69,26 +69,26 @@ public:
 		buff(buff_owner.data())
 	{}
 
-	template<unsigned SIZE, typename VALUE_T, typename STORE_METHOD>
-	void StoreKmer(const kmcdb::CKmer<SIZE>& kmer, uint64_t kmer_len, const std::vector<VALUE_T>& cnts, const STORE_METHOD& storeMethod)
+	template<typename VALUE_T, typename STORE_METHOD>
+	void StoreKmer(const std::string& kmerSeq, const std::vector<VALUE_T>& cnts, const STORE_METHOD& storeMethod)
 	{
 		if (out_buff_pos + max_line_len > buff_owner.size())
 		{
 			writer.Write(buff, out_buff_pos);
 			out_buff_pos = 0;
 		}
-		out_buff_pos += storeMethod(kmer, kmer_len, cnts, buff + out_buff_pos);
+		out_buff_pos += storeMethod(kmerSeq, cnts, buff + out_buff_pos);
 	}
 
-	template<unsigned SIZE, typename VALUE_T, typename STORE_METHOD>
-	void StoreKmer(const kmcdb::CKmer<SIZE>& kmer, uint64_t kmer_len, const VALUE_T cnt, const STORE_METHOD& storeMethod)
+	template<typename VALUE_T, typename STORE_METHOD>
+	void StoreKmer(const std::string& kmerSeq, const VALUE_T cnt, const STORE_METHOD& storeMethod)
 	{
 		if (out_buff_pos + max_line_len > buff_owner.size())
 		{
 			writer.Write(buff, out_buff_pos);
 			out_buff_pos = 0;
 		}
-		out_buff_pos += storeMethod(kmer, kmer_len, cnt, buff + out_buff_pos);
+		out_buff_pos += storeMethod(kmerSeq, cnt, buff + out_buff_pos);
 	}
 
 	~OutputBuffer()

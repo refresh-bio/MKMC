@@ -57,7 +57,7 @@ class WritingGathererBin
 
 public:
 	template<unsigned SIZE>
-	void writeKmer(std::vector<Statistics_T>& outNormMatrixEntry, const kmcdb::CKmer<SIZE>& kmer, const std::vector<Statistics_T>& outStatsEntry); // outNormMatrixEntry may be modified
+	void writeKmer(std::vector<Statistics_T>& outNormMatrixEntry, const kmcdb::CKmer<SIZE>& kmer, const std::string kmerSeq, const std::vector<Statistics_T>& outStatsEntry); // outNormMatrixEntry may be modified
 };
 
 
@@ -139,13 +139,16 @@ WritingGathererBin<Statistics_T>::WritingGathererBin(WritingGatherer<Statistics_
 
 template<typename Statistics_T>
 template<unsigned SIZE>
-void WritingGathererBin<Statistics_T>::writeKmer(std::vector<Statistics_T>& outNormMatrixEntry, const kmcdb::CKmer<SIZE>& kmer, const std::vector<Statistics_T>& outStatsEntry)
+void WritingGathererBin<Statistics_T>::writeKmer(std::vector<Statistics_T>& outNormMatrixEntry, const kmcdb::CKmer<SIZE>& kmer, const std::string kmerSeq, const std::vector<Statistics_T>& outStatsEntry)
 {
-	auto storeMethod = []<unsigned SIZE_, typename VALUE_T>(const kmcdb::CKmer<SIZE_>&kmer, uint64_t kmer_len, const VALUE_T cnt, char* out) -> size_t
+	auto storeMethod = []<typename VALUE_T>(const std::string & kmerSeq, const VALUE_T cnt, char* out) -> size_t
 	{
-		kmer.to_string(kmer_len, out, '\t');
-		size_t res = kmer_len + 1;
-		out += kmer_len + 1;
+		std::memcpy(out, kmerSeq.data(), kmerSeq.length());
+		out += kmerSeq.length();
+		*out = '\t';
+		++out;
+
+		size_t res = kmerSeq.length() + 1;
 
 		auto store_single_value = [&](const VALUE_T& val, char term)
 		{
@@ -202,26 +205,26 @@ void WritingGathererBin<Statistics_T>::writeKmer(std::vector<Statistics_T>& outN
 	if (mainWritingGatherer.statisticsToGeneration.pearson)
 	{
 		outNormMatrixEntry.push_back(outStatsEntry[valuesIdx]);
-		pearsonOutputBuffer->StoreKmer(kmer, kmerLength, outStatsEntry[valuesIdx], storeMethod);
+		pearsonOutputBuffer->StoreKmer(kmerSeq, outStatsEntry[valuesIdx], storeMethod);
 		++valuesIdx;
 	}
 	if (mainWritingGatherer.statisticsToGeneration.spearman)
 	{
 		outNormMatrixEntry.push_back(outStatsEntry[valuesIdx]);
-		spearmanOutputBuffer->StoreKmer(kmer, kmerLength, outStatsEntry[valuesIdx], storeMethod);
+		spearmanOutputBuffer->StoreKmer(kmerSeq, outStatsEntry[valuesIdx], storeMethod);
 		++valuesIdx;
 	}
 	if (mainWritingGatherer.statisticsToGeneration.kendall)
 	{
 		outNormMatrixEntry.push_back(outStatsEntry[valuesIdx]);
-		kendallOutputBuffer->StoreKmer(kmer, kmerLength, outStatsEntry[valuesIdx], storeMethod);
+		kendallOutputBuffer->StoreKmer(kmerSeq, outStatsEntry[valuesIdx], storeMethod);
 		++valuesIdx;
 	}
 
 	if (mainWritingGatherer.statisticsToGeneration.entropy)
 	{
 		outNormMatrixEntry.push_back(outStatsEntry[valuesIdx]);
-		entropyOutputBuffer->StoreKmer(kmer, kmerLength, outStatsEntry[valuesIdx], storeMethod);
+		entropyOutputBuffer->StoreKmer(kmerSeq, outStatsEntry[valuesIdx], storeMethod);
 		++valuesIdx;
 	}
 	if (mainWritingGatherer.statisticsToGeneration.differentialAnalysis)
@@ -229,31 +232,31 @@ void WritingGathererBin<Statistics_T>::writeKmer(std::vector<Statistics_T>& outN
 		if (mainWritingGatherer.statisticsToGeneration.tTest)
 		{
 			outNormMatrixEntry.push_back(outStatsEntry[valuesIdx]);
-			tTestOutputBuffer->StoreKmer(kmer, kmerLength, outStatsEntry[valuesIdx], storeMethod);
+			tTestOutputBuffer->StoreKmer(kmerSeq, outStatsEntry[valuesIdx], storeMethod);
 			++valuesIdx;
 		}
 		if (mainWritingGatherer.statisticsToGeneration.snr)
 		{
 			outNormMatrixEntry.push_back(outStatsEntry[valuesIdx]);
-			snrOutputBuffer->StoreKmer(kmer, kmerLength, outStatsEntry[valuesIdx], storeMethod);
+			snrOutputBuffer->StoreKmer(kmerSeq, outStatsEntry[valuesIdx], storeMethod);
 			++valuesIdx;
 		}
 		if (mainWritingGatherer.statisticsToGeneration.wilcoxonRankSum)
 		{
 			outNormMatrixEntry.push_back(outStatsEntry[valuesIdx]);
-			wilcoxonRankSumOutputBuffer->StoreKmer(kmer, kmerLength, outStatsEntry[valuesIdx], storeMethod);
+			wilcoxonRankSumOutputBuffer->StoreKmer(kmerSeq, outStatsEntry[valuesIdx], storeMethod);
 			++valuesIdx;
 		}
 		if (mainWritingGatherer.statisticsToGeneration.dids)
 		{
 			outNormMatrixEntry.push_back(outStatsEntry[valuesIdx]);
-			didsOutputBuffer->StoreKmer(kmer, kmerLength, outStatsEntry[valuesIdx], storeMethod);
+			didsOutputBuffer->StoreKmer(kmerSeq, outStatsEntry[valuesIdx], storeMethod);
 			++valuesIdx;
 		}
 		if (mainWritingGatherer.statisticsToGeneration.anova)
 		{
 			outNormMatrixEntry.push_back(outStatsEntry[valuesIdx]);
-			anovaOutputBuffer->StoreKmer(kmer, kmerLength, outStatsEntry[valuesIdx], storeMethod);
+			anovaOutputBuffer->StoreKmer(kmerSeq, outStatsEntry[valuesIdx], storeMethod);
 			++valuesIdx;
 		}
 	}

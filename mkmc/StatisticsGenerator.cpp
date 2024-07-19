@@ -224,7 +224,7 @@ void StatisticsGenerator::operator()()
 
 				++progress_bar_updater;
 
-				outBin->writeKmer(outNormMatrixEntry, kmer, outStatsEntry);
+				outBin->writeKmer(outNormMatrixEntry, kmer, kmerSequence, outStatsEntry);
 			}
 		});
 	}

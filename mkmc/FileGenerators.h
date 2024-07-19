@@ -86,6 +86,7 @@ class MatrixFileGenerator
 
 	OutputBuffer outputBuffer;
 	uint32_t kmerLength;
+	std::string kmerSeqBuf;
 
 	size_t getMaxLineLength(const Params& params) const
 	{
@@ -94,7 +95,8 @@ class MatrixFileGenerator
 public:
 	MatrixFileGenerator(const Params& params) :
 		outputBuffer(*dumpWriter, getMaxLineLength(params)),
-		kmerLength(params.stage1Params.GetKmerLen())
+		kmerLength(params.stage1Params.GetKmerLen()),
+		kmerSeqBuf(params.stage1Params.GetKmerLen(), ' ')
 	{}
 
 	void setBinId(uint32_t binId){}
@@ -133,10 +135,12 @@ class FASTAFileGenerator
 
 	OutputBuffer outputBuffer;
 	uint64_t kmerLength;
+	std::string kmerSeqBuf;
 public:
 	FASTAFileGenerator(const Params& params) :
 		outputBuffer(*dumpWriter, params.stage1Params.GetKmerLen()),
-		kmerLength(params.stage1Params.GetKmerLen())
+		kmerLength(params.stage1Params.GetKmerLen()),
+		kmerSeqBuf(params.stage1Params.GetKmerLen(), ' ')
 	{}
 
 	void setBinId(uint32_t binId) {}
@@ -246,11 +250,14 @@ void BinFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 template<typename KmersSamplesData_T>
 void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
-	auto storeMethod = []<unsigned SIZE, typename VALUE_T>(const kmcdb::CKmer<SIZE>& kmer, uint64_t kmer_len, const std::vector<VALUE_T>& cnts, char* out) -> size_t
+	auto storeMethod = []<typename VALUE_T>(const std::string& kmerSeq, const std::vector<VALUE_T>& cnts, char* out) -> size_t
 	{
-		kmer.to_string(kmer_len, out, '\t');
-		size_t res = kmer_len + 1;
-		out += kmer_len + 1;
+		std::memcpy(out, kmerSeq.data(), kmerSeq.length());
+		out += kmerSeq.length();
+		*out = '\t';
+		++out;
+
+		size_t res = kmerSeq.length() + 1;
 
 		auto store_single_value = [&](const VALUE_T& val, char term)
 		{
@@ -274,7 +281,8 @@ void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 		return res;
 	};
 
-	outputBuffer.StoreKmer(kmersData.kmer, kmerLength, kmersData.kMersCounts, storeMethod);
+	kmersData.kmer.to_string(kmerLength, kmerSeqBuf.data());
+	outputBuffer.StoreKmer(kmerSeqBuf, kmersData.kMersCounts, storeMethod);
 }
 
 
@@ -282,19 +290,23 @@ void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 template<typename KmersSamplesData_T>
 void FASTAFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
-	auto storeMethod = []<unsigned SIZE, typename VALUE_T>(const kmcdb::CKmer<SIZE>& kmer, uint64_t kmer_len, const std::vector<VALUE_T>& cnts, char* out) -> size_t
+	auto storeMethod = []<typename VALUE_T>(const std::string& kmerSeq, const std::vector<VALUE_T>& cnts, char* out) -> size_t
 	{
 		out[0] = '>';
 		out[1] = '\n';
 		size_t res = 2;
 		out += 2;
 
-		kmer.to_string(kmer_len, out, '\n');
-		res += kmer_len + 1;
-		out += kmer_len + 1;
+		std::memcpy(out, kmerSeq.data(), kmerSeq.length());
+		out += kmerSeq.length();
+		*out = '\t';
+		++out;
+
+		res += kmerSeq.length() + 1;
 
 		return res;
 	};
 
-	outputBuffer.StoreKmer(kmersData.kmer, kmerLength, kmersData.kMersCounts, storeMethod);
+	kmersData.kmer.to_string(kmerLength, kmerSeqBuf.data());
+	outputBuffer.StoreKmer(kmerSeqBuf, kmersData.kMersCounts, storeMethod);
 }
