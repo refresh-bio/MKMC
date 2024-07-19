@@ -38,6 +38,7 @@ class StatisticsGenerator
 	using out_kmcdb_value_type = double;
 
 	WritingGatherer<out_kmcdb_value_type> gatherer;
+	std::unique_ptr<DumpWriter> normWriter;
 
 	std::unique_ptr<ProgressBar> progress_bar;
 

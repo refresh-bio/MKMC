@@ -61,6 +61,8 @@ void Params::generateTempAndOutputFilesNames()
 
 	mkmcParams.normStatsBinFile = mkmcParams.outputFilesTemplate + ".stats";
 
+	mkmcParams.outputFileNorm = mkmcParams.outputFilesTemplate + "_norm";
+
 	mkmcParams.outputFilePearson = mkmcParams.outputFilesTemplate + "_pearson";
 	mkmcParams.outputFileSpearman = mkmcParams.outputFilesTemplate + "_spearman";
 	mkmcParams.outputFileKendall = mkmcParams.outputFilesTemplate + "_kendall_tau";

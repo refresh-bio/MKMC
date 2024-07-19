@@ -39,6 +39,8 @@ struct MKMCParams
 
 	std::string normStatsBinFile;
 
+	std::string outputFileNorm;
+
 	std::string outputFilePearson;
 	std::string outputFileSpearman;
 	std::string outputFileKendall;
