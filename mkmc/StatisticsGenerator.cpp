@@ -69,6 +69,8 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 		return false;
 	};
 
+	statisticsToGeneration.normalize = params.statisticsParams.generateNormalization;
+
 	statisticsToGeneration.pearson = is_correlation_method(StatisticsParams::CorrelationMethod::Pearson);
 	statisticsToGeneration.spearman = is_correlation_method(StatisticsParams::CorrelationMethod::Spearman);
 	statisticsToGeneration.kendall = is_correlation_method(StatisticsParams::CorrelationMethod::Kendall);
@@ -85,6 +87,8 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 	statisticsToGeneration.anova = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::ANOVA);
 
 	statisticsToGeneration.differentialAnalysis = statisticsToGeneration.tTest || statisticsToGeneration.snr || statisticsToGeneration.wilcoxonRankSum || statisticsToGeneration.dids || statisticsToGeneration.anova;
+
+	statisticsToGeneration.nResults = statisticsToGeneration.nStatistics + (params.statisticsParams.generateNormalization ? params.mkmcParams.samples.size() : 0);
 }
 
 
@@ -112,13 +116,11 @@ void StatisticsGenerator::operator()()
 		refresh::scorers scorer;
 
 		std::vector<uint64_t> inMatrixEntry;
-		std::vector<out_kmcdb_value_type> outNormMatrixEntry;
-		std::vector<out_kmcdb_value_type> outStatsEntry;
+		std::vector<out_kmcdb_value_type> outEntry; // normalized counts and statistics
 		std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
 
 		inMatrixEntry.resize(num_samples);
-		outNormMatrixEntry.resize(num_samples);
-		outStatsEntry.resize(statisticsToGeneration.nStatistics);
+		outEntry.resize(statisticsToGeneration.nResults);
 
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
@@ -131,100 +133,108 @@ void StatisticsGenerator::operator()()
 			while (bin->NextKmer(kmer, inMatrixEntry.data()))
 			{
 				kmer.to_string(kmer_len, kmerSequence.data());
-				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormMatrixEntry);
 
-				size_t outStatsEntryIdx = 0;
+				if (statisticsToGeneration.normalize)
+				{
+					normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outEntry);
+					outEntry.resize(statisticsToGeneration.nResults); // space for statistics
+				}
+
+				size_t outStatsEntryIdx = statisticsToGeneration.nResults - statisticsToGeneration.nStatistics;
 
 				if (statisticsToGeneration.pearson)
 				{
+					assert(statisticsToGeneration.normalize);
 					const double pearson = refresh::correlation::pearson_n(
-						outNormMatrixEntry.begin(),
+						outEntry.begin(),
 						correlationPhenotype.begin(),
 						num_samples);
 
-					outStatsEntry[outStatsEntryIdx++] = pearson;
+					outEntry[outStatsEntryIdx++] = pearson;
 				}
 				if (statisticsToGeneration.spearman)
 				{
+					assert(statisticsToGeneration.normalize);
 					const double spearman = correlation.spearman_n(
-						outNormMatrixEntry.begin(),
+						outEntry.begin(),
 						correlationPhenotype.begin(),
 						num_samples);
 
-					outStatsEntry[outStatsEntryIdx++] = spearman;
+					outEntry[outStatsEntryIdx++] = spearman;
 				}
 				if (statisticsToGeneration.kendall)
 				{
+					assert(statisticsToGeneration.normalize);
 					const double kendall = refresh::correlation::kendall_tau_n(
-						outNormMatrixEntry.begin(),
+						outEntry.begin(),
 						correlationPhenotype.begin(),
 						num_samples);
 
-					outStatsEntry[outStatsEntryIdx++] = kendall;
+					outEntry[outStatsEntryIdx++] = kendall;
 				}
 
 				if (statisticsToGeneration.entropy)
 				{
 					const double entropy = entropyObj.entropy_n(
-						outNormMatrixEntry.begin(),
+						inMatrixEntry.begin(),
 						num_samples);
 
-					outStatsEntry[outStatsEntryIdx++] = entropy;
+					outEntry[outStatsEntryIdx++] = entropy;
 				}
 				if (statisticsToGeneration.differentialAnalysis)
 				{
 					if (statisticsToGeneration.tTest)
 					{
 						const double tTestPValue = statistics.t_test_n(
-							outNormMatrixEntry.begin(),
+							inMatrixEntry.begin(),
 							differentialAnalysisPhenotype.begin(),
 							num_samples).p_value;
 
-						outStatsEntry[outStatsEntryIdx++] = tTestPValue;
+						outEntry[outStatsEntryIdx++] = tTestPValue;
 					}
 					if (statisticsToGeneration.snr)
 					{
 						const double snr = statistics.SNR_test_n(
-							outNormMatrixEntry.begin(),
+							inMatrixEntry.begin(),
 							differentialAnalysisPhenotype.begin(),
 							num_samples);
 
-						outStatsEntry[outStatsEntryIdx++] = snr;
+						outEntry[outStatsEntryIdx++] = snr;
 					}
 					if (statisticsToGeneration.wilcoxonRankSum)
 					{
 						const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test_n(
-							outNormMatrixEntry.begin(),
+							inMatrixEntry.begin(),
 							differentialAnalysisPhenotype.begin(),
 							num_samples).p_value;
 
-						outStatsEntry[outStatsEntryIdx++] = wilcoxonRankSumPValue;
+						outEntry[outStatsEntryIdx++] = wilcoxonRankSumPValue;
 					}
 					if (statisticsToGeneration.dids)
 					{
 						const double dids = scorer.dids_n(
-							outNormMatrixEntry.begin(),
+							inMatrixEntry.begin(),
 							differentialAnalysisPhenotype.begin(),
 							differentialAnalysisNClasses,
 							num_samples);
 
-						outStatsEntry[outStatsEntryIdx++] = dids;
+						outEntry[outStatsEntryIdx++] = dids;
 					}
 					if (statisticsToGeneration.anova)
 					{
 						const double anovaPValue = scorer.anova_n(
-							outNormMatrixEntry.begin(),
+							inMatrixEntry.begin(),
 							differentialAnalysisPhenotype.begin(),
 							differentialAnalysisNClasses,
 							num_samples).p_value;
 
-						outStatsEntry[outStatsEntryIdx++] = anovaPValue;
+						outEntry[outStatsEntryIdx++] = anovaPValue;
 					}
 				}
 
 				++progress_bar_updater;
 
-				outBin->writeKmer(outNormMatrixEntry, kmer, kmerSequence, outStatsEntry);
+				outBin->writeKmer(outEntry, kmer, kmerSequence);
 			}
 		});
 	}
@@ -236,8 +246,12 @@ void StatisticsGenerator::generateStatisticsParallel()
 	fillTaskData();
 
 	std::vector<std::string> sample_names;
-	matrixReader->GetSampleNames(sample_names);
-	assert(!sample_names.empty());
+
+	if (statisticsToGeneration.normalize)
+	{
+		matrixReader->GetSampleNames(sample_names);
+		assert(!sample_names.empty());
+	} // otherwise: no normalization in output
 
 	gatherer.initWriting(matrixMetadataReader, sample_names);
 
