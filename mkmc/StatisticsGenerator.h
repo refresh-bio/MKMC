@@ -11,6 +11,7 @@
 #include "progress_bar.hpp"
 #include "kmcdb/kmcdb.h"
 #include "DumpWriter.h"
+#include "StatisticsGatherers.h"
 
 
 class StatisticsGenerator
@@ -36,7 +37,7 @@ class StatisticsGenerator
 
 	using out_kmcdb_value_type = double;
 
-	std::unique_ptr<kmcdb::WriterSortedPlain<out_kmcdb_value_type>> kmcdbWriter;
+	WritingGatherer<out_kmcdb_value_type> gatherer;
 
 	std::unique_ptr<ProgressBar> progress_bar;
 
@@ -49,41 +50,9 @@ class StatisticsGenerator
 	const std::vector<uint32_t>& differentialAnalysisPhenotype;
 	size_t differentialAnalysisNClasses;
 
+	StatisticsToGeneration statisticsToGeneration;
+
 	void operator()();
-
-	struct
-	{
-		bool pearson = false;
-		bool spearman = false;
-		bool kendall = false;
-
-		bool entropy = false;
-
-		bool differentialAnalysis = false; // logical sum of the following ones
-
-		bool tTest = false;
-		bool snr = false;
-		bool wilcoxonRankSum = false;
-
-		bool dids = false;
-		bool anova = false;
-	} statisticsToGeneration;
-
-	struct
-	{
-		std::unique_ptr<DumpWriter> pearson;
-		std::unique_ptr<DumpWriter> spearman;
-		std::unique_ptr<DumpWriter> kendall;
-
-		std::unique_ptr<DumpWriter> entropy;
-
-		std::unique_ptr<DumpWriter> tTest;
-		std::unique_ptr<DumpWriter> snr;
-		std::unique_ptr<DumpWriter> wilcoxonRankSum;
-
-		std::unique_ptr<DumpWriter> dids;
-		std::unique_ptr<DumpWriter> anova;
-	} writers;
 
 public:
 	StatisticsGenerator(Params& params);

@@ -189,6 +189,7 @@
     <ClInclude Include="KmersSamplesStruct.h" />
     <ClInclude Include="parameters.h" />
     <ClInclude Include="Start.h" />
+    <ClInclude Include="StatisticsGatherers.h" />
     <ClInclude Include="StatisticsGenerator.h" />
     <ClInclude Include="SamplesFileReader.h" />
     <ClInclude Include="TasksPool.h" />

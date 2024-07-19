@@ -111,5 +111,8 @@
     <ClInclude Include="DumpWriter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="StatisticsGatherers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
