@@ -53,6 +53,11 @@ class StatisticsGenerator
 
 	StatisticsToGeneration statisticsToGeneration;
 
+	size_t getMaxNormLineLength() const
+	{
+		return params.stage1Params.GetKmerLen() + params.mkmcParams.samples.size() * (refresh::numeric_conversion_max_length<out_kmcdb_value_type>() + 1);
+	}
+
 	void operator()();
 
 public:

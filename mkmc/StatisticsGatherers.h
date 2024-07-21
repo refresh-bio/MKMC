@@ -56,6 +56,11 @@ class WritingGathererBin
 
 	const StatisticsToGeneration& statisticsToGeneration;
 
+	size_t getMaxLineLength() const
+	{
+		return kmerLength + 1 + refresh::numeric_conversion_max_length<Statistics_T>();
+	}
+
 	WritingGathererBin(WritingGatherer<Statistics_T>& mainWritingGatherer, const StatisticsToGeneration& statisticsToGeneration, const uint32_t kmerLength, uint32_t binId);
 
 public:
@@ -116,26 +121,26 @@ WritingGathererBin<Statistics_T>::WritingGathererBin(WritingGatherer<Statistics_
 	statisticsToGeneration(statisticsToGeneration)
 {
 	if (statisticsToGeneration.pearson)
-		pearsonOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.pearson, kmerLength);
+		pearsonOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.pearson, getMaxLineLength());
 	if (statisticsToGeneration.spearman)
-		spearmanOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.spearman, kmerLength);
+		spearmanOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.spearman, getMaxLineLength());
 	if (statisticsToGeneration.kendall)
-		kendallOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.kendall, kmerLength);
+		kendallOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.kendall, getMaxLineLength());
 
 	if (statisticsToGeneration.entropy)
-		entropyOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.entropy, kmerLength);
+		entropyOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.entropy, getMaxLineLength());
 
 	if (statisticsToGeneration.tTest)
-		tTestOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.tTest, kmerLength);
+		tTestOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.tTest, getMaxLineLength());
 	if (statisticsToGeneration.snr)
-		snrOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.snr, kmerLength);
+		snrOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.snr, getMaxLineLength());
 	if (statisticsToGeneration.wilcoxonRankSum)
-		wilcoxonRankSumOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.wilcoxonRankSum, kmerLength);
+		wilcoxonRankSumOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.wilcoxonRankSum, getMaxLineLength());
 
 	if (statisticsToGeneration.dids)
-		didsOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.dids, kmerLength);
+		didsOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.dids, getMaxLineLength());
 	if (statisticsToGeneration.anova)
-		anovaOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.anova, kmerLength);
+		anovaOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.anova, getMaxLineLength());
 }
 
 

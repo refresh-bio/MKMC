@@ -110,7 +110,7 @@ void StatisticsGenerator::operator()()
 
 			normalization.initialize();
 
-			normOutputBuffer = std::make_unique<OutputBuffer>(*normWriter, params.stage1Params.GetKmerLen());
+			normOutputBuffer = std::make_unique<OutputBuffer>(*normWriter, getMaxNormLineLength());
 		}
 
 		refresh::correlation correlation;
