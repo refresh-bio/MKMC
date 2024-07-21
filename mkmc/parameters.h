@@ -141,3 +141,11 @@ struct Params
 	void adjustAnotherParams();
 	void readPhenotypes();
 };
+
+
+
+class MessagesUtilities
+{
+public:
+	static std::string generateStartingSentence(const std::vector<std::string>& tasks);
+};

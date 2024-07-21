@@ -33,7 +33,15 @@ public:
 	template<unsigned SIZE>
 	void Run()
 	{
-		std::cerr << "\nStarting dumping to files " << params.mkmcParams.outputFilesTemplate << "_X..." << std::endl;
+		std::vector<std::string> tasks = { params.mkmcParams.outputBinFile };
+		const auto& outputFileTypes = params.mkmcParams.outputFileTypes;
+		if (std::find(outputFileTypes.begin(), outputFileTypes.end(), OutputFileType::Matrix) != outputFileTypes.end())
+			tasks.push_back(params.mkmcParams.outputMatrixFile);
+		if (std::find(outputFileTypes.begin(), outputFileTypes.end(), OutputFileType::FASTA) != outputFileTypes.end())
+			tasks.push_back(params.mkmcParams.outputFASTAFile);
+
+		std::cerr << "\nStarting dumping to " << (tasks.size() > 1 ? "files " : "file ") << MessagesUtilities::generateStartingSentence(tasks) << '\n';
+
 		Dump<SIZE> dump(params);
 		dump_timer.startTimer();
 		dump.dumpToFileParallel();
@@ -237,7 +245,18 @@ int main(int argc, char** argv)
 
 		if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
 		{
-			std::cerr << "\nStarting normalizing and computing correlation...\n";
+			std::vector<std::string> tasks;
+			if (params.statisticsParams.generateNormalization)
+				tasks.push_back("normalizing");
+			if (!params.statisticsParams.correlationMethods.empty())
+				tasks.push_back("computing correlation");
+			if (params.statisticsParams.generateEntropy)
+				tasks.push_back("generating entropy");
+			if (!params.statisticsParams.classificationMethods.empty())
+				tasks.push_back("performing differential k-mers analysis");
+
+			std::cerr << "\nStarting " << MessagesUtilities::generateStartingSentence(tasks) << '\n';
+
 			StatisticsGenerator statisticsGenerator(params);
 			statistics_timer.startTimer();
 			statisticsGenerator.generateStatisticsParallel();

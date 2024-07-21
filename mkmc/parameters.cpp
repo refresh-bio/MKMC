@@ -118,7 +118,7 @@ void Params::adjustAnotherParams()
 {
 	if (mkmcParams.maxRamGBUserDefined && stage1Params.GetRamOnlyMode())
 	{
-		std::cerr << "Warning: when -r parameter is given, limit specified with -m may be exceeded." << std::endl;
+		std::cerr << "Warning: when -r parameter is given, the limit specified with -m may be exceeded." << std::endl;
 	}
 
 	size_t nCorrelationMethods = statisticsParams.correlationMethods.size();
@@ -136,15 +136,6 @@ void Params::adjustAnotherParams()
 	if (nOutputFileTypes != mkmcParams.outputFileTypes.size())
 	{
 		std::cerr << "Warning: some output files types were given multiple times." << std::endl;
-	}
-
-	if (statisticsParams.generateNormalization)
-	{
-		if (std::find(mkmcParams.outputFileTypes.begin(), mkmcParams.outputFileTypes.end(), OutputFileType::Matrix) == mkmcParams.outputFileTypes.end())
-		{
-			std::cerr << "Warning: due to normalization generation, temporarily MKMC has to generate output matrix (-o matrix flag will be additionally applied)." << std::endl;
-			mkmcParams.outputFileTypes.push_back(OutputFileType::Matrix);
-		}
 	}
 }
 
@@ -180,3 +171,27 @@ void Params::readPhenotypes()
 		}
 	}
 }
+
+
+
+std::string MessagesUtilities::generateStartingSentence(const std::vector<std::string>& tasks)
+{
+	std::string result;
+	if (tasks.size() == 1)
+		result += *tasks.begin();
+	else if (tasks.size() == 2)
+		result += *tasks.begin() + " and " + result += *(tasks.begin() + 1);
+	else
+	{
+		for (size_t i = 0; i < tasks.size(); ++i)
+		{
+			if (i == tasks.size() - 1)
+				result += ", and ";
+			else if (i != 0)
+				result += ", ";
+			result += tasks[i];
+		}
+	}
+	return result;
+}
+
