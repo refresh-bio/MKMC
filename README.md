@@ -38,7 +38,6 @@ Options:
   Options:	
  - `-f ENUM:value in {fa,fq,mf} [fq]` - input format (FASTA, FASTQ or multi-FASTA); mixing files is not supported
  - `-o ENUM:value in {fa,matrix} [matrix]  ...` - output format (FASTA or matrix)
- - `--on UINT:POSITIVE [512]` - number of output files, reduce carefully
  - `-b` - turn off transformation of k-mers into canonical form
  - `--ci UINT:POSITIVE [1]` - exclude k-mers occurring less than specified number of times (if k-mer occurs less than --ci times in a sample, it gets counter 0, but for this sample only)
  - `--cx UINT:POSITIVE [4000000000]` - exclude counting k-mers occurring more than specified number of times (if k-mer occurs more than --cx times in a sample, it gets counter 0, but for this sample only)
@@ -52,6 +51,9 @@ Options:
 [Option Group: debug parameters]
   Options:
  - `--keep` - keep temporary files
+ - `--on UINT:POSITIVE [512]` - number of internal bins, reduce carefully
+
+Warning: k-mers order in output files is not specified and may vary between runnings
 
 Example: to run MKMC, type:
 ```

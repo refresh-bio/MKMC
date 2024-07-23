@@ -134,8 +134,6 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	std::map<std::string, OutputFileType> outputValuesMap{ {"fa", OutputFileType::FASTA }, {"matrix", OutputFileType::Matrix } };
 	optionalGroup->add_option("-o", mkmcParams.outputFileTypes, "output format (FASTA or matrix)")->transform(CLI::CheckedTransformer(outputValuesMap, CLI::ignore_case));
 
-	optionalGroup->add_option("--on", mkmcParams.nKMCBins, "number of output files, reduce carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
-
 	std::function<void()> bCallback = [&]()
 	{
 		stage1Params.SetCanonicalKmers(false);
@@ -190,10 +188,13 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
 	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files");
 
+	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, reduce carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
+
 	cor->needs(n)->needs(p);
 	differentialAnalysis->needs(c);
 
-	app.footer("Example: to run MKMC, type:\n"
+	app.footer("Warning: k-mers order in output files is not specified and may vary between runnings.\n\n"
+		"Example: to run MKMC, type:\n"
 		"    ./mkmc -k 20 --thr_rat 0.5 input_files_list.txt output tmp\n"
 		"It will generate a matrix of 20-mers occurring in at least a half of the input files.\n"
 		"    ./mkmc -k 20 --thr 2 --thr_rat 0.5 input_files_list.txt output tmp\n"
