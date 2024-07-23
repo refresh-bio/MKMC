@@ -299,7 +299,7 @@ void FASTAFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 
 		std::memcpy(out, kmerSeq.data(), kmerSeq.length());
 		out += kmerSeq.length();
-		*out = '\t';
+		*out = '\n';
 		++out;
 
 		res += kmerSeq.length() + 1;
