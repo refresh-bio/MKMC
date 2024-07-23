@@ -65,6 +65,8 @@ public:
 	Dump(const Params& params) :
 		params(params), tasksPool(tasksData)
 	{
+		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+			normalizationLearning.register_method(StatisticsParams::NormalizationMethod::deseq2);
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::frequency_count);
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
 		normalizationLearning.set_no_series(params.mkmcParams.samples.size());
@@ -266,12 +268,16 @@ inline void Dump<SIZE>::fillTaskData()
 template<unsigned SIZE>
 void Dump<SIZE>::serializeNormalizationAndDump()
 {
-	std::vector<uint8_t> frequencyNormalizationData, quantileNormalizationData;
+	std::vector<uint8_t> deseq2NormalizationData, frequencyNormalizationData, quantileNormalizationData;
 
+	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+		normalizationLearning.serialize(StatisticsParams::NormalizationMethod::deseq2, deseq2NormalizationData);
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::frequency_count, frequencyNormalizationData);
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::quantile, quantileNormalizationData);
 
 	MatrixStatsWriter stats_writer(params.mkmcParams.normStatsBinFile);
+	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+		stats_writer.Add(params.statisticsParams.normDeseq2StreamName, deseq2NormalizationData);
 	stats_writer.Add(params.statisticsParams.normFrequencyStreamName, frequencyNormalizationData);
 	stats_writer.Add(params.statisticsParams.normQuantileStreamName, quantileNormalizationData);
 }
@@ -380,6 +386,8 @@ void Dump<SIZE>::operator()()
 	while (tasksPool.getTask(taskData))
 	{
 		StatisticsParams::NormalizationLearning currentBinNormalizationLearnings;
+		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+			currentBinNormalizationLearnings.register_method(StatisticsParams::NormalizationMethod::deseq2);
 		currentBinNormalizationLearnings.register_method(StatisticsParams::NormalizationMethod::frequency_count);
 		currentBinNormalizationLearnings.register_method(StatisticsParams::NormalizationMethod::quantile);
 		currentBinNormalizationLearnings.set_no_series(params.mkmcParams.samples.size());

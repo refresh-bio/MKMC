@@ -26,7 +26,7 @@ Options:
  - `--thr UINT:POSITIVE [1]` -  filter out k-mers occuring less than specified number of times...
  - `--thr_rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
  - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only
- - `-n ENUM:value in {freq,q}` - generate normalized counts (frequency count/quantile normalization)
+ - `-n ENUM:value in {deseq,freq,q}` - generate normalized counts (DESeq2/frequency count/quantile normalization)
  - `--cor ENUM:value in {kendall,pearson,spearman}` Needs: `-n` `-p` - compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a set of integers, one in each line)
  - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` Needs: `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))

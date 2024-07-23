@@ -100,6 +100,7 @@ struct StatisticsParams
 	DifferentialAnalysisCorrectionMethod classificationPValueCorrection;
 
 	bool generateEntropy = false;
+	inline const static std::string normDeseq2StreamName = "norm_deseq2";
 	inline const static std::string normFrequencyStreamName = "norm_frequency";
 	inline const static std::string normQuantileStreamName = "norm_quantile";
 };

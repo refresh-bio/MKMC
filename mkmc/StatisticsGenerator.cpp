@@ -610,7 +610,9 @@ void StatisticsGenerator::generateStatisticsParallel()
 	{
 		MatrixStatsReader stats_reader(params.mkmcParams.normStatsBinFile);
 		bool success = false;
-		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::frequency_count)
+		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+			success = stats_reader.Get(params.statisticsParams.normDeseq2StreamName, normalizationData);
+		else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::frequency_count)
 			success = stats_reader.Get(params.statisticsParams.normFrequencyStreamName, normalizationData);
 		else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile)
 			success = stats_reader.Get(params.statisticsParams.normQuantileStreamName, normalizationData);
