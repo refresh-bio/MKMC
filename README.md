@@ -26,18 +26,18 @@ Options:
  - `--thr UINT:POSITIVE [1]` -  filter out k-mers occuring less than specified number of times...
  - `--thr_rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
  - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only
- - `-n ENUM:value in {freq,q}` - generate normalized counts (frequency count/quantile normalization)
+ - `-n ENUM:value in {deseq,freq,q}` - generate normalized counts (DESeq2/frequency count/quantile normalization)
  - `--cor ENUM:value in {kendall,pearson,spearman}` Needs: `-n` `-p` - compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
- - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a set of the integers, one in each line)
+ - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a set of integers, one in each line)
  - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` Needs: `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))
- - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a set of the natural numbers or text labels, one in each line)
+ - `--pcorr ENUM:value in {b,bh,by,hb}` Needs: `-diff` - correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni)
+ - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)
  - `--entropy` - generate k-mers counts entropy
 
 [Option Group: optional parameters]
   Options:	
  - `-f ENUM:value in {fa,fq,mf} [fq]` - input format (FASTA, FASTQ or multi-FASTA); mixing files is not supported
  - `-o ENUM:value in {fa,matrix} [matrix]  ...` - output format (FASTA or matrix)
- - `--on UINT:POSITIVE [512]` - number of output files, reduce carefully
  - `-b` - turn off transformation of k-mers into canonical form
  - `--ci UINT:POSITIVE [1]` - exclude k-mers occurring less than specified number of times (if k-mer occurs less than --ci times in a sample, it gets counter 0, but for this sample only)
  - `--cx UINT:POSITIVE [4000000000]` - exclude counting k-mers occurring more than specified number of times (if k-mer occurs more than --cx times in a sample, it gets counter 0, but for this sample only)
@@ -51,6 +51,9 @@ Options:
 [Option Group: debug parameters]
   Options:
  - `--keep` - keep temporary files
+ - `--on UINT:POSITIVE [512]` - number of internal bins, reduce carefully
+
+Warning: k-mers order in output files is not specified and may vary between runnings
 
 Example: to run MKMC, type:
 ```

@@ -13,9 +13,9 @@ Params::Params() :
 
 	stage1Params.SetSignatureSelectionScheme(KMC::SignatureSelectionScheme::min_hash);
 
-	stage2Params.SetCutoffMin(1);
-	stage2Params.SetCutoffMax(static_cast<uint64_t>(4E9));
-	stage2Params.SetCounterMax(65535);
+	stage1Params.SetCutoffMin(1);
+	stage1Params.SetCutoffMax(static_cast<uint64_t>(4E9));
+	stage1Params.SetCounterMax(65535);
 
 	static KMC::NullPercentProgressObserver nullPercentProgressObserver;
 	static KMC::NullProgressObserver nullProgressObserver;
@@ -54,32 +54,29 @@ void Params::generateTempAndOutputFilesNames()
 	filterParams.kmersSequencesToFilterOutDB = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter";
 	mutableParams.kmersSequencesToFilterOut = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter.fa";
 
-	statisticsParams.normFrequencyFileTmp = tmpFilesTemplate + statisticsParams.normFrequencyFileTmp;
-	statisticsParams.normQuantileFileTmp = tmpFilesTemplate + statisticsParams.normQuantileFileTmp;
+	mkmcParams.outputBinFile = mkmcParams.outputFilesTemplate + ".kmcdb";
+	mkmcParams.outputStatsBinFile = mkmcParams.outputFilesTemplate + "_norm+cor.kmcdb"; 
+	mkmcParams.outputMatrixFile = mkmcParams.outputFilesTemplate + "_matrix";
+	mkmcParams.outputFASTAFile = mkmcParams.outputFilesTemplate + ".fa";
 
-	const uint32_t nBinsDigits = static_cast<uint32_t>(std::log10(static_cast<double>(stage1Params.GetNBins()))) + 1;
-	for (uint32_t binId = 0; binId < stage1Params.GetNBins(); ++binId) {
-		std::ostringstream sstreamOutput;
-		sstreamOutput << std::setfill('0') << std::setw(nBinsDigits) << binId;
-		const std::string binIdStr = sstreamOutput.str();
+	mkmcParams.normStatsBinFile = mkmcParams.outputFilesTemplate + ".stats";
 
-		mkmcParams.outputMatrixFiles.push_back(mkmcParams.outputFilesTemplate + "_matrix_" + binIdStr);
-		mkmcParams.outputFASTAFiles.push_back(mkmcParams.outputFilesTemplate + +"_" + binIdStr + ".fa");
+	mkmcParams.outputFileNorm = mkmcParams.outputFilesTemplate + "_norm";
 
-		mkmcParams.outputFilesNorm.push_back(mkmcParams.outputFilesTemplate + "_norm_" + binIdStr);
+	mkmcParams.outputFilePearson = mkmcParams.outputFilesTemplate + "_pearson";
+	mkmcParams.outputFileSpearman = mkmcParams.outputFilesTemplate + "_spearman";
+	mkmcParams.outputFileKendall = mkmcParams.outputFilesTemplate + "_kendall_tau";
 
-		mkmcParams.outputFilesPearson.push_back(mkmcParams.outputFilesTemplate + "_pearson_" + binIdStr);
-		mkmcParams.outputFilesSpearman.push_back(mkmcParams.outputFilesTemplate + "_spearman_" + binIdStr);
-		mkmcParams.outputFilesKendall.push_back(mkmcParams.outputFilesTemplate + "_kendall_tau_" + binIdStr);
+	mkmcParams.outputFileEntropy = mkmcParams.outputFilesTemplate + "_entropy";
 
-		mkmcParams.outputFilesEntropy.push_back(mkmcParams.outputFilesTemplate + "_entropy_" + binIdStr);
-
-		mkmcParams.outputFilesTTest.push_back(mkmcParams.outputFilesTemplate + "_ttest_" + binIdStr);
-		mkmcParams.outputFilesSNR.push_back(mkmcParams.outputFilesTemplate + "_snr_" + binIdStr);
-		mkmcParams.outputFilesWilcoxonRankSum.push_back(mkmcParams.outputFilesTemplate + "_wrs_" + binIdStr);
-		mkmcParams.outputFilesDIDS.push_back(mkmcParams.outputFilesTemplate + "_dids_" + binIdStr);
-		mkmcParams.outputFilesANOVA.push_back(mkmcParams.outputFilesTemplate + "_anova_" + binIdStr);
-	}
+	mkmcParams.outputFileTTest = mkmcParams.outputFilesTemplate + "_ttest";
+	mkmcParams.outputFileTTestCor = mkmcParams.outputFilesTemplate + "_ttest_cor";
+	mkmcParams.outputFileSNR = mkmcParams.outputFilesTemplate + "_snr";
+	mkmcParams.outputFileWilcoxonRankSum = mkmcParams.outputFilesTemplate + "_wrs";
+	mkmcParams.outputFileWilcoxonRankSumCor = mkmcParams.outputFilesTemplate + "_wrs_cor";
+	mkmcParams.outputFileDIDS = mkmcParams.outputFilesTemplate + "_dids";
+	mkmcParams.outputFileANOVA = mkmcParams.outputFilesTemplate + "_anova";
+	mkmcParams.outputFileANOVACor = mkmcParams.outputFilesTemplate + "_anova_cor";
 }
 
 
@@ -124,7 +121,7 @@ void Params::adjustAnotherParams()
 {
 	if (mkmcParams.maxRamGBUserDefined && stage1Params.GetRamOnlyMode())
 	{
-		std::cerr << "Warning: when -r parameter is given, limit specified with -m may be exceeded." << std::endl;
+		std::cerr << "Warning: when -r parameter is given, the limit specified with -m may be exceeded." << std::endl;
 	}
 
 	size_t nCorrelationMethods = statisticsParams.correlationMethods.size();
@@ -142,15 +139,6 @@ void Params::adjustAnotherParams()
 	if (nOutputFileTypes != mkmcParams.outputFileTypes.size())
 	{
 		std::cerr << "Warning: some output files types were given multiple times." << std::endl;
-	}
-
-	if (statisticsParams.generateNormalization)
-	{
-		if (std::find(mkmcParams.outputFileTypes.begin(), mkmcParams.outputFileTypes.end(), OutputFileType::Matrix) == mkmcParams.outputFileTypes.end())
-		{
-			std::cerr << "Warning: due to normalization generation, temporarily MKMC has to generate output matrix (-o matrix flag will be additionally applied)." << std::endl;
-			mkmcParams.outputFileTypes.push_back(OutputFileType::Matrix);
-		}
 	}
 }
 
@@ -186,3 +174,27 @@ void Params::readPhenotypes()
 		}
 	}
 }
+
+
+
+std::string MessagesUtilities::generateStartingSentence(const std::vector<std::string>& tasks)
+{
+	std::string result;
+	if (tasks.size() == 1)
+		result += *tasks.begin();
+	else if (tasks.size() == 2)
+		result += *tasks.begin() + " and " + result += *(tasks.begin() + 1);
+	else
+	{
+		for (size_t i = 0; i < tasks.size(); ++i)
+		{
+			if (i == tasks.size() - 1)
+				result += ", and ";
+			else if (i != 0)
+				result += ", ";
+			result += tasks[i];
+		}
+	}
+	return result;
+}
+

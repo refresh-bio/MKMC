@@ -18,7 +18,7 @@ class KMCRunner
 		std::vector<std::string> inputFiles;
 		std::string outputFile;
 		std::string tmpDir;
-		KMC::InputFileType inputFileType;
+		KMC::InputFileType inputFileType = KMC::InputFileType::FASTQ;
 	};
 	std::vector<TaskData> tasksData;
 

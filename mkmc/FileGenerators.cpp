@@ -3,35 +3,9 @@
 
 
 
-MatrixFileGenerator::MatrixFileGenerator(const Params& params, uint32_t binId) :
-	str_kmer_buff(std::make_unique<char[]>(params.mkmcParams.samples.size() * (params.mkmcParams.countSymbols + 1) + params.stage1Params.GetKmerLen() + 1)),
-	file(params.mkmcParams.outputMatrixFiles[binId]),
-	k(params.stage1Params.GetKmerLen())
-{
-	if (!file.is_open())
-	{
-		std::cerr << "Error: cannot create output file " << params.mkmcParams.outputMatrixFiles[binId] << "." << std::endl;
-		exit(1);
-	}
-
-	file << "k-mer\t";
-	for (const Sample& sample : params.mkmcParams.samples)
-	{
-		file << sample.name << '\t';
-	}
-	file << '\n';
-}
-
-
-
-FASTAFileGenerator::FASTAFileGenerator(const Params& params, uint32_t binId) :
-	str_kmer_buff(std::make_unique<char[]>(params.stage1Params.GetKmerLen() + 1)),
-	file(params.mkmcParams.outputFASTAFiles[binId]),
-	k(params.stage1Params.GetKmerLen())
-{
-	if (!file.is_open())
-	{
-		std::cerr << "Error: cannot create output file " << params.mkmcParams.outputFASTAFiles[binId] << "." << std::endl;
-		exit(1);
-	}
-}
+kmcdb::WriterSortedPlain<uint64_t>* BinFileGenerator::kmcDBWriter = nullptr;
+bool BinFileGenerator::writerWasOpened = false;
+DumpWriter* MatrixFileGenerator::dumpWriter = nullptr;
+bool MatrixFileGenerator::writerWasOpened = false;
+DumpWriter* FASTAFileGenerator::dumpWriter = nullptr;
+bool FASTAFileGenerator::writerWasOpened = false;

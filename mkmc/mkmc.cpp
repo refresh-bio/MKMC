@@ -33,7 +33,15 @@ public:
 	template<unsigned SIZE>
 	void Run()
 	{
-		std::cerr << "\nStarting dumping to files " << params.mkmcParams.outputFilesTemplate << "_X..." << std::endl;
+		std::vector<std::string> tasks = { params.mkmcParams.outputBinFile };
+		const auto& outputFileTypes = params.mkmcParams.outputFileTypes;
+		if (std::find(outputFileTypes.begin(), outputFileTypes.end(), OutputFileType::Matrix) != outputFileTypes.end())
+			tasks.push_back(params.mkmcParams.outputMatrixFile);
+		if (std::find(outputFileTypes.begin(), outputFileTypes.end(), OutputFileType::FASTA) != outputFileTypes.end())
+			tasks.push_back(params.mkmcParams.outputFASTAFile);
+
+		std::cerr << "\nStarting dumping to " << (tasks.size() > 1 ? "files " : "file ") << MessagesUtilities::generateStartingSentence(tasks) << '\n';
+
 		Dump<SIZE> dump(params);
 		dump_timer.startTimer();
 		dump.dumpToFileParallel();
@@ -47,7 +55,6 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 {
 	DefaultKMCParams& defaultKMCParams = params.defaultKMCParams;
 	KMC::Stage1Params& stage1Params = params.stage1Params;
-	KMC::Stage2Params& stage2Params = params.stage2Params;
 	MKMCParams& mkmcParams = params.mkmcParams;
 	FilterParams& filterParams = params.filterParams;
 	StatisticsParams& statisticsParams = params.statisticsParams;
@@ -55,15 +62,15 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	// set KMC defaults
 	stage1Params.SetKmerLen(defaultKMCParams.k);
-	stage2Params.SetCutoffMin(defaultKMCParams.ci);
-	stage2Params.SetCutoffMax(defaultKMCParams.cx);
-	stage2Params.SetCounterMax(defaultKMCParams.cs);
+	stage1Params.SetCutoffMin(defaultKMCParams.ci);
+	stage1Params.SetCutoffMax(defaultKMCParams.cx);
+	stage1Params.SetCounterMax(defaultKMCParams.cs);
 
 	CLI::Option* p = nullptr, * n = nullptr, * cor = nullptr, * differentialAnalysis = nullptr, * c = nullptr;
 
 	app.add_option("input_samples_file", mkmcParams.inputFileName, "file with a list of samples names with input files names in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
 	app.add_option("output_files", mkmcParams.outputFilesTemplate, "file where the matrix of k-mers counts or FASTA file will be dumped")->required();
-	app.add_option("temp_dir", mkmcParams.tmpPath, "a directory where temporary files will be stored")->required()->check(CLI::ExistingDirectory);
+	app.add_option("temp_dir", mkmcParams.tmpPath, "a directory where temporary files will be stored")->required();
 
 	std::function<void(const uint32_t&)> kCallback = [&](const uint32_t& k)
 	{
@@ -81,13 +88,13 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	app.add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only")->check(CLI::ExistingFile);
 
-	std::map<std::string, StatisticsParams::NormalizationMethod> valuesMap{ {"freq", StatisticsParams::NormalizationMethod::frequency_count }, {"q", StatisticsParams::NormalizationMethod::quantile } };
+	std::map<std::string, StatisticsParams::NormalizationMethod> valuesMap{ {"deseq", StatisticsParams::NormalizationMethod::deseq2}, {"freq", StatisticsParams::NormalizationMethod::frequency_count }, {"q", StatisticsParams::NormalizationMethod::quantile } };
 	std::function<void(const decltype(statisticsParams.normalizationMethod)&)> nCallback = [&](const decltype(statisticsParams.normalizationMethod)& normalizationMethod)
 	{
 		statisticsParams.normalizationMethod = normalizationMethod;
 		statisticsParams.generateNormalization = true;
 	};
-	n = app.add_option_function("-n", nCallback, "generate normalized counts (frequency count/quantile normalization)")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
+	n = app.add_option_function("-n", nCallback, "generate normalized counts (DESeq2/frequency count/quantile normalization)")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
 
 	std::map<std::string, StatisticsParams::CorrelationMethod> correlationValuesMap{ {"pearson", StatisticsParams::CorrelationMethod::Pearson }, { "spearman", StatisticsParams::CorrelationMethod::Spearman }, {"kendall", StatisticsParams::CorrelationMethod::Kendall } };
 	cor = app.add_option("--cor", statisticsParams.correlationMethods, "compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
@@ -96,17 +103,26 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	{
 		phenotypes.correlationPhenotype.setFileName(fileName);
 	};
-	p = app.add_option_function("-p", pCallback, "set a phenotype file (a set of the integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
+	p = app.add_option_function("-p", pCallback, "set a phenotype file (a set of integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
 
 	typedef StatisticsParams::DifferentialAnalysisMethod DAMethod;
 	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"ttest", DAMethod::TTest }, {"snr", DAMethod::SNR }, {"wrs", DAMethod::WilcoxonRankSum }, {"dids", DAMethod::DIDS }, {"anova", DAMethod::ANOVA } };
 	differentialAnalysis = app.add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
 
+	typedef StatisticsParams::DifferentialAnalysisCorrectionMethod CorrectionMethod;
+	std::map<std::string, StatisticsParams::DifferentialAnalysisCorrectionMethod> differentialAnalysisCorrectionValuesMap{ { "b", CorrectionMethod::Bonferroni }, { "hb", CorrectionMethod::HolmBonferroni }, { "bh", CorrectionMethod::BenjaminiHochberg }, { "by", CorrectionMethod::BenjaminiYekutieli } };
+	std::function<void(const decltype(statisticsParams.classificationPValueCorrection)&)> pcorrCallback = [&](const decltype(statisticsParams.classificationPValueCorrection)& classificationPValueCorrection)
+	{
+		statisticsParams.classificationPValueCorrection = classificationPValueCorrection;
+		statisticsParams.correctPvalues = true;
+	};
+	app.add_option_function("--pcorr", pcorrCallback, "correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni)")->transform(CLI::CheckedTransformer(differentialAnalysisCorrectionValuesMap))->needs(differentialAnalysis);
+
 	std::function<void(const std::string&)> cCallback = [&](const std::string& fileName)
 	{
 		phenotypes.differentialAnalysisPhenotype.setFileName(fileName);
 	};
-	c = app.add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a set of the natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
+	c = app.add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
 
 	app.add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy")->default_val(statisticsParams.generateEntropy);
 
@@ -116,9 +132,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	optionalGroup->add_option("-f", mkmcParams.inputFileType, "input format (FASTA, FASTQ or multi-FASTA); mixing files is not supported")->transform(CLI::CheckedTransformer(inputValuesMap, CLI::ignore_case))->default_val(mkmcParams.inputFileType)->default_str("fq");
 
 	std::map<std::string, OutputFileType> outputValuesMap{ {"fa", OutputFileType::FASTA }, {"matrix", OutputFileType::Matrix } };
-	optionalGroup->add_option("-o", mkmcParams.outputFileTypes, "output format (FASTA or matrix)")->transform(CLI::CheckedTransformer(outputValuesMap, CLI::ignore_case))->default_val(mkmcParams.outputFileTypes)->default_str("matrix");
-
-	optionalGroup->add_option("--on", mkmcParams.nKMCBins, "number of output files, reduce carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
+	optionalGroup->add_option("-o", mkmcParams.outputFileTypes, "output format (FASTA or matrix)")->transform(CLI::CheckedTransformer(outputValuesMap, CLI::ignore_case));
 
 	std::function<void()> bCallback = [&]()
 	{
@@ -128,18 +142,18 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	std::function<void(const uint32_t&)> ciCallback = [&](const uint32_t& ci) // currently 32 bits
 	{
-		stage2Params.SetCutoffMin(static_cast<uint64_t>(ci));
+		stage1Params.SetCutoffMin(static_cast<uint64_t>(ci));
 	};
 	optionalGroup->add_option_function("--ci", ciCallback, "exclude k-mers occurring less than specified number of times (if k-mer occurs less than --ci times in a sample, it gets counter 0, but for this sample only)")->check(CLI::PositiveNumber)->default_val(defaultKMCParams.ci);
 	std::function<void(const uint32_t&)> cxCallback = [&](const uint32_t& cx) // currently 32 bits
 	{
-		stage2Params.SetCutoffMax(static_cast<uint64_t>(cx));
+		stage1Params.SetCutoffMax(static_cast<uint64_t>(cx));
 	};
 	optionalGroup->add_option_function("--cx", cxCallback, "exclude counting k-mers occurring more than specified number of times (if k-mer occurs more than --cx times in a sample, it gets counter 0, but for this sample only)")->check(CLI::PositiveNumber)->default_val(static_cast<uint32_t>(defaultKMCParams.cx));
 
 	std::function<void(const uint32_t&)> csCallback = [&](const uint32_t& cs) // currently 32 bits
 	{
-		stage2Params.SetCounterMax(static_cast<uint64_t>(cs));
+		stage1Params.SetCounterMax(static_cast<uint64_t>(cs));
 	};
 	optionalGroup->add_option_function("--cs", csCallback, "maximal value of a counter")->check(CLI::Range(2U, std::numeric_limits<uint32_t>::max()))->default_val(defaultKMCParams.cs);
 
@@ -174,10 +188,13 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
 	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files");
 
+	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, reduce carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
+
 	cor->needs(n)->needs(p);
 	differentialAnalysis->needs(c);
 
-	app.footer("Example: to run MKMC, type:\n"
+	app.footer("Warning: k-mers order in output files is not specified and may vary between runnings.\n\n"
+		"Example: to run MKMC, type:\n"
 		"    ./mkmc -k 20 --thr_rat 0.5 input_files_list.txt output tmp\n"
 		"It will generate a matrix of 20-mers occurring in at least a half of the input files.\n"
 		"    ./mkmc -k 20 --thr 2 --thr_rat 0.5 input_files_list.txt output tmp\n"
@@ -238,7 +255,18 @@ int main(int argc, char** argv)
 
 		if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
 		{
-			std::cerr << "\nStarting normalizing and computing correlation...\n";
+			std::vector<std::string> tasks;
+			if (params.statisticsParams.generateNormalization)
+				tasks.push_back("normalizing");
+			if (!params.statisticsParams.correlationMethods.empty())
+				tasks.push_back("computing correlation");
+			if (params.statisticsParams.generateEntropy)
+				tasks.push_back("generating entropy");
+			if (!params.statisticsParams.classificationMethods.empty())
+				tasks.push_back("performing differential k-mers analysis");
+
+			std::cerr << "\nStarting " << MessagesUtilities::generateStartingSentence(tasks) << '\n';
+
 			StatisticsGenerator statisticsGenerator(params);
 			statistics_timer.startTimer();
 			statisticsGenerator.generateStatisticsParallel();

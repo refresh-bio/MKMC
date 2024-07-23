@@ -45,6 +45,8 @@ void KMCRunner::operator()()
 		// Fill missing, per counting, KMC parameters
 		KMC::Stage1Params stage1Params = params.stage1Params;
 		stage1Params.SetInputFiles(taskData.inputFiles);
+		stage1Params.SetOutputFileName(taskData.outputFile);
+		stage1Params.SetOutputFileType(KMC::OutputFileType::KMCDB); //mkokot_TODO: set also sample name!
 		stage1Params.SetTmpPath(taskData.tmpDir);
 		stage1Params.SetInputFileType(taskData.inputFileType);
 		progress_observer.reset();
@@ -53,7 +55,7 @@ void KMCRunner::operator()()
 		runner.RunStage1(stage1Params);
 
 		KMC::Stage2Params stage2Params = params.stage2Params;
-		stage2Params.SetOutputFileName(taskData.outputFile);
+
 		progress_observer.reset();
 
 		runner.RunStage2(stage2Params);

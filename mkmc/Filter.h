@@ -12,7 +12,7 @@ class FilterCountThreshold
 	const Params& params;
 
 public:
-	FilterCountThreshold(const Params& params, const uint32_t binId) :
+	FilterCountThreshold(const Params& params, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* /*bin*/) :
 		params(params)
 	{}
 
@@ -28,9 +28,9 @@ class FilterSequences
 	KMCFileWrapper<KmersSamplesData_T::SIZE> kmcFile;
 
 public:
-	FilterSequences(const Params& params, const uint32_t binId) :
+	FilterSequences(const Params& params, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin) :
 		params(params),
-		kmcFile(params.filterParams.kmersSequencesToFilterOutDB, binId)
+		kmcFile(bin)
 	{}
 
 	bool keepKMer(const KmersSamplesData_T& kmersData);
@@ -44,8 +44,8 @@ class PerformFilter
 	Filter_T filter;
 	PerformFilter<NextFilters_T...> nextPerformFilter;
 public:
-	PerformFilter(const Params& params, const uint32_t binId) :
-		filter(params, binId), nextPerformFilter(params, binId)
+	PerformFilter(const Params& params, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin) :
+		filter(params, bin), nextPerformFilter(params, bin)
 	{}
 
 	template<typename KmersSamplesData_T>
@@ -64,8 +64,8 @@ class PerformFilter<Filter_T>
 {
 	Filter_T filter;
 public:
-	PerformFilter(const Params& params, const uint32_t binId) :
-		filter(params, binId)
+	PerformFilter(const Params& params, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin) :
+		filter(params, bin)
 	{}
 
 	template<typename KmersSamplesData_T>
@@ -105,7 +105,7 @@ bool FilterSequences<KmersSamplesData_T>::keepKMer(const KmersSamplesData_T& kme
 	}
 
 	//assert(!(kmcFile.First() < kmersData.minKmer));
-	if (kmersData.minKmer < kmcFile.First())
+	if (kmersData.kmer < kmcFile.First())
 	{
 		return false;
 	}

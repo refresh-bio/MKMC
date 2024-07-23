@@ -22,6 +22,7 @@ public:
 	{}
 
 	bool getTask(TASK_T& task);
+	void reset();
 };
 
 
@@ -37,4 +38,12 @@ bool TasksPool<TASK_T>::getTask(TASK_T& task) {
 	task = tasks[nextTask];
 	nextTask++;
 	return true;
+}
+
+
+
+template<typename TASK_T>
+void TasksPool<TASK_T>::reset() {
+	assert(nextTask == tasks.size());
+	nextTask = 0;
 }

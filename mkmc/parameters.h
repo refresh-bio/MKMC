@@ -8,7 +8,7 @@
 #include "kmc_api/kmc_file.h"
 #include "kmc_api/kmer_api.h"
 #undef small
-#include "lib/statistics/lib/statistics_normalization.h"
+#include "refresh/statistics/lib/statistics_normalization.h"
 
 
 
@@ -31,24 +31,30 @@ struct MKMCParams
 	std::vector<std::string> kmcTmpDirs;
 
 	std::string outputFilesTemplate;
-	std::vector<std::string> outputFASTAFiles;
-	std::vector<std::string> outputMatrixFiles;
-	std::vector<OutputFileType> outputFileTypes = { OutputFileType::Matrix }; // also default "matrix" value in input parameters
+	std::string outputBinFile;
+	std::string outputStatsBinFile;
+	std::string outputFASTAFile;
+	std::string outputMatrixFile;
+	std::vector<OutputFileType> outputFileTypes;
 
+	std::string normStatsBinFile;
 
-	std::vector<std::string> outputFilesNorm;
+	std::string outputFileNorm;
 
-	std::vector<std::string> outputFilesPearson;
-	std::vector<std::string> outputFilesSpearman;
-	std::vector<std::string> outputFilesKendall;
+	std::string outputFilePearson;
+	std::string outputFileSpearman;
+	std::string outputFileKendall;
 
-	std::vector<std::string> outputFilesEntropy;
+	std::string outputFileEntropy;
 
-	std::vector<std::string> outputFilesTTest;
-	std::vector<std::string> outputFilesSNR;
-	std::vector<std::string> outputFilesWilcoxonRankSum;
-	std::vector<std::string> outputFilesDIDS;
-	std::vector<std::string> outputFilesANOVA;
+	std::string outputFileTTest;
+	std::string outputFileTTestCor;
+	std::string outputFileSNR;
+	std::string outputFileWilcoxonRankSum;
+	std::string outputFileWilcoxonRankSumCor;
+	std::string outputFileDIDS;
+	std::string outputFileANOVA;
+	std::string outputFileANOVACor;
 
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
 	uint32_t nKMCWorkers = 4;
@@ -80,11 +86,6 @@ struct StatisticsParams
 	using NormalizationMethod = refresh::normalization_base<uint64_t, double>::method_t;
 	using NormalizationLearning = refresh::normalization_learn<uint64_t, double>;
 
-	std::string normFrequencyFileTmp = "frequencyDump";
-	std::string normQuantileFileTmp = "quantileDump";
-
-	std::string statsNOutputKmers = "nKmers";
-
 	bool generateNormalization = false;
 	NormalizationMethod normalizationMethod;
 
@@ -94,7 +95,14 @@ struct StatisticsParams
 	enum class DifferentialAnalysisMethod { TTest, SNR, WilcoxonRankSum, DIDS, ANOVA };
 	std::vector<DifferentialAnalysisMethod> classificationMethods;
 
+	bool correctPvalues = false;
+	enum class DifferentialAnalysisCorrectionMethod { Bonferroni, HolmBonferroni, BenjaminiHochberg, BenjaminiYekutieli };
+	DifferentialAnalysisCorrectionMethod classificationPValueCorrection;
+
 	bool generateEntropy = false;
+	inline const static std::string normDeseq2StreamName = "norm_deseq2";
+	inline const static std::string normFrequencyStreamName = "norm_frequency";
+	inline const static std::string normQuantileStreamName = "norm_quantile";
 };
 
 struct MutableParams
@@ -140,4 +148,12 @@ struct Params
 	void adjustKMCPerformanceParams();
 	void adjustAnotherParams();
 	void readPhenotypes();
+};
+
+
+
+class MessagesUtilities
+{
+public:
+	static std::string generateStartingSentence(const std::vector<std::string>& tasks);
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "FileGenerators.h"
 #include <vector>
 #include <cstdint>
 #include <fstream>
@@ -11,19 +12,18 @@
 #include <vector>
 #include <mutex>
 #include "parameters.h"
-#include "kmc_api/kmc_file.h"
 #include "kmc_dump/nc_utils.h"
 #include "KMCFileWrapper.h"
 #include "HeapMerge.h"
-#include "FileGenerators.h"
 #include "TasksPool.h"
 #include "Logger.h"
 #define NOMINMAX
 #include "progress_bar.hpp"
-#include "Dump.h"
 #include "Filter.h"
+#include "MatrixStats.h"
 #include "KmersSamplesStruct.h"
-#include "lib/statistics/lib/statistics_normalization.h"
+#include "kmcdb/kmcdb.h"
+#include "refresh/statistics/lib/statistics_normalization.h"
 
 template<unsigned SIZE>
 class Dump
@@ -46,41 +46,27 @@ class Dump
 	std::vector<TaskData> tasksData;
 	TasksPool<TaskData> tasksPool;
 
-	std::vector<uint64_t> nOutputKmersPerBin;
+	std::vector<std::unique_ptr<kmcdb::MetadataReader>> samplesMetadata;
+	std::vector<std::unique_ptr<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>> samplesReaders;
 
-	ProgressBar progress_bar;
+	std::unique_ptr<kmcdb::MetadataReader> sequencesToFilterMetadataReader;
+	std::unique_ptr<kmcdb::ReaderSortedWithLUTForListing<uint64_t>> sequencesToFilterReader;
 
-	bool allKAreSame(const std::vector<KMCFileWrapper<SIZE>>& samples);
-	void openDatabases(std::vector<KMCFileWrapper<SIZE>>& samples, uint32_t binId);
+	std::unique_ptr<ProgressBar> progress_bar;
+
+	bool inputIsConsistent();
 	void fillTaskData();
-	template<typename T>
-	void writeDump(const std::vector<T>& data, std::string fileName);
 	void serializeNormalizationAndDump();
 
-	uint64_t getNTotInputKmers()
-	{
-		uint64_t res{};
-		for (const auto& x : params.mkmcParams.kmcOutputFiles)
-		{
-			CKMCFile tmp(true);
-			if (!tmp.OpenForListingWithBinOrder(x))
-			{
-				std::cerr << "Error: cannot open kmc database " << x << "." << std::endl;
-				exit(1);
-			}
-			res += tmp.KmerCount();
-		}
-		return res;
-	}
-
 	template<typename Generators_T, typename Filters_T>
-	void dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning);
+	void dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
 
 public:
 	Dump(const Params& params) :
-		params(params), tasksPool(tasksData),
-		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : getNTotInputKmers(), "Dumping", std::cerr, params.mkmcParams.verbosity_level == 0)
+		params(params), tasksPool(tasksData)
 	{
+		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+			normalizationLearning.register_method(StatisticsParams::NormalizationMethod::deseq2);
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::frequency_count);
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
 		normalizationLearning.set_no_series(params.mkmcParams.samples.size());
@@ -89,6 +75,7 @@ public:
 
 	void dumpToFileParallel();
 
+	template<typename Generators_T>
 	void operator()();
 };
 
@@ -96,23 +83,22 @@ public:
 
 template<unsigned SIZE>
 template<typename Generators_T, typename Filters_T>
-void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning)
+void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
 {
 	std::vector<KMCFileWrapper<SIZE>> samples;
-	openDatabases(samples, binId);
+	for (size_t sample_id = 0; sample_id < params.mkmcParams.kmcOutputFiles.size(); ++sample_id)
+		samples.emplace_back(samplesReaders[sample_id]->GetBin(binId));
 
 	size_t tot_all_kmers{};
 	for (const auto& db : samples) {
 		tot_all_kmers += db.GetTotKmers();
 	}
 
-	ProgressBarUpdater progress_bar_updater(progress_bar, (std::max)(1ull, tot_all_kmers / 100ull));
-	Generators_T fileGenerator(params, binId);
+	ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, tot_all_kmers / 100ull));
 
 	std::vector<uint64_t> kMersCounts(samples.size());
 
-	Filters_T filter(params, binId);
-
+	Filters_T filter(params, bin);
 
 	auto do_with_elem_if_exists_init = [&](size_t id, const auto& modifyHeapCallback) -> bool
 	{
@@ -156,8 +142,7 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 	if (heap.Empty())
 		return;
 
-	CKmer<SIZE> minKmer;
-	uint64_t nOutputKmers = 0;
+	kmcdb::CKmer<SIZE> minKmer;
 
 	heap.ProcessElem(do_with_elem_if_exists, [&](size_t elem, size_t id)
 		{
@@ -170,14 +155,13 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 	while (!heap.Empty()) {
 		heap.ProcessElem(do_with_elem_if_exists, [&](size_t elem, size_t id)
 			{
-				const CKmer<SIZE>& curKmer = samples[elem].First();
+				const kmcdb::CKmer<SIZE>& curKmer = samples[elem].First();
 				if (!(curKmer == minKmer))
 				{
 					if (filter.keepKMer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts }))
 					{
-						fileGenerator.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
+						fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 						normalizationLearning.add_entry(kMersCounts);
-						++nOutputKmers;
 					}
 
 					minKmer = curKmer;
@@ -190,52 +174,38 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 
 	if (filter.keepKMer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts }))
 	{
-		fileGenerator.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
+		fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 		normalizationLearning.add_entry(kMersCounts);
-		++nOutputKmers;
 	}
-	nOutputKmersPerBin[binId] = nOutputKmers;
 }
 
 
 template<unsigned SIZE>
-bool Dump<SIZE>::allKAreSame(const std::vector<KMCFileWrapper<SIZE>>& samples)
+bool Dump<SIZE>::inputIsConsistent()
 {
-	if (samples.empty())
+	if (samplesMetadata.empty())
 		return true;
-	uint32_t k = samples.front().GetK();
-	uint32_t signatureLen = samples.front().GetSignatureLen();
-	auto signatureSelectionScheme = samples.front().GetSignatureSelectionScheme();
+	uint32_t k = samplesMetadata.front()->GetConfig().kmer_len;
+	uint64_t signatureLen = samplesMetadata.front()->GetConfig().signature_len;
+	auto signatureSelectionScheme = samplesMetadata.front()->GetConfig().signature_selection_scheme;
+	auto signatureToBinMapping = samplesMetadata.front()->GetConfig().signature_to_bin_mapping;
+	auto num_bins = samplesMetadata.front()->GetConfig().num_bins;
 
-	for (const auto& sample : samples)
+	for (const auto& sample : samplesMetadata)
 	{
-		if (k != sample.GetK())
+		if (k != sample->GetConfig().kmer_len)
 			return false;
-		if (signatureLen != sample.GetSignatureLen())
+		if (signatureLen != sample->GetConfig().signature_len)
 			return false;
-		if (signatureSelectionScheme != sample.GetSignatureSelectionScheme())
+		if (signatureSelectionScheme != sample->GetConfig().signature_selection_scheme)
+			return false;
+		if (signatureToBinMapping != sample->GetConfig().signature_to_bin_mapping)
+			return false;
+		if (num_bins != sample->GetConfig().num_bins)
 			return false;
 	}
 	return true;
 }
-
-
-template<unsigned SIZE>
-void Dump<SIZE>::openDatabases(std::vector<KMCFileWrapper<SIZE>>& samples, uint32_t binId)
-{
-	for (const std::string& fileName : params.mkmcParams.kmcOutputFiles)
-	{
-		samples.emplace_back(fileName, binId);
-	}
-
-	if (!allKAreSame(samples))
-	{
-		std::cerr << "Error: KMC databases are not consistent." << std::endl;
-		exit(1);
-	}
-}
-
-
 
 template<unsigned SIZE>
 inline void Dump<SIZE>::fillTaskData()
@@ -245,90 +215,159 @@ inline void Dump<SIZE>::fillTaskData()
 	{
 		tasksData.push_back(TaskData{ i });
 	}
-	nOutputKmersPerBin.resize(params.stage1Params.GetNBins(), 0);
 
-	size_t biggestSample = 0;
 	uint64_t biggestSampleKmersCount = 0;
-	{
-		for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i)
-		{
-			CKMCFile tmp(true);
-			if (!tmp.OpenForListingWithBinOrder(params.mkmcParams.kmcOutputFiles[i]))
-			{
-				std::cerr << "Error: cannot open kmc database " << params.mkmcParams.kmcOutputFiles[i] << "." << std::endl;
-				exit(1);
-			}
 
-			if (tmp.KmerCount() > biggestSampleKmersCount)
+	std::vector<uint64_t> samplesBeginSize(params.mkmcParams.nKMCBins);
+
+	samplesMetadata.reserve(params.stage1Params.GetNBins());
+	samplesReaders.reserve(params.stage1Params.GetNBins());
+
+	uint64_t totKmersAllSamples = 0;
+
+	for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i)
+	{
+		try
+		{
+			samplesMetadata.emplace_back(std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.kmcOutputFiles[i], true));
+			kmcdb::MetadataReader& metadata_reader = *samplesMetadata.back();
+			samplesReaders.emplace_back(std::make_unique<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>(metadata_reader));
+			kmcdb::ReaderSortedWithLUTForListing<uint64_t>& reader = *samplesReaders.back();
+			uint64_t totKmers = 0;
+			for (uint32_t bin_id = 0; bin_id < metadata_reader.GetConfig().num_bins; ++bin_id)
+				totKmers += reader.GetBin(bin_id)->GetBinMetadata().total_kmers;
+
+			totKmersAllSamples += totKmers;
+			if (totKmers > biggestSampleKmersCount)
 			{
-				biggestSample = i;
-				biggestSampleKmersCount = tmp.KmerCount();
+				biggestSampleKmersCount = totKmers;
+
+				for (uint32_t bin_id = 0; bin_id < metadata_reader.GetConfig().num_bins; ++bin_id)
+					samplesBeginSize[bin_id] = reader.GetBin(bin_id)->GetBinMetadata().total_kmers;
 			}
 		}
-	} // close samples
-
-	// sorting is performed in the following manner: first biggest bins are dumped, then smaller; but the sorting is performed basing on the biggest sample only
-
-	std::vector<uint64_t> samplesBeginSize;
-	samplesBeginSize.reserve(params.mkmcParams.nKMCBins);
-	for (size_t i = 0; i < params.mkmcParams.nKMCBins; ++i)
-	{
-		KMCFileWrapper<SIZE> currentSample(params.mkmcParams.kmcOutputFiles[biggestSample], i);
-		samplesBeginSize.push_back(currentSample.GetTotKmers());
+		catch (const std::runtime_error& ex)
+		{
+			std::cerr << "Error: " << ex.what() << std::endl;
+			exit(1);
+		}
 	}
 
-	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return samplesBeginSize[a.binId] > samplesBeginSize[b.binId]; });
-}
-
-
-
-template<unsigned SIZE>
-template<typename T>
-void Dump<SIZE>::writeDump(const std::vector<T>& normalizationData, std::string normalizationFileName)
-{
-	std::ofstream file(normalizationFileName, std::ios::binary);
-	if (!file.is_open())
+	if (!inputIsConsistent())
 	{
-		std::cerr << "Error: cannot open " << normalizationFileName << "." << std::endl;
+		std::cerr << "Error: KMC databases are not consistent." << std::endl;
 		exit(1);
 	}
 
-	size_t nElements = normalizationData.size();
-	file.write(reinterpret_cast<char*>(&nElements), sizeof(size_t));
-	file.write(const_cast<char*>(reinterpret_cast<const char*>(normalizationData.data())), normalizationData.size() * sizeof(T));
+	progress_bar = std::make_unique<ProgressBar>(params.mkmcParams.verbosity_level == 0 ? 0 : totKmersAllSamples, "Dumping", std::cerr, params.mkmcParams.verbosity_level == 0);
+
+	// sorting is performed in the following manner: first biggest bins are dumped, then smaller; but the sorting is performed basing on the biggest sample only
+	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return samplesBeginSize[a.binId] > samplesBeginSize[b.binId]; });
 }
-
-
 
 template<unsigned SIZE>
 void Dump<SIZE>::serializeNormalizationAndDump()
 {
-	std::vector<uint8_t> frequencyNormalizationData, quantileNormalizationData;
+	std::vector<uint8_t> deseq2NormalizationData, frequencyNormalizationData, quantileNormalizationData;
+
+	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+		normalizationLearning.serialize(StatisticsParams::NormalizationMethod::deseq2, deseq2NormalizationData);
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::frequency_count, frequencyNormalizationData);
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::quantile, quantileNormalizationData);
 
-	writeDump(frequencyNormalizationData, params.statisticsParams.normFrequencyFileTmp);
-	writeDump(quantileNormalizationData, params.statisticsParams.normQuantileFileTmp);
-
-	writeDump(nOutputKmersPerBin, params.statisticsParams.statsNOutputKmers);
+	MatrixStatsWriter stats_writer(params.mkmcParams.normStatsBinFile);
+	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+		stats_writer.Add(params.statisticsParams.normDeseq2StreamName, deseq2NormalizationData);
+	stats_writer.Add(params.statisticsParams.normFrequencyStreamName, frequencyNormalizationData);
+	stats_writer.Add(params.statisticsParams.normQuantileStreamName, quantileNormalizationData);
 }
-
-
 
 template<unsigned SIZE>
 void Dump<SIZE>::dumpToFileParallel()
 {
 	fillTaskData();
 
-	std::vector<std::thread> threads(params.mkmcParams.nThreads);
-	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+	if (params.filterParams.filterKmersSequences)
 	{
-		threads[i_thred] = std::thread([this] { (*this)(); });
+		sequencesToFilterMetadataReader = std::make_unique<kmcdb::MetadataReader>(params.filterParams.kmersSequencesToFilterOutDB, true);
+		sequencesToFilterReader = std::make_unique<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>(*sequencesToFilterMetadataReader);
 	}
 
-	for (std::thread& thread : threads)
+	kmcdb::Config config;
 	{
-		thread.join();
+		config.num_bins = samplesMetadata.front()->GetConfig().num_bins;
+		config.signature_len = samplesMetadata.front()->GetConfig().signature_len;
+		config.signature_selection_scheme = samplesMetadata.front()->GetConfig().signature_selection_scheme;
+		config.signature_to_bin_mapping = samplesMetadata.front()->GetConfig().signature_to_bin_mapping;
+		config.kmer_len = samplesMetadata.front()->GetConfig().kmer_len;
+		config.num_samples = samplesMetadata.size();
+		config.num_bytes_single_value = samplesMetadata.front()->GetConfig().num_bytes_single_value;
+		for (size_t i = 1; i < samplesMetadata.size(); ++i)
+			if (samplesMetadata[i]->GetConfig().num_bytes_single_value > config.num_bytes_single_value)
+				config.num_bytes_single_value = samplesMetadata[i]->GetConfig().num_bytes_single_value;
+	}
+
+	std::vector<std::thread> threads(params.mkmcParams.nThreads);
+
+	if (params.mkmcParams.outputFileTypes.empty())
+	{
+		using Generators_T = PerformGenerate<BinFileGenerator>;
+		Generators_T::initWriters(params, config);
+		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+		{
+			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+		}
+
+		for (std::thread& thread : threads)
+		{
+			thread.join();
+		}
+		Generators_T::closeWriters();
+	}
+	else if (params.mkmcParams.outputFileTypes.size() == 2)
+	{
+		using Generators_T = PerformGenerate<BinFileGenerator, MatrixFileGenerator, FASTAFileGenerator>;
+		Generators_T::initWriters(params, config);
+		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+		{
+			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+		}
+
+		for (std::thread& thread : threads)
+		{
+			thread.join();
+		}
+		Generators_T::closeWriters();
+	}
+	else if (params.mkmcParams.outputFileTypes.front() == OutputFileType::Matrix)
+	{
+		using Generators_T = PerformGenerate<BinFileGenerator, MatrixFileGenerator>;
+		Generators_T::initWriters(params, config);
+		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+		{
+			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+		}
+
+		for (std::thread& thread : threads)
+		{
+			thread.join();
+		}
+		Generators_T::closeWriters();
+	}
+	else
+	{
+		using Generators_T = PerformGenerate<BinFileGenerator, FASTAFileGenerator>;
+		Generators_T::initWriters(params, config);
+		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+		{
+			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+		}
+		
+		for (std::thread& thread : threads)
+		{
+			thread.join();
+		}
+		Generators_T::closeWriters();
 	}
 
 	if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
@@ -337,56 +376,35 @@ void Dump<SIZE>::dumpToFileParallel()
 
 
 template<unsigned SIZE>
+template<typename Generators_T>
 void Dump<SIZE>::operator()()
 {
+	Generators_T fileGenerators(params);
 	TaskData taskData;
 	using ParameterizedKmersSamplesStruct = KmersSamplesStruct<SIZE>;
 
 	while (tasksPool.getTask(taskData))
 	{
 		StatisticsParams::NormalizationLearning currentBinNormalizationLearnings;
+		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+			currentBinNormalizationLearnings.register_method(StatisticsParams::NormalizationMethod::deseq2);
 		currentBinNormalizationLearnings.register_method(StatisticsParams::NormalizationMethod::frequency_count);
 		currentBinNormalizationLearnings.register_method(StatisticsParams::NormalizationMethod::quantile);
 		currentBinNormalizationLearnings.set_no_series(params.mkmcParams.samples.size());
 		currentBinNormalizationLearnings.initialize();
 
+		fileGenerators.setBinId(taskData.binId);
+
 		if (params.filterParams.filterKmersSequences)
 		{
+			assert(sequencesToFilterReader);
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
-			if (params.mkmcParams.outputFileTypes.size() == 2)
-			{
-				using Generators_T = PerformGenerate<MatrixFileGenerator, FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
-			}
-			else if (params.mkmcParams.outputFileTypes.front() == OutputFileType::Matrix)
-			{
-				using Generators_T = PerformGenerate<MatrixFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
-			}
-			else
-			{
-				using Generators_T = PerformGenerate<FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
-			}
+			dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, fileGenerators, sequencesToFilterReader->GetBin(taskData.binId));
 		}
 		else
 		{
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
-			if (params.mkmcParams.outputFileTypes.size() == 2)
-			{
-				using Generators_T = PerformGenerate<MatrixFileGenerator, FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
-			}
-			else if (params.mkmcParams.outputFileTypes.front() == OutputFileType::Matrix)
-			{
-				using Generators_T = PerformGenerate<MatrixFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
-			}
-			else
-			{
-				using Generators_T = PerformGenerate<FASTAFileGenerator>;
-				dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings);
-			}
+			dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, fileGenerators, nullptr);
 		}
 		normalizationLearningMutex.lock();
 		normalizationLearning.merge_with(&currentBinNormalizationLearnings, &currentBinNormalizationLearnings + 1);

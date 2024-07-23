@@ -3,12 +3,15 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <memory>
 #include "parameters.h"
 #include "TasksPool.h"
-#include "lib/statistics/lib/statistics.h"
+#include "refresh/statistics/lib/statistics.h"
 #define NOMINMAX
 #include "progress_bar.hpp"
-
+#include "kmcdb/kmcdb.h"
+#include "DumpWriter.h"
+#include "StatisticsGatherers.h"
 
 
 class StatisticsGenerator
@@ -29,80 +32,63 @@ class StatisticsGenerator
 	std::vector<TaskData> tasksData;
 	TasksPool<TaskData> tasksPool;
 
-	uint64_t totAllKmers;
-	ProgressBar progress_bar;
+	struct CorrectTaskData
+	{
+		uint32_t algIdx;
 
+		CorrectTaskData() :
+			algIdx(static_cast<uint32_t>(-1))
+		{}
+		CorrectTaskData(uint32_t algIdx) :
+			algIdx(algIdx)
+		{}
+	};
+	std::vector<CorrectTaskData> correctTasksData;
+	TasksPool<CorrectTaskData> correctTasksPool;
+
+	std::vector<uint64_t> nOutputKmersPerBin;
+
+	std::unique_ptr<kmcdb::MetadataReader> matrixMetadataReader;
+	std::unique_ptr<kmcdb::ReaderSortedPlainForListing<uint64_t>> matrixReader;
+
+	using out_kmcdb_value_type = double;
+
+	WritingGatherer<out_kmcdb_value_type> gatherer;
+	std::unique_ptr<DumpWriter> normWriter;
+
+	std::unique_ptr<ProgressBar> progress_bar;
+
+	void openReaders();
 	void fillTaskData();
 
-	template<typename T>
-	void readDump(std::vector<T>& normalizationData, std::string normalizationFileName);
-
-	bool getLine(std::ifstream& stream, std::string& kmerSequence, std::vector<uint64_t>& counts)
-	{
-		stream >> kmerSequence;
-		if (stream.eof())
-			return false;
-		for (auto& count : counts)
-		{
-			stream >> count;
-		}
-		return true;
-	}
-	void putLine(std::ofstream& stream, std::string& kmerSequence, const std::vector<double>& counts)
-	{
-		stream << kmerSequence << '\t';
-		for (auto count : counts)
-		{
-			stream << count << '\t';
-		}
-		stream << '\n';
-	}
-
-	uint64_t getNTotInputKmers()
-	{
-		std::vector<uint64_t> nOutputKmersPerBin;
-		readDump(nOutputKmersPerBin, params.statisticsParams.statsNOutputKmers);
-		uint64_t nKmers = 0;
-		for (auto a : nOutputKmersPerBin)
-			nKmers += a;
-		return nKmers;
-	}
 
 	std::vector<uint8_t> normalizationData;
 
 	const std::vector<int64_t>& correlationPhenotype;
 	const std::vector<uint32_t>& differentialAnalysisPhenotype;
-	size_t differentialAnalysisClasses;
+	size_t differentialAnalysisNClasses;
 
-	void operator()();
+	std::vector<std::vector<out_kmcdb_value_type>> pValuesData; // first index: algorithm, second: entries
+	std::vector<std::vector<out_kmcdb_value_type>> pValuesCorrectedData; // first index: algorithm, second: entries
+	std::vector<uint64_t> binsIndicesForCorrection; // (of size no. of bins + 1) contains indices of first entries for every bin; the last element contains number of all the entries
+
+	StatisticsToGeneration statisticsToGeneration;
+
+	size_t getMaxNormLineLength() const
+	{
+		return params.stage1Params.GetKmerLen() + params.mkmcParams.samples.size() * (refresh::numeric_conversion_max_length<out_kmcdb_value_type>() + 1);
+	}
+
+	void processEntries();
+	void gatherPValuesEntriesToCorrection();
+
+	void correctPValuesEntries();
+
+	void processEntriesAfterCorrection();
 
 public:
-	StatisticsGenerator(Params& params) :
-		params(params),
-		tasksPool(tasksData),
-		totAllKmers(getNTotInputKmers()),
-		progress_bar(params.mkmcParams.verbosity_level == 0 ? 0 : totAllKmers, "Computing statistics", std::cerr, params.mkmcParams.verbosity_level == 0),
-		correlationPhenotype(params.phenotypes.correlationPhenotype.getPhenotype()),
-		differentialAnalysisPhenotype(params.phenotypes.differentialAnalysisPhenotype.getMappedPhenotype()),
-		differentialAnalysisClasses(params.phenotypes.differentialAnalysisPhenotype.getClassesNumber())
-	{}
+	StatisticsGenerator(Params& params);
 
 	void generateStatisticsParallel();
 };
 
-
-
-template<typename T>
-void StatisticsGenerator::readDump(std::vector<T>& data, std::string fileName)
-{
-	std::ifstream file(fileName, std::ios::binary);
-	if (!file.is_open())
-	{
-		std::cerr << "Error: cannot open " << fileName << "." << std::endl;
-		exit(1);
-	}
-	size_t nElements;
-	file.read(reinterpret_cast<char*>(&nElements), sizeof(size_t));
-	data.resize(nElements);
-	file.read(reinterpret_cast<char*>(data.data()), nElements * sizeof(T));
-}

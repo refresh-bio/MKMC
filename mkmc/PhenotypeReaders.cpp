@@ -53,9 +53,9 @@ void DifferentialAnalysisPhenotypeReader::mapPhenotypeToInts()
 		if (!mapToInt.contains(c))
 		{
 			mapToClass.push_back(c);
-			mapToInt[c] = mapToClass.size() - 1;
+			mapToInt[c] = static_cast<uint32_t>(mapToClass.size() - 1);
 
-			mappedPhenotype.push_back(mapToClass.size() - 1);
+			mappedPhenotype.push_back(static_cast<uint32_t>(mapToClass.size() - 1));
 		}
 		else
 		{
