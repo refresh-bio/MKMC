@@ -109,6 +109,15 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"ttest", DAMethod::TTest }, {"snr", DAMethod::SNR }, {"wrs", DAMethod::WilcoxonRankSum }, {"dids", DAMethod::DIDS }, {"anova", DAMethod::ANOVA } };
 	differentialAnalysis = app.add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
 
+	typedef StatisticsParams::DifferentialAnalysisCorrectionMethod CorrectionMethod;
+	std::map<std::string, StatisticsParams::DifferentialAnalysisCorrectionMethod> differentialAnalysisCorrectionValuesMap{ { "b", CorrectionMethod::Bonferroni }, { "hb", CorrectionMethod::HolmBonferroni }, { "bh", CorrectionMethod::BenjaminiHochberg }, { "by", CorrectionMethod::BenjaminiYekutieli } };
+	std::function<void(const decltype(statisticsParams.classificationPValueCorrection)&)> pcorrCallback = [&](const decltype(statisticsParams.classificationPValueCorrection)& classificationPValueCorrection)
+	{
+		statisticsParams.classificationPValueCorrection = classificationPValueCorrection;
+		statisticsParams.correctPvalues = true;
+	};
+	app.add_option_function("--pcorr", pcorrCallback, "correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni)")->transform(CLI::CheckedTransformer(differentialAnalysisCorrectionValuesMap))->needs(differentialAnalysis);
+
 	std::function<void(const std::string&)> cCallback = [&](const std::string& fileName)
 	{
 		phenotypes.differentialAnalysisPhenotype.setFileName(fileName);

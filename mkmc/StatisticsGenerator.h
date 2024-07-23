@@ -32,6 +32,22 @@ class StatisticsGenerator
 	std::vector<TaskData> tasksData;
 	TasksPool<TaskData> tasksPool;
 
+	struct CorrectTaskData
+	{
+		uint32_t algIdx;
+
+		CorrectTaskData() :
+			algIdx(static_cast<uint32_t>(-1))
+		{}
+		CorrectTaskData(uint32_t algIdx) :
+			algIdx(algIdx)
+		{}
+	};
+	std::vector<CorrectTaskData> correctTasksData;
+	TasksPool<CorrectTaskData> correctTasksPool;
+
+	std::vector<uint64_t> nOutputKmersPerBin;
+
 	std::unique_ptr<kmcdb::MetadataReader> matrixMetadataReader;
 	std::unique_ptr<kmcdb::ReaderSortedPlainForListing<uint64_t>> matrixReader;
 
@@ -42,6 +58,7 @@ class StatisticsGenerator
 
 	std::unique_ptr<ProgressBar> progress_bar;
 
+	void openReaders();
 	void fillTaskData();
 
 
@@ -51,6 +68,10 @@ class StatisticsGenerator
 	const std::vector<uint32_t>& differentialAnalysisPhenotype;
 	size_t differentialAnalysisNClasses;
 
+	std::vector<std::vector<out_kmcdb_value_type>> pValuesData; // first index: algorithm, second: entries
+	std::vector<std::vector<out_kmcdb_value_type>> pValuesCorrectedData; // first index: algorithm, second: entries
+	std::vector<uint64_t> binsIndicesForCorrection; // (of size no. of bins + 1) contains indices of first entries for every bin; the last element contains number of all the entries
+
 	StatisticsToGeneration statisticsToGeneration;
 
 	size_t getMaxNormLineLength() const
@@ -58,7 +79,12 @@ class StatisticsGenerator
 		return params.stage1Params.GetKmerLen() + params.mkmcParams.samples.size() * (refresh::numeric_conversion_max_length<out_kmcdb_value_type>() + 1);
 	}
 
-	void operator()();
+	void processEntries();
+	void gatherPValuesEntriesToCorrection();
+
+	void correctPValuesEntries();
+
+	void processEntriesAfterCorrection();
 
 public:
 	StatisticsGenerator(Params& params);

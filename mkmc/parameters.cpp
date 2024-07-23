@@ -70,10 +70,13 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputFileEntropy = mkmcParams.outputFilesTemplate + "_entropy";
 
 	mkmcParams.outputFileTTest = mkmcParams.outputFilesTemplate + "_ttest";
+	mkmcParams.outputFileTTestCor = mkmcParams.outputFilesTemplate + "_ttest_cor";
 	mkmcParams.outputFileSNR = mkmcParams.outputFilesTemplate + "_snr";
 	mkmcParams.outputFileWilcoxonRankSum = mkmcParams.outputFilesTemplate + "_wrs";
+	mkmcParams.outputFileWilcoxonRankSumCor = mkmcParams.outputFilesTemplate + "_wrs_cor";
 	mkmcParams.outputFileDIDS = mkmcParams.outputFilesTemplate + "_dids";
 	mkmcParams.outputFileANOVA = mkmcParams.outputFilesTemplate + "_anova";
+	mkmcParams.outputFileANOVACor = mkmcParams.outputFilesTemplate + "_anova_cor";
 }
 
 

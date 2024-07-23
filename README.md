@@ -30,6 +30,7 @@ Options:
  - `--cor ENUM:value in {kendall,pearson,spearman}` Needs: `-n` `-p` - compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a set of integers, one in each line)
  - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` Needs: `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))
+ - `--pcorr ENUM:value in {b,bh,by,hb}` Needs: `-diff` - correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni)
  - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)
  - `--entropy` - generate k-mers counts entropy
 

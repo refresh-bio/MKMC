@@ -29,6 +29,7 @@ struct StatisticsToGeneration
 	bool anova = false;
 
 	uint32_t nStatistics = 0;
+	uint32_t nStatisticsWithPValues = 0;
 	uint32_t nResults = 0; // sum of nStatistics and number of normalized samples
 };
 
@@ -301,9 +302,18 @@ void WritingGatherer<Statistics_T>::initWriting(const std::unique_ptr<kmcdb::Met
 	}
 	if (statisticsToGeneration.tTest)
 	{
-		writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTest, multiThreadedGeneration);
-		writers.tTest->StoreHeader({ "ttest_analysis_p_val" });
-		sample_names.emplace_back("ttest_analysis");
+		if (params.statisticsParams.correctPvalues)
+		{
+			writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCor, multiThreadedGeneration);
+			writers.tTest->StoreHeader({ "ttest_analysis_p_val_cor" });
+			sample_names.emplace_back("ttest_analysis_cor");
+		}
+		else
+		{
+			writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTest, multiThreadedGeneration);
+			writers.tTest->StoreHeader({ "ttest_analysis_p_val" });
+			sample_names.emplace_back("ttest_analysis");
+		}
 	}
 	if (statisticsToGeneration.snr)
 	{
@@ -313,9 +323,18 @@ void WritingGatherer<Statistics_T>::initWriting(const std::unique_ptr<kmcdb::Met
 	}
 	if (statisticsToGeneration.wilcoxonRankSum)
 	{
-		writers.wilcoxonRankSum = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSum, multiThreadedGeneration);
-		writers.wilcoxonRankSum->StoreHeader({ "wrs_analysis_p_val" });
-		sample_names.emplace_back("wrs_analysis");
+		if (params.statisticsParams.correctPvalues)
+		{
+			writers.wilcoxonRankSum = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCor, multiThreadedGeneration);
+			writers.wilcoxonRankSum->StoreHeader({ "wrs_analysis_p_val_cor" });
+			sample_names.emplace_back("wrs_analysis_cor");
+		}
+		else
+		{
+			writers.wilcoxonRankSum = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSum, multiThreadedGeneration);
+			writers.wilcoxonRankSum->StoreHeader({ "wrs_analysis_p_val" });
+			sample_names.emplace_back("wrs_analysis");
+		}
 	}
 	if (statisticsToGeneration.dids)
 	{
@@ -325,9 +344,18 @@ void WritingGatherer<Statistics_T>::initWriting(const std::unique_ptr<kmcdb::Met
 	}
 	if (statisticsToGeneration.anova)
 	{
-		writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVA, multiThreadedGeneration);
-		writers.anova->StoreHeader({ "anova_analysis_p_val" });
-		sample_names.emplace_back("anova_analysis");
+		if (params.statisticsParams.correctPvalues)
+		{
+			writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACor, multiThreadedGeneration);
+			writers.anova->StoreHeader({ "anova_analysis_p_val_cor" });
+			sample_names.emplace_back("anova_analysis_cor");
+		}
+		else
+		{
+			writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVA, multiThreadedGeneration);
+			writers.anova->StoreHeader({ "anova_analysis_p_val" });
+			sample_names.emplace_back("anova_analysis");
+		}
 	}
 
 	kmcdb::ConfigSortedPlain representation_config{};

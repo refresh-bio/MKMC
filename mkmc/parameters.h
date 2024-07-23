@@ -48,10 +48,13 @@ struct MKMCParams
 	std::string outputFileEntropy;
 
 	std::string outputFileTTest;
+	std::string outputFileTTestCor;
 	std::string outputFileSNR;
 	std::string outputFileWilcoxonRankSum;
+	std::string outputFileWilcoxonRankSumCor;
 	std::string outputFileDIDS;
 	std::string outputFileANOVA;
+	std::string outputFileANOVACor;
 
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
 	uint32_t nKMCWorkers = 4;
@@ -91,6 +94,10 @@ struct StatisticsParams
 
 	enum class DifferentialAnalysisMethod { TTest, SNR, WilcoxonRankSum, DIDS, ANOVA };
 	std::vector<DifferentialAnalysisMethod> classificationMethods;
+
+	bool correctPvalues = false;
+	enum class DifferentialAnalysisCorrectionMethod { Bonferroni, HolmBonferroni, BenjaminiHochberg, BenjaminiYekutieli };
+	DifferentialAnalysisCorrectionMethod classificationPValueCorrection;
 
 	bool generateEntropy = false;
 	inline const static std::string normFrequencyStreamName = "norm_frequency";
