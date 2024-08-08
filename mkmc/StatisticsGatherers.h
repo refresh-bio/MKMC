@@ -166,36 +166,7 @@ void WritingGathererBin<Statistics_T>::writeKmer(const std::vector<Statistics_T>
 				r = refresh::int_to_pchar(val, out, term);
 			else if constexpr (std::is_floating_point_v<VALUE_T>)
 			{
-				if (std::isnan(val))
-				{
-					out[0] = 'n';
-					out[1] = 'a';
-					out[2] = 'n';
-					out[3] = term;
-					r = 4;
-				}
-				else if (std::isinf(val))
-				{
-					if (val < static_cast<VALUE_T>(0)) {
-						out[0] = '-';
-						out[1] = 'i';
-						out[2] = 'n';
-						out[3] = 'f';
-						out[4] = term;
-						r = 5;
-					}
-					else
-					{
-						out[0] = 'i';
-						out[1] = 'n';
-						out[2] = 'f';
-						out[3] = term;
-						r = 4;
-					}
-				}
-				else
-					r = refresh::real_to_pchar(val, out, 6, term);
-
+				r = refresh::real_to_pchar(val, out, 6, term);
 			}
 			else
 			{
