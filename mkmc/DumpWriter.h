@@ -51,7 +51,69 @@ public:
 	}
 };
 
+//collection of different methods to store k-mer and values
+//mkokot_TODO: consider moving to different file?
+//It seems to make it work without the need to specify VALUE_T directly when calling OutputBuffer::StoreKmer we need to use generic lambdas
+namespace StoreMethods
+{
+	namespace detail
+	{
+		template<typename VALUE_T>
+		size_t store_single_value(const VALUE_T& val, char*& out, char term)
+		{
+			size_t r{};
+			if constexpr (std::is_integral_v<VALUE_T>)
+				r = refresh::int_to_pchar(val, out, term);
+			else if constexpr (std::is_floating_point_v<VALUE_T>)
+				r = refresh::real_to_pchar(val, out, 6, term);
+			else
+				static_assert(!sizeof(VALUE_T), "Unsupported type");
 
+			out += r;
+			return r;
+		}
+
+		inline size_t store_kmer(const std::string& kmerSeq, char* &out, char term)
+		{
+			std::memcpy(out, kmerSeq.data(), kmerSeq.length());
+			out += kmerSeq.length();
+			*out++ = term;
+
+			return kmerSeq.length() + 1;
+		}
+	}
+	inline auto AsMatrixRow = []<typename VALUE_T>(const std::string& kmerSeq, const std::vector<VALUE_T>& cnts, char* out) -> size_t
+	{
+		size_t res = detail::store_kmer(kmerSeq, out, '\t');
+
+		for (size_t i = 0; i < cnts.size() - 1; ++i)
+			res += detail::store_single_value(cnts[i], out, '\t');
+		res += detail::store_single_value(cnts.back(), out, '\n');
+
+		return res;
+	};
+
+	inline auto AsMatrixRow_single_val = []<typename VALUE_T>(const std::string & kmerSeq, const VALUE_T cnt, char* out) -> size_t
+	{
+		size_t res = detail::store_kmer(kmerSeq, out, '\t');
+
+		res += detail::store_single_value(cnt, out, '\n');
+
+		return res;
+	};
+
+	inline auto AsFastaRecord = []<typename VALUE_T>(const std::string& kmerSeq, const std::vector<VALUE_T>&cnts, char* out) -> size_t
+	{
+		out[0] = '>';
+		out[1] = '\n';
+		size_t res = 2;
+		out += 2;
+
+		res += detail::store_kmer(kmerSeq, out, '\n');
+
+		return res;
+	};
+};
 
 class OutputBuffer
 {

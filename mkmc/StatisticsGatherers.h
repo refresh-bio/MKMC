@@ -150,76 +150,45 @@ template<typename Statistics_T>
 template<unsigned SIZE>
 void WritingGathererBin<Statistics_T>::writeKmer(const std::vector<Statistics_T>& outEntry, const kmcdb::CKmer<SIZE>& kmer, const std::string kmerSeq)
 {
-	auto storeMethod = []<typename VALUE_T>(const std::string & kmerSeq, const VALUE_T cnt, char* out) -> size_t
-	{
-		std::memcpy(out, kmerSeq.data(), kmerSeq.length());
-		out += kmerSeq.length();
-		*out = '\t';
-		++out;
-
-		size_t res = kmerSeq.length() + 1;
-
-		auto store_single_value = [&](const VALUE_T& val, char term)
-		{
-			size_t r{};
-			if constexpr (std::is_integral_v<VALUE_T>)
-				r = refresh::int_to_pchar(val, out, term);
-			else if constexpr (std::is_floating_point_v<VALUE_T>)
-			{
-				r = refresh::real_to_pchar(val, out, 6, term);
-			}
-			else
-			{
-				static_assert(!sizeof(VALUE_T), "Unsupported type");
-			}
-			out += r;
-			res += r;
-		};
-
-		store_single_value(cnt, '\n');
-
-		return res;
-	};
-
 	size_t valuesIdx = statisticsToGeneration.nResults - statisticsToGeneration.nStatistics;
 	if (mainWritingGatherer.statisticsToGeneration.pearson)
 	{
-		pearsonOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], storeMethod);
+		pearsonOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
 	}
 	if (mainWritingGatherer.statisticsToGeneration.spearman)
 	{
-		spearmanOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], storeMethod);
+		spearmanOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
 	}
 	if (mainWritingGatherer.statisticsToGeneration.kendall)
 	{
-		kendallOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], storeMethod);
+		kendallOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
 	}
 
 	if (mainWritingGatherer.statisticsToGeneration.entropy)
 	{
-		entropyOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], storeMethod);
+		entropyOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
 	}
 	if (mainWritingGatherer.statisticsToGeneration.differentialAnalysis)
 	{
 		if (mainWritingGatherer.statisticsToGeneration.tTest)
 		{
-			tTestOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], storeMethod);
+			tTestOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
 		}
 		if (mainWritingGatherer.statisticsToGeneration.snr)
 		{
-			snrOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], storeMethod);
+			snrOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
 		}
 		if (mainWritingGatherer.statisticsToGeneration.wilcoxonRankSum)
 		{
-			wilcoxonRankSumOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], storeMethod);
+			wilcoxonRankSumOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
 		}
 		if (mainWritingGatherer.statisticsToGeneration.dids)
 		{
-			didsOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], storeMethod);
+			didsOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
 		}
 		if (mainWritingGatherer.statisticsToGeneration.anova)
 		{
-			anovaOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], storeMethod);
+			anovaOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
 		}
 	}
 

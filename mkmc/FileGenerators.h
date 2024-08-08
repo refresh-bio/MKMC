@@ -250,39 +250,8 @@ void BinFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 template<typename KmersSamplesData_T>
 void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
-	auto storeMethod = []<typename VALUE_T>(const std::string& kmerSeq, const std::vector<VALUE_T>& cnts, char* out) -> size_t
-	{
-		std::memcpy(out, kmerSeq.data(), kmerSeq.length());
-		out += kmerSeq.length();
-		*out = '\t';
-		++out;
-
-		size_t res = kmerSeq.length() + 1;
-
-		auto store_single_value = [&](const VALUE_T& val, char term)
-		{
-			size_t r{};
-			if constexpr (std::is_integral_v<VALUE_T>)
-				r = refresh::int_to_pchar(val, out, term);
-			else if constexpr (std::is_floating_point_v<VALUE_T>)
-				r = refresh::real_to_pchar(val, out, 6, term);
-			else
-			{
-				static_assert(!sizeof(VALUE_T), "Unsupported type");
-			}
-			out += r;
-			res += r;
-		};
-
-		for (size_t i = 0; i < cnts.size() - 1; ++i)
-			store_single_value(cnts[i], '\t');
-		store_single_value(cnts.back(), '\n');
-
-		return res;
-	};
-
 	kmersData.kmer.to_string(kmerLength, kmerSeqBuf.data());
-	outputBuffer.StoreKmer(kmerSeqBuf, kmersData.kMersCounts, storeMethod);
+	outputBuffer.StoreKmer(kmerSeqBuf, kmersData.kMersCounts, StoreMethods::AsMatrixRow);
 }
 
 
@@ -290,23 +259,6 @@ void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 template<typename KmersSamplesData_T>
 void FASTAFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
-	auto storeMethod = []<typename VALUE_T>(const std::string& kmerSeq, const std::vector<VALUE_T>& cnts, char* out) -> size_t
-	{
-		out[0] = '>';
-		out[1] = '\n';
-		size_t res = 2;
-		out += 2;
-
-		std::memcpy(out, kmerSeq.data(), kmerSeq.length());
-		out += kmerSeq.length();
-		*out = '\n';
-		++out;
-
-		res += kmerSeq.length() + 1;
-
-		return res;
-	};
-
 	kmersData.kmer.to_string(kmerLength, kmerSeqBuf.data());
-	outputBuffer.StoreKmer(kmerSeqBuf, kmersData.kMersCounts, storeMethod);
+	outputBuffer.StoreKmer(kmerSeqBuf, kmersData.kMersCounts, StoreMethods::AsFastaRecord);
 }

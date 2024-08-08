@@ -155,37 +155,6 @@ void StatisticsGenerator::processEntries()
 		inMatrixEntry.resize(num_samples);
 		outEntry.resize(statisticsToGeneration.nResults);
 
-		auto storeMethod = []<typename VALUE_T>(const std::string& kmerSeq, const std::vector<VALUE_T>&cnts, char* out) -> size_t
-		{
-			std::memcpy(out, kmerSeq.data(), kmerSeq.length());
-			out += kmerSeq.length();
-			*out = '\t';
-			++out;
-
-			size_t res = kmerSeq.length() + 1;
-
-			auto store_single_value = [&](const VALUE_T& val, char term)
-			{
-				size_t r{};
-				if constexpr (std::is_integral_v<VALUE_T>)
-					r = refresh::int_to_pchar(val, out, term);
-				else if constexpr (std::is_floating_point_v<VALUE_T>)
-					r = refresh::real_to_pchar(val, out, 6, term);
-				else
-				{
-					static_assert(!sizeof(VALUE_T), "Unsupported type");
-				}
-				out += r;
-				res += r;
-			};
-
-			for (size_t i = 0; i < cnts.size() - 1; ++i)
-				store_single_value(cnts[i], '\t');
-			store_single_value(cnts.back(), '\n');
-
-			return res;
-		};
-
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
 		auto kmer_len = params.stage1Params.GetKmerLen();
@@ -202,7 +171,7 @@ void StatisticsGenerator::processEntries()
 				{
 					normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outEntry);
 
-					normOutputBuffer->StoreKmer(kmerSequence, outEntry, storeMethod);
+					normOutputBuffer->StoreKmer(kmerSequence, outEntry, StoreMethods::AsMatrixRow);
 
 					outEntry.resize(statisticsToGeneration.nResults); // space for statistics
 				}
@@ -447,37 +416,6 @@ void StatisticsGenerator::processEntriesAfterCorrection()
 		inMatrixEntry.resize(num_samples);
 		outEntry.resize(statisticsToGeneration.nResults);
 
-		auto storeMethod = []<typename VALUE_T>(const std::string & kmerSeq, const std::vector<VALUE_T>&cnts, char* out) -> size_t
-		{
-			std::memcpy(out, kmerSeq.data(), kmerSeq.length());
-			out += kmerSeq.length();
-			*out = '\t';
-			++out;
-
-			size_t res = kmerSeq.length() + 1;
-
-			auto store_single_value = [&](const VALUE_T& val, char term)
-			{
-				size_t r{};
-				if constexpr (std::is_integral_v<VALUE_T>)
-					r = refresh::int_to_pchar(val, out, term);
-				else if constexpr (std::is_floating_point_v<VALUE_T>)
-					r = refresh::real_to_pchar(val, out, 6, term);
-				else
-				{
-					static_assert(!sizeof(VALUE_T), "Unsupported type");
-				}
-				out += r;
-				res += r;
-			};
-
-			for (size_t i = 0; i < cnts.size() - 1; ++i)
-				store_single_value(cnts[i], '\t');
-			store_single_value(cnts.back(), '\n');
-
-			return res;
-		};
-
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
 		auto kmer_len = params.stage1Params.GetKmerLen();
@@ -494,7 +432,7 @@ void StatisticsGenerator::processEntriesAfterCorrection()
 				{
 					normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outEntry);
 
-					normOutputBuffer->StoreKmer(kmerSequence, outEntry, storeMethod);
+					normOutputBuffer->StoreKmer(kmerSequence, outEntry, StoreMethods::AsMatrixRow);
 
 					outEntry.resize(statisticsToGeneration.nResults); // space for statistics
 				}
