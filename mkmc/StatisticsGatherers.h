@@ -154,7 +154,10 @@ public:
 		statisticsToGeneration(statisticsToGeneration)
 	{}
 
-	void initWriting(const std::unique_ptr<kmcdb::MetadataReader>& matrixMetadataReader, std::vector<std::string> sample_names); // pass sample_names by value
+	void initWriting(
+		const std::unique_ptr<kmcdb::MetadataReader>& matrixMetadataReader,
+		std::vector<std::string> sample_names, // pass sample_names by value
+		const std::vector<std::string>& cnt_matrix_output_header);
 
 	std::unique_ptr<WritingGathererBin<Statistics_T>> getBin(uint32_t binId)
 	{
@@ -333,7 +336,10 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 
 
 template<typename Statistics_T>
-void WritingGatherer<Statistics_T>::initWriting(const std::unique_ptr<kmcdb::MetadataReader>& matrixMetadataReader, std::vector<std::string> sample_names)
+void WritingGatherer<Statistics_T>::initWriting(
+	const std::unique_ptr<kmcdb::MetadataReader>& matrixMetadataReader,
+	std::vector<std::string> sample_names,
+	const std::vector<std::string>& cnt_matrix_output_header)
 {
 	kmcdb::Config config;
 	config.num_bins = matrixMetadataReader->GetConfig().num_bins;
@@ -350,8 +356,6 @@ void WritingGatherer<Statistics_T>::initWriting(const std::unique_ptr<kmcdb::Met
 	//this make sense because those all of the same type (currently double)
 
 	const bool multiThreadedGeneration = params.mkmcParams.nThreads > 1;
-
-	std::vector<std::string> cnt_matrix_output_header = sample_names;
 
 	if (statisticsToGeneration.pearson)
 	{

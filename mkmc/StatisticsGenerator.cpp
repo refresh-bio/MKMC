@@ -533,16 +533,18 @@ void StatisticsGenerator::generateStatisticsParallel()
 
 	std::vector<std::string> sample_names;
 
+	std::vector<std::string> cnt_matrix_output_header;
+	matrixReader->GetSampleNames(cnt_matrix_output_header);
+	assert(!cnt_matrix_output_header.empty());
 	if (statisticsToGeneration.normalize)
 	{
-		matrixReader->GetSampleNames(sample_names);
-		assert(!sample_names.empty());
+		sample_names = cnt_matrix_output_header;
 
 		normWriter = std::make_unique<DumpWriter>(params.mkmcParams.outputFileNorm, params.mkmcParams.nThreads > 1);
 		normWriter->StoreHeader(sample_names);
 	} // otherwise: no normalization in output
 
-	gatherer.initWriting(matrixMetadataReader, sample_names);
+	gatherer.initWriting(matrixMetadataReader, sample_names, cnt_matrix_output_header);
 
 	if (params.statisticsParams.generateNormalization)
 	{
