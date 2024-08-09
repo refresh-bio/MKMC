@@ -49,12 +49,23 @@ struct MKMCParams
 
 	std::string outputFileTTest;
 	std::string outputFileTTestCor;
+	std::string outputFileTTestCorSignificant;
+	std::string outputFileTTestCorSignificantCntMatrix;
+	std::string outputFileTTestCorSignificantFasta;
+
 	std::string outputFileSNR;
 	std::string outputFileWilcoxonRankSum;
 	std::string outputFileWilcoxonRankSumCor;
+	std::string outputFileWilcoxonRankSumCorSignificant;
+	std::string outputFileWilcoxonRankSumCorSignificantCntMatrix;
+	std::string outputFileWilcoxonRankSumCorSignificantFasta;
+
 	std::string outputFileDIDS;
 	std::string outputFileANOVA;
 	std::string outputFileANOVACor;
+	std::string outputFileANOVACorSignificant;
+	std::string outputFileANOVACorSignificantCntMatrix;
+	std::string outputFileANOVACorSignificantFasta;
 
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
 	uint32_t nKMCWorkers = 4;
@@ -98,6 +109,7 @@ struct StatisticsParams
 	bool correctPvalues = false;
 	enum class DifferentialAnalysisCorrectionMethod { Bonferroni, HolmBonferroni, BenjaminiHochberg, BenjaminiYekutieli };
 	DifferentialAnalysisCorrectionMethod classificationPValueCorrection;
+	double maxCorrectedPval = 0.05;
 
 	bool generateEntropy = false;
 	inline const static std::string normDeseq2StreamName = "norm_deseq2";

@@ -118,6 +118,8 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	app.add_option_function("--pcorr", pcorrCallback, "correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni)")->transform(CLI::CheckedTransformer(differentialAnalysisCorrectionValuesMap))->needs(differentialAnalysis);
 
+	app.add_option("--max_corrected_pval", statisticsParams.maxCorrectedPval, "if --pcorr is used significant k-mers (with corrected p-val <= max_corrected_pval) are also stored in separate files")->check(CLI::Range(0.0, 1.0))->default_val(statisticsParams.maxCorrectedPval);
+
 	std::function<void(const std::string&)> cCallback = [&](const std::string& fileName)
 	{
 		phenotypes.differentialAnalysisPhenotype.setFileName(fileName);

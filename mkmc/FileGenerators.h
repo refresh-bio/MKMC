@@ -138,7 +138,7 @@ class FASTAFileGenerator
 	std::string kmerSeqBuf;
 public:
 	FASTAFileGenerator(const Params& params) :
-		outputBuffer(*dumpWriter, params.stage1Params.GetKmerLen()),
+		outputBuffer(*dumpWriter, params.stage1Params.GetKmerLen() + 3), // + 3 because there is >\n and \n after k-mer, @Maciej: does it make sense to you?
 		kmerLength(params.stage1Params.GetKmerLen()),
 		kmerSeqBuf(params.stage1Params.GetKmerLen(), ' ')
 	{}

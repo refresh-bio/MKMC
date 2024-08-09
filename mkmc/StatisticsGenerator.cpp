@@ -270,7 +270,7 @@ void StatisticsGenerator::processEntries()
 
 				++progress_bar_updater;
 
-				outBin->writeKmer(outEntry, kmer, kmerSequence);
+				outBin->writeKmer(outEntry, kmer, kmerSequence, inMatrixEntry);
 			}
 		});
 	}
@@ -517,7 +517,7 @@ void StatisticsGenerator::processEntriesAfterCorrection()
 				++dataIdx;
 				++progress_bar_updater;
 
-				outBin->writeKmer(outEntry, kmer, kmerSequence);
+				outBin->writeKmer(outEntry, kmer, kmerSequence, inMatrixEntry);
 			}
 			});
 		assert(dataIdx == dataIdxEnd);
