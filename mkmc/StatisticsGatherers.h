@@ -159,7 +159,7 @@ private:
 		OutputBuffer buff_top_fasta(writer_fasta, max_line_len_top_fasta);
 
 		std::vector<KeepTopElem<SIZE>> data;
-		to_flush->StealSorted(data, [](const auto& lhs, const auto& rhs) { return lhs.kmer < rhs.kmer; }); //could actually be Steal (no sorted), but lets keep it deterministic
+		to_flush->StealSorted(data, PRED{}); //could actually be Steal (no sorted), but lets keep it deterministic
 		for (auto& elem : data)
 		{
 			buff_top.StoreKmer(elem.kmerSeq, elem.key, StoreMethods::AsMatrixRow_single_val);
