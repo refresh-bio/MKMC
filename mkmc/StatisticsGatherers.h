@@ -3,9 +3,12 @@
 #include <memory>
 #include <vector>
 #include <string>
+
+#include "Dump.h"
 #include "parameters.h"
 #include "DumpWriter.h"
 #include "kmcdb/kmcdb.h"
+#include "KeepNLargests.h"
 
 
 
@@ -39,6 +42,200 @@ template<typename Statistics_T>
 class WritingGatherer;
 
 
+
+
+//mkokot_TODO: move to some other file?
+
+//mkokot_TODO: its not perfect because I am copying this vector with values
+//This could be avoided if I copy it only if my element is large enough to
+//be keep in the heap
+//but it would require some extension in KeepNLargest probably
+template<unsigned SIZE>
+struct KeepTopElem
+{
+	std::string kmerSeq;
+	kmcdb::CKmer<SIZE> kmer;
+	double key;
+	std::vector<uint64_t> counts;
+
+	KeepTopElem(std::string kmerSeq,
+	kmcdb::CKmer<SIZE> kmer,
+	double key,
+	std::vector<uint64_t> counts):
+	kmerSeq(std::move(kmerSeq)),
+	kmer(kmer),
+	key(key),
+	counts(std::move(counts))
+	{
+
+	}
+
+	struct ABSGreater
+	{
+		bool operator()(const KeepTopElem<SIZE>& lhs, const KeepTopElem<SIZE>& rhs)
+		{
+			return std::make_pair(std::abs(lhs.key), rhs.kmer) > std::make_pair(std::abs(rhs.key), lhs.kmer);
+		}
+	};
+
+	struct Greater
+	{
+		bool operator()(const KeepTopElem<SIZE>& lhs, const KeepTopElem<SIZE>& rhs)
+		{
+			return std::make_pair(lhs.key, rhs.kmer) > std::make_pair(rhs.key, lhs.kmer);
+		}
+	};
+};
+
+
+
+
+//mkokot_TODO: move it somewhere else?
+template<unsigned SIZE>
+struct KeepNLargestCollection
+{
+	using ABSGreater = typename KeepTopElem<SIZE>::ABSGreater;
+	using Greater = typename KeepTopElem<SIZE>::Greater;
+
+	using KeepTopNLargestABS_T = KeepNLargests<KeepTopElem<SIZE>, ABSGreater>;
+	using KeepTopNLargestPlain_T = KeepNLargests<KeepTopElem<SIZE>, Greater>;
+
+	std::unique_ptr<KeepTopNLargestABS_T> pearson;
+	std::unique_ptr<KeepTopNLargestABS_T> spearman;
+	std::unique_ptr<KeepTopNLargestABS_T> kendall;
+
+	std::unique_ptr<KeepTopNLargestPlain_T> entropy;
+
+	std::unique_ptr<KeepTopNLargestABS_T> snr;
+	std::unique_ptr<KeepTopNLargestPlain_T> dids;
+};
+
+template<unsigned SIZE>
+struct KeepNLargestCollectionGlobal
+{
+private:
+	std::mutex mtx;
+	KeepNLargestCollection<SIZE> global;
+
+	template<typename PRED>
+	static void add_for(
+		std::unique_ptr<KeepNLargests<KeepTopElem<SIZE>, PRED>>& src,
+		std::unique_ptr<KeepNLargests<KeepTopElem<SIZE>, PRED>>& dest)
+	{
+		//if source was not collected do nothing
+		if (!src)
+			return;
+
+		if (!dest)
+			dest = std::make_unique<KeepNLargests<KeepTopElem<SIZE>, PRED>>(src->GetN());
+
+		assert(dest->GetN() == src->GetN()); //just to be sure that all source have the same N
+
+		std::vector<KeepTopElem<SIZE>> data;
+		src->Steal(data);
+		for (auto& elem : data)
+			dest->Add(std::move(elem));
+	}
+
+	template<typename PRED>
+	static void flush_for(
+		std::unique_ptr<KeepNLargests<KeepTopElem<SIZE>, PRED>>& to_flush,
+		const std::string& fname_top, const std::vector<std::string>& header_top, size_t max_line_len_top,
+		const std::string& fname_top_matrix, const std::vector<std::string>& header_top_matrix, size_t max_line_len_top_matrix,
+		const std::string& fname_top_fasta, size_t max_line_len_top_fasta)
+	{
+		if (!to_flush)
+			return;
+
+		DumpWriter writer_top(fname_top, false);
+		writer_top.StoreHeader(header_top);
+		OutputBuffer buff_top(writer_top, max_line_len_top);
+
+		DumpWriter writer_top_matrix(fname_top_matrix, false);
+		writer_top_matrix.StoreHeader(header_top_matrix);
+		OutputBuffer buff_top_matrix(writer_top_matrix, max_line_len_top_matrix);
+
+		DumpWriter writer_fasta(fname_top_fasta, false);
+		OutputBuffer buff_top_fasta(writer_fasta, max_line_len_top_fasta);
+
+		std::vector<KeepTopElem<SIZE>> data;
+		to_flush->StealSorted(data, [](const auto& lhs, const auto& rhs) { return lhs.kmer < rhs.kmer; }); //could actually be Steal (no sorted), but lets keep it deterministic
+		for (auto& elem : data)
+		{
+			buff_top.StoreKmer(elem.kmerSeq, elem.key, StoreMethods::AsMatrixRow_single_val);
+			buff_top_matrix.StoreKmer(elem.kmerSeq, elem.counts, StoreMethods::AsMatrixRow);
+			buff_top_fasta.StoreKmer(elem.kmerSeq, elem.counts, StoreMethods::AsFastaRecord);
+		}
+	}
+public:
+	void Add(KeepNLargestCollection<SIZE>& collection)
+	{
+		std::lock_guard lck(mtx);
+		add_for(collection.pearson, global.pearson);
+		add_for(collection.spearman, global.spearman);
+		add_for(collection.kendall, global.kendall);
+
+		add_for(collection.entropy, global.entropy);
+
+		add_for(collection.snr, global.snr);
+		add_for(collection.dids, global.dids);
+	}
+
+	void Flush(const Params& params, const std::vector<std::string>& cnt_matrix_output_header)
+	{
+		//mkokot_TODO: ugly code repetition, we have the same (almost) in other class as private methods, to be refactored...
+		auto getMaxLineLength = [](uint32_t kmerLength) -> size_t
+		{
+			return kmerLength + 1 + refresh::numeric_conversion_max_length<double>() + 1;
+		};
+
+		auto getMaxLineLengthForFasta = [](uint32_t kmerLength) -> size_t
+		{
+			//     >\n   k-mer       \n
+			return 2 + kmerLength + 1;
+		};
+		auto getMaxLineLengthForCntMatrix = [](uint32_t kmerLength, uint32_t numSamples) -> size_t
+		{
+			constexpr uint32_t assumed_max_len_for_cnt = 20;
+			//     k-mer      term(\t)            cnt                       term(\t or \n)
+			return kmerLength + 1 + numSamples * (assumed_max_len_for_cnt + 1);
+		};
+
+		auto max_line_len_top = getMaxLineLength(params.stage1Params.GetKmerLen());
+		auto max_line_len_top_matrix = getMaxLineLengthForCntMatrix(params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size());
+		auto max_line_len_top_fasta = getMaxLineLengthForFasta(params.stage1Params.GetKmerLen());
+
+		flush_for(global.pearson,
+			params.mkmcParams.outputFilePearsonTop, { "pearson_cor" }, max_line_len_top,
+			params.mkmcParams.outputFilePearsonTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
+			params.mkmcParams.outputFilePearsonTopFasta, max_line_len_top_fasta);
+
+		flush_for(global.spearman,
+			params.mkmcParams.outputFileSpearmanTop, { "spearman_cor" }, max_line_len_top,
+			params.mkmcParams.outputFileSpearmanTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
+			params.mkmcParams.outputFileSpearmanTopFasta, max_line_len_top_fasta);
+
+		flush_for(global.kendall,
+			params.mkmcParams.outputFileKendallTop, { "kendall_cor" }, max_line_len_top,
+			params.mkmcParams.outputFileKendallTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
+			params.mkmcParams.outputFileKendallTopFasta, max_line_len_top_fasta);
+
+		flush_for(global.entropy,
+			params.mkmcParams.outputFileEntropyTop, { "entropy" }, max_line_len_top,
+			params.mkmcParams.outputFileEntropyTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
+			params.mkmcParams.outputFileEntropyTopFasta, max_line_len_top_fasta);
+
+		flush_for(global.snr,
+			params.mkmcParams.outputFileSNRTop, { "snr_analysis" }, max_line_len_top,
+			params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
+			params.mkmcParams.outputFileSNRTopFasta, max_line_len_top_fasta);
+
+		flush_for(global.dids,
+			params.mkmcParams.outputFileDIDSTop, { "dids_analysis" }, max_line_len_top,
+			params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
+			params.mkmcParams.outputFileDIDSTopFasta, max_line_len_top_fasta);
+	}
+};
 
 template<typename Statistics_T>
 class WritingGathererBin
@@ -107,7 +304,9 @@ public:
 		const std::vector<Statistics_T>& outEntry, // outEntry - normalized values (if any) followed by statistics
 		const kmcdb::CKmer<SIZE>& kmer,
 		const std::string kmerSeq,
-		const std::vector<VALUE_T>& original_counts);
+		const std::vector<VALUE_T>& original_counts,
+		KeepNLargestCollection<SIZE>& keepNLargestCollection);
+
 };
 
 
@@ -253,25 +452,38 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 	const std::vector<Statistics_T>& outEntry,
 	const kmcdb::CKmer<SIZE>& kmer,
 	const std::string kmerSeq,
-	const std::vector<VALUE_T>& original_counts)
+	const std::vector<VALUE_T>& original_counts,
+	KeepNLargestCollection<SIZE>& keepNLargestCollection)
 {
 	size_t valuesIdx = statisticsToGeneration.nResults - statisticsToGeneration.nStatistics;
 	if (mainWritingGatherer.statisticsToGeneration.pearson)
 	{
-		pearsonOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
+		auto value = outEntry[valuesIdx++];
+		pearsonOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+
+		keepNLargestCollection.pearson->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 	}
 	if (mainWritingGatherer.statisticsToGeneration.spearman)
 	{
-		spearmanOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
+		auto value = outEntry[valuesIdx++];
+		spearmanOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+
+		keepNLargestCollection.spearman->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 	}
 	if (mainWritingGatherer.statisticsToGeneration.kendall)
 	{
-		kendallOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
+		auto value = outEntry[valuesIdx++];
+		kendallOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+
+		keepNLargestCollection.spearman->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 	}
 
 	if (mainWritingGatherer.statisticsToGeneration.entropy)
 	{
-		entropyOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
+		auto value = outEntry[valuesIdx++];
+		entropyOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+
+		keepNLargestCollection.entropy->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 	}
 	if (mainWritingGatherer.statisticsToGeneration.differentialAnalysis)
 	{
@@ -292,7 +504,10 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 		}
 		if (mainWritingGatherer.statisticsToGeneration.snr)
 		{
-			snrOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
+			auto value = outEntry[valuesIdx++];
+			snrOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+
+			keepNLargestCollection.snr->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 		}
 		if (mainWritingGatherer.statisticsToGeneration.wilcoxonRankSum)
 		{
@@ -311,7 +526,10 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 		}
 		if (mainWritingGatherer.statisticsToGeneration.dids)
 		{
+			auto value = outEntry[valuesIdx++];
 			didsOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
+
+			keepNLargestCollection.dids->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 		}
 		if (mainWritingGatherer.statisticsToGeneration.anova)
 		{
@@ -332,7 +550,6 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 
 	outBin->AddKmer(kmer, outEntry.data());
 }
-
 
 
 template<typename Statistics_T>

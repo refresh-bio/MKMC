@@ -181,6 +181,7 @@
     <ClInclude Include="Filter.h" />
     <ClInclude Include="Finish.h" />
     <ClInclude Include="HeapMerge.h" />
+    <ClInclude Include="KeepNLargests.h" />
     <ClInclude Include="KMCFileWrapper.h" />
     <ClInclude Include="KMCRunner.h" />
     <ClInclude Include="PhenotypeReaders.h" />

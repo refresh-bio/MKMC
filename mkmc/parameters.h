@@ -42,10 +42,24 @@ struct MKMCParams
 	std::string outputFileNorm;
 
 	std::string outputFilePearson;
+	std::string outputFilePearsonTop;
+	std::string outputFilePearsonTopCntMatrix;
+	std::string outputFilePearsonTopFasta;
+
 	std::string outputFileSpearman;
+	std::string outputFileSpearmanTop;
+	std::string outputFileSpearmanTopCntMatrix;
+	std::string outputFileSpearmanTopFasta;
+
 	std::string outputFileKendall;
+	std::string outputFileKendallTop;
+	std::string outputFileKendallTopCntMatrix;
+	std::string outputFileKendallTopFasta;
 
 	std::string outputFileEntropy;
+	std::string outputFileEntropyTop;
+	std::string outputFileEntropyTopCntMatrix;
+	std::string outputFileEntropyTopFasta;
 
 	std::string outputFileTTest;
 	std::string outputFileTTestCor;
@@ -54,6 +68,10 @@ struct MKMCParams
 	std::string outputFileTTestCorSignificantFasta;
 
 	std::string outputFileSNR;
+	std::string outputFileSNRTop;
+	std::string outputFileSNRTopCntMatrix;
+	std::string outputFileSNRTopFasta;
+
 	std::string outputFileWilcoxonRankSum;
 	std::string outputFileWilcoxonRankSumCor;
 	std::string outputFileWilcoxonRankSumCorSignificant;
@@ -61,6 +79,10 @@ struct MKMCParams
 	std::string outputFileWilcoxonRankSumCorSignificantFasta;
 
 	std::string outputFileDIDS;
+	std::string outputFileDIDSTop;
+	std::string outputFileDIDSTopCntMatrix;
+	std::string outputFileDIDSTopFasta;
+
 	std::string outputFileANOVA;
 	std::string outputFileANOVACor;
 	std::string outputFileANOVACorSignificant;
@@ -102,6 +124,8 @@ struct StatisticsParams
 
 	enum class CorrelationMethod { Pearson, Spearman, Kendall };
 	std::vector<CorrelationMethod> correlationMethods;
+
+	size_t nTop = 10000;
 
 	enum class DifferentialAnalysisMethod { TTest, SNR, WilcoxonRankSum, DIDS, ANOVA };
 	std::vector<DifferentialAnalysisMethod> classificationMethods;

@@ -114,5 +114,8 @@
     <ClInclude Include="StatisticsGatherers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="KeepNLargests.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

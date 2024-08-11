@@ -105,6 +105,8 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	p = app.add_option_function("-p", pCallback, "set a phenotype file (a set of integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
 
+	app.add_option("--n_top", statisticsParams.nTop, "select top_n k-mers (for correlations using absolute value)")->default_val(statisticsParams.nTop);
+
 	typedef StatisticsParams::DifferentialAnalysisMethod DAMethod;
 	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"ttest", DAMethod::TTest }, {"snr", DAMethod::SNR }, {"wrs", DAMethod::WilcoxonRankSum }, {"dids", DAMethod::DIDS }, {"anova", DAMethod::ANOVA } };
 	differentialAnalysis = app.add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));

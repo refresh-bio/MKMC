@@ -123,158 +123,6 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 
 
 
-void StatisticsGenerator::processEntries()
-{
-	TaskData taskData;
-	while (tasksPool.getTask(taskData))
-	{
-		auto bin = matrixReader->GetBin(taskData.binId);
-		std::unique_ptr<OutputBuffer> normOutputBuffer;
-
-		refresh::normalization_work<uint64_t, double> normalization;
-		if (params.statisticsParams.generateNormalization)
-		{
-			normalization.register_method(params.statisticsParams.normalizationMethod);
-			normalization.set_no_series(params.mkmcParams.samples.size());
-			normalization.deserialize(params.statisticsParams.normalizationMethod, normalizationData);
-
-			normalization.initialize();
-
-			normOutputBuffer = std::make_unique<OutputBuffer>(*normWriter, getMaxNormLineLength());
-		}
-
-		refresh::correlation correlation;
-		refresh::statistics_entropy entropyObj;
-		refresh::statistical_test statistics;
-		refresh::scorers scorer;
-
-		std::vector<uint64_t> inMatrixEntry;
-		std::vector<out_kmcdb_value_type> outEntry; // normalized counts and statistics
-		std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
-
-		inMatrixEntry.resize(num_samples);
-		outEntry.resize(statisticsToGeneration.nResults);
-
-		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
-
-		auto kmer_len = params.stage1Params.GetKmerLen();
-		std::string kmerSequence(kmer_len, ' ');
-
-		kmcdb::DispatchKmerSize<MAX_K>(kmer_len, [&](auto SIZE) {
-			kmcdb::CKmer<SIZE> kmer;
-			std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outBin = gatherer.getBin(taskData.binId);
-			while (bin->NextKmer(kmer, inMatrixEntry.data()))
-			{
-				kmer.to_string(kmer_len, kmerSequence.data());
-
-				if (statisticsToGeneration.normalize)
-				{
-					normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outEntry);
-
-					normOutputBuffer->StoreKmer(kmerSequence, outEntry, StoreMethods::AsMatrixRow);
-
-					outEntry.resize(statisticsToGeneration.nResults); // space for statistics
-				}
-
-				size_t outStatsEntryIdx = statisticsToGeneration.nResults - statisticsToGeneration.nStatistics;
-
-				if (statisticsToGeneration.pearson)
-				{
-					assert(statisticsToGeneration.normalize);
-					const double pearson = refresh::correlation::pearson_n(
-						outEntry.begin(),
-						correlationPhenotype.begin(),
-						num_samples);
-
-					outEntry[outStatsEntryIdx++] = pearson;
-				}
-				if (statisticsToGeneration.spearman)
-				{
-					assert(statisticsToGeneration.normalize);
-					const double spearman = correlation.spearman_n(
-						outEntry.begin(),
-						correlationPhenotype.begin(),
-						num_samples);
-
-					outEntry[outStatsEntryIdx++] = spearman;
-				}
-				if (statisticsToGeneration.kendall)
-				{
-					assert(statisticsToGeneration.normalize);
-					const double kendall = refresh::correlation::kendall_tau_n(
-						outEntry.begin(),
-						correlationPhenotype.begin(),
-						num_samples);
-
-					outEntry[outStatsEntryIdx++] = kendall;
-				}
-
-				if (statisticsToGeneration.entropy)
-				{
-					const double entropy = entropyObj.entropy_n(
-						inMatrixEntry.begin(),
-						num_samples);
-
-					outEntry[outStatsEntryIdx++] = entropy;
-				}
-				if (statisticsToGeneration.differentialAnalysis)
-				{
-					if (statisticsToGeneration.tTest)
-					{
-						const double tTestPValue = statistics.t_test_n(
-							inMatrixEntry.begin(),
-							differentialAnalysisPhenotype.begin(),
-							num_samples).p_value;
-
-						outEntry[outStatsEntryIdx++] = tTestPValue;
-					}
-					if (statisticsToGeneration.snr)
-					{
-						const double snr = statistics.SNR_test_n(
-							inMatrixEntry.begin(),
-							differentialAnalysisPhenotype.begin(),
-							num_samples);
-
-						outEntry[outStatsEntryIdx++] = snr;
-					}
-					if (statisticsToGeneration.wilcoxonRankSum)
-					{
-						const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test_n(
-							inMatrixEntry.begin(),
-							differentialAnalysisPhenotype.begin(),
-							num_samples).p_value;
-
-						outEntry[outStatsEntryIdx++] = wilcoxonRankSumPValue;
-					}
-					if (statisticsToGeneration.dids)
-					{
-						const double dids = scorer.dids_n(
-							inMatrixEntry.begin(),
-							differentialAnalysisPhenotype.begin(),
-							differentialAnalysisNClasses,
-							num_samples);
-
-						outEntry[outStatsEntryIdx++] = dids;
-					}
-					if (statisticsToGeneration.anova)
-					{
-						const double anovaPValue = scorer.anova_n(
-							inMatrixEntry.begin(),
-							differentialAnalysisPhenotype.begin(),
-							differentialAnalysisNClasses,
-							num_samples).p_value;
-
-						outEntry[outStatsEntryIdx++] = anovaPValue;
-					}
-				}
-
-				++progress_bar_updater;
-
-				outBin->writeKmer(outEntry, kmer, kmerSequence, inMatrixEntry);
-			}
-		});
-	}
-}
 
 
 
@@ -380,151 +228,6 @@ void StatisticsGenerator::correctPValuesEntries()
 
 
 
-void StatisticsGenerator::processEntriesAfterCorrection()
-{
-	TaskData taskData;
-	while (tasksPool.getTask(taskData))
-	{
-		auto bin = matrixReader->GetBin(taskData.binId);
-
-		uint64_t dataIdx = binsIndicesForCorrection[taskData.binId];
-		const uint64_t dataIdxEnd = binsIndicesForCorrection[taskData.binId + 1];
-
-		std::unique_ptr<OutputBuffer> normOutputBuffer;
-
-		refresh::normalization_work<uint64_t, double> normalization;
-		if (params.statisticsParams.generateNormalization)
-		{
-			normalization.register_method(params.statisticsParams.normalizationMethod);
-			normalization.set_no_series(params.mkmcParams.samples.size());
-			normalization.deserialize(params.statisticsParams.normalizationMethod, normalizationData);
-
-			normalization.initialize();
-
-			normOutputBuffer = std::make_unique<OutputBuffer>(*normWriter, getMaxNormLineLength());
-		}
-
-		refresh::correlation correlation;
-		refresh::statistics_entropy entropyObj;
-		refresh::statistical_test statistics;
-		refresh::scorers scorer;
-
-		std::vector<uint64_t> inMatrixEntry;
-		std::vector<out_kmcdb_value_type> outEntry; // normalized counts and statistics
-		std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
-
-		inMatrixEntry.resize(num_samples);
-		outEntry.resize(statisticsToGeneration.nResults);
-
-		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
-
-		auto kmer_len = params.stage1Params.GetKmerLen();
-		std::string kmerSequence(kmer_len, ' ');
-
-		kmcdb::DispatchKmerSize<MAX_K>(kmer_len, [&](auto SIZE) {
-			kmcdb::CKmer<SIZE> kmer;
-			std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outBin = gatherer.getBin(taskData.binId);
-			while (bin->NextKmer(kmer, inMatrixEntry.data()))
-			{
-				kmer.to_string(kmer_len, kmerSequence.data());
-
-				if (statisticsToGeneration.normalize)
-				{
-					normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outEntry);
-
-					normOutputBuffer->StoreKmer(kmerSequence, outEntry, StoreMethods::AsMatrixRow);
-
-					outEntry.resize(statisticsToGeneration.nResults); // space for statistics
-				}
-
-				size_t outStatsEntryIdx = statisticsToGeneration.nResults - statisticsToGeneration.nStatistics;
-				size_t outPValuesAlgIdx = 0;
-
-				if (statisticsToGeneration.pearson)
-				{
-					assert(statisticsToGeneration.normalize);
-					const double pearson = refresh::correlation::pearson_n(
-						outEntry.begin(),
-						correlationPhenotype.begin(),
-						num_samples);
-
-					outEntry[outStatsEntryIdx++] = pearson;
-				}
-				if (statisticsToGeneration.spearman)
-				{
-					assert(statisticsToGeneration.normalize);
-					const double spearman = correlation.spearman_n(
-						outEntry.begin(),
-						correlationPhenotype.begin(),
-						num_samples);
-
-					outEntry[outStatsEntryIdx++] = spearman;
-				}
-				if (statisticsToGeneration.kendall)
-				{
-					assert(statisticsToGeneration.normalize);
-					const double kendall = refresh::correlation::kendall_tau_n(
-						outEntry.begin(),
-						correlationPhenotype.begin(),
-						num_samples);
-
-					outEntry[outStatsEntryIdx++] = kendall;
-				}
-
-				if (statisticsToGeneration.entropy)
-				{
-					const double entropy = entropyObj.entropy_n(
-						inMatrixEntry.begin(),
-						num_samples);
-
-					outEntry[outStatsEntryIdx++] = entropy;
-				}
-				if (statisticsToGeneration.differentialAnalysis)
-				{
-					if (statisticsToGeneration.tTest)
-					{
-						outEntry[outStatsEntryIdx++] = pValuesCorrectedData[outPValuesAlgIdx++][dataIdx];
-					}
-					if (statisticsToGeneration.snr)
-					{
-						const double snr = statistics.SNR_test_n(
-							inMatrixEntry.begin(),
-							differentialAnalysisPhenotype.begin(),
-							num_samples);
-
-						outEntry[outStatsEntryIdx++] = snr;
-					}
-					if (statisticsToGeneration.wilcoxonRankSum)
-					{
-						outEntry[outStatsEntryIdx++] = pValuesCorrectedData[outPValuesAlgIdx++][dataIdx];
-					}
-					if (statisticsToGeneration.dids)
-					{
-						const double dids = scorer.dids_n(
-							inMatrixEntry.begin(),
-							differentialAnalysisPhenotype.begin(),
-							differentialAnalysisNClasses,
-							num_samples);
-
-						outEntry[outStatsEntryIdx++] = dids;
-					}
-					if (statisticsToGeneration.anova)
-					{
-						outEntry[outStatsEntryIdx++] = pValuesCorrectedData[outPValuesAlgIdx++][dataIdx];
-					}
-				}
-
-				++dataIdx;
-				++progress_bar_updater;
-
-				outBin->writeKmer(outEntry, kmer, kmerSequence, inMatrixEntry);
-			}
-			});
-		assert(dataIdx == dataIdxEnd);
-	}
-}
-
-
 
 void StatisticsGenerator::generateStatisticsParallel()
 {
@@ -590,25 +293,38 @@ void StatisticsGenerator::generateStatisticsParallel()
 
 		tasksPool.reset();
 		openReaders(); // reopen
-		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
-		{
-			threads[i_thred] = std::thread([this] { this->processEntriesAfterCorrection(); });
-		}
-		for (std::thread& thread : threads)
-		{
-			thread.join();
-		}
+		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
+			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
+			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+			{
+				threads[i_thred] = std::thread([this, &SIZE, &keepNLargestCollectionGlobal]
+					{ this->processEntriesAfterCorrection<SIZE>(keepNLargestCollectionGlobal); });
+			}
+			for (std::thread& thread : threads)
+			{
+				thread.join();
+			}
+
+			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
+		});
 	}
 	else
 	{
-		std::vector<std::thread> threads(params.mkmcParams.nThreads);
-		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
-		{
-			threads[i_thred] = std::thread([this] { this->processEntries(); });
-		}
-		for (std::thread& thread : threads)
-		{
-			thread.join();
-		}
+		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
+			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
+
+			std::vector<std::thread> threads(params.mkmcParams.nThreads);
+			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+			{
+				threads[i_thred] = std::thread([this, &SIZE, &keepNLargestCollectionGlobal]
+					{ this->processEntries<SIZE>(keepNLargestCollectionGlobal); });
+			}
+			for (std::thread& thread : threads)
+			{
+				thread.join();
+			}
+
+			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
+		});
 	}
 }
