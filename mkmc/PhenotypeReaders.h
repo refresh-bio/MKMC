@@ -11,6 +11,13 @@
 
 
 struct Params;
+
+namespace PhenotypeReaderHelpers
+{
+	size_t get_no_samples(const Params& params);
+}
+
+
 template<typename Phenotype_T>
 class PhenotypeReader
 {
@@ -89,9 +96,11 @@ void PhenotypeReader<Phenotype_T>::readPhenotype()
 		exit(1);
 	}
 
-	if (phenotype.size() != params.mkmcParams.samples.size())
+	//@Maciej: I have changed it this way because params was incomplete type here, I
+	auto no_samples = PhenotypeReaderHelpers::get_no_samples(params);
+	if (phenotype.size() != no_samples)
 	{
-		std::cerr << "Error: number of a phenotype values in a file " << fileName << " (" << phenotype.size() << ") is different than number of samples (" << params.mkmcParams.samples.size() << ")." << std::endl;
+		std::cerr << "Error: number of a phenotype values in a file " << fileName << " (" << phenotype.size() << ") is different than number of samples (" << no_samples << ")." << std::endl;
 		exit(1);
 	}
 }

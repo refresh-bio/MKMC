@@ -2,7 +2,13 @@
 #include "parameters.h"
 #include <string>
 
-
+namespace PhenotypeReaderHelpers
+{
+	size_t get_no_samples(const Params& params)
+	{
+		return params.mkmcParams.samples.size();
+	}
+}
 
 bool DifferentialAnalysisPhenotypeReader::verifyClassesSense()
 {
