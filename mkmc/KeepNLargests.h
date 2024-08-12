@@ -10,7 +10,7 @@ class KeepNLargests {
 	PRED pred;
 public:
 	KeepNLargests(size_t n, PRED pred = PRED{}) : n(n), pred(pred) {
-
+		assert(n);
 	}
 	void Add(T&& elem) {
 		if (heap.size() == n) {

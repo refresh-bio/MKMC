@@ -66,51 +66,51 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputFilePearson = mkmcParams.outputFilesTemplate + "_pearson";
 	mkmcParams.outputFilePearsonTop = mkmcParams.outputFilesTemplate + "_pearson_top";
 	mkmcParams.outputFilePearsonTopCntMatrix = mkmcParams.outputFilesTemplate + "_pearson_top_matrix";
-	mkmcParams.outputFilePearsonTopFasta = mkmcParams.outputFilesTemplate + "_pearson_top_fasta";
+	mkmcParams.outputFilePearsonTopFasta = mkmcParams.outputFilesTemplate + "_pearson_top.fa";
 
 	mkmcParams.outputFileSpearman = mkmcParams.outputFilesTemplate + "_spearman";
 	mkmcParams.outputFileSpearmanTop = mkmcParams.outputFilesTemplate + "_spearman_top";
 	mkmcParams.outputFileSpearmanTopCntMatrix = mkmcParams.outputFilesTemplate + "_spearman_top_matrix";
-	mkmcParams.outputFileSpearmanTopFasta = mkmcParams.outputFilesTemplate + "_spearman_top_fasta";
+	mkmcParams.outputFileSpearmanTopFasta = mkmcParams.outputFilesTemplate + "_spearman_top.fa";
 
 	mkmcParams.outputFileKendall = mkmcParams.outputFilesTemplate + "_kendall_tau";
 	mkmcParams.outputFileKendallTop = mkmcParams.outputFilesTemplate + "_kendall_tau_top";
 	mkmcParams.outputFileKendallTopCntMatrix = mkmcParams.outputFilesTemplate + "_kendall_tau_top_matrix";
-	mkmcParams.outputFileKendallTopFasta = mkmcParams.outputFilesTemplate + "_kendall_tau_top_fasta";
+	mkmcParams.outputFileKendallTopFasta = mkmcParams.outputFilesTemplate + "_kendall_tau_top.fa";
 
 
 	mkmcParams.outputFileEntropy = mkmcParams.outputFilesTemplate + "_entropy";
 	mkmcParams.outputFileEntropyTop = mkmcParams.outputFilesTemplate + "_entropy_top";
 	mkmcParams.outputFileEntropyTopCntMatrix = mkmcParams.outputFilesTemplate + "_entropy_top_matrix";
-	mkmcParams.outputFileEntropyTopFasta = mkmcParams.outputFilesTemplate + "_entropy_top_fasta";
+	mkmcParams.outputFileEntropyTopFasta = mkmcParams.outputFilesTemplate + "_entropy_top.fa";
 
 	mkmcParams.outputFileTTest = mkmcParams.outputFilesTemplate + "_ttest";
 	mkmcParams.outputFileTTestCor = mkmcParams.outputFilesTemplate + "_ttest_cor";
 	mkmcParams.outputFileTTestCorSignificant = mkmcParams.outputFilesTemplate + "_ttest_cor_significant";
 	mkmcParams.outputFileTTestCorSignificantCntMatrix = mkmcParams.outputFilesTemplate + "_ttest_cor_significant_matrix";
-	mkmcParams.outputFileTTestCorSignificantFasta = mkmcParams.outputFilesTemplate + "_ttest_cor_significant_fasta";
+	mkmcParams.outputFileTTestCorSignificantFasta = mkmcParams.outputFilesTemplate + "_ttest_cor_significant.fa";
 
 	mkmcParams.outputFileSNR = mkmcParams.outputFilesTemplate + "_snr";
 	mkmcParams.outputFileSNRTop = mkmcParams.outputFilesTemplate + "_snr_top";
 	mkmcParams.outputFileSNRTopCntMatrix = mkmcParams.outputFilesTemplate + "_snr_top_matrix";
-	mkmcParams.outputFileSNRTopFasta = mkmcParams.outputFilesTemplate + "_snr_top_fasta";
+	mkmcParams.outputFileSNRTopFasta = mkmcParams.outputFilesTemplate + "_snr_top.fa";
 
 	mkmcParams.outputFileWilcoxonRankSum = mkmcParams.outputFilesTemplate + "_wrs";
 	mkmcParams.outputFileWilcoxonRankSumCor = mkmcParams.outputFilesTemplate + "_wrs_cor";
 	mkmcParams.outputFileWilcoxonRankSumCorSignificant = mkmcParams.outputFilesTemplate + "_wrs_cor_significant";
 	mkmcParams.outputFileWilcoxonRankSumCorSignificantCntMatrix = mkmcParams.outputFilesTemplate + "_wrs_cor_significant_matrix";
-	mkmcParams.outputFileWilcoxonRankSumCorSignificantFasta = mkmcParams.outputFilesTemplate + "_wrs_cor_significant_fasta";
+	mkmcParams.outputFileWilcoxonRankSumCorSignificantFasta = mkmcParams.outputFilesTemplate + "_wrs_cor_significant.fa";
 
 	mkmcParams.outputFileDIDS = mkmcParams.outputFilesTemplate + "_dids";
 	mkmcParams.outputFileDIDSTop = mkmcParams.outputFilesTemplate + "_dids_top";
 	mkmcParams.outputFileDIDSTopCntMatrix = mkmcParams.outputFilesTemplate + "_dids_top_matrix";
-	mkmcParams.outputFileDIDSTopFasta = mkmcParams.outputFilesTemplate + "_dids_top_fasta";
+	mkmcParams.outputFileDIDSTopFasta = mkmcParams.outputFilesTemplate + "_dids_top.fa";
 
 	mkmcParams.outputFileANOVA = mkmcParams.outputFilesTemplate + "_anova";
 	mkmcParams.outputFileANOVACor = mkmcParams.outputFilesTemplate + "_anova_cor";
 	mkmcParams.outputFileANOVACorSignificant = mkmcParams.outputFilesTemplate + "_anova_cor_significant";
 	mkmcParams.outputFileANOVACorSignificantCntMatrix = mkmcParams.outputFilesTemplate + "_anova_cor_significant_matrix";
-	mkmcParams.outputFileANOVACorSignificantFasta = mkmcParams.outputFilesTemplate + "_anova_cor_significant_fasta";
+	mkmcParams.outputFileANOVACorSignificantFasta = mkmcParams.outputFilesTemplate + "_anova_cor_significant.fa";
 }
 
 
