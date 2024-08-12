@@ -461,21 +461,24 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 		auto value = outEntry[valuesIdx++];
 		pearsonOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
 
-		keepNLargestCollection.pearson->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+		if (mainWritingGatherer.params.statisticsParams.nTop)
+			keepNLargestCollection.pearson->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 	}
 	if (mainWritingGatherer.statisticsToGeneration.spearman)
 	{
 		auto value = outEntry[valuesIdx++];
 		spearmanOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
 
-		keepNLargestCollection.spearman->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+		if (mainWritingGatherer.params.statisticsParams.nTop)
+			keepNLargestCollection.spearman->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 	}
 	if (mainWritingGatherer.statisticsToGeneration.kendall)
 	{
 		auto value = outEntry[valuesIdx++];
 		kendallOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
 
-		keepNLargestCollection.spearman->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+		if (mainWritingGatherer.params.statisticsParams.nTop)
+			keepNLargestCollection.spearman->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 	}
 
 	if (mainWritingGatherer.statisticsToGeneration.entropy)
@@ -483,7 +486,8 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 		auto value = outEntry[valuesIdx++];
 		entropyOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
 
-		keepNLargestCollection.entropy->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+		if (mainWritingGatherer.params.statisticsParams.nTop)
+			keepNLargestCollection.entropy->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 	}
 	if (mainWritingGatherer.statisticsToGeneration.differentialAnalysis)
 	{
@@ -507,7 +511,8 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 			auto value = outEntry[valuesIdx++];
 			snrOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
 
-			keepNLargestCollection.snr->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+			if (mainWritingGatherer.params.statisticsParams.nTop)
+				keepNLargestCollection.snr->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 		}
 		if (mainWritingGatherer.statisticsToGeneration.wilcoxonRankSum)
 		{
@@ -527,9 +532,10 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 		if (mainWritingGatherer.statisticsToGeneration.dids)
 		{
 			auto value = outEntry[valuesIdx++];
-			didsOutputBuffer->StoreKmer(kmerSeq, outEntry[valuesIdx++], StoreMethods::AsMatrixRow_single_val);
+			didsOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
 
-			keepNLargestCollection.dids->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+			if (mainWritingGatherer.params.statisticsParams.nTop)
+				keepNLargestCollection.dids->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 		}
 		if (mainWritingGatherer.statisticsToGeneration.anova)
 		{
