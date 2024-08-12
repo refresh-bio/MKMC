@@ -100,8 +100,11 @@ public:
 
 
 template<unsigned SIZE>
-void  StatisticsGenerator::initKeepNLargest(KeepNLargestCollection<SIZE>& keepNLargestCollection)
+void StatisticsGenerator::initKeepNLargest(KeepNLargestCollection<SIZE>& keepNLargestCollection)
 {
+	if (params.statisticsParams.nTop == 0)
+		return;
+
 	using KeepTopNLargestABS_T = typename KeepNLargestCollection<SIZE>::KeepTopNLargestABS_T;
 	using KeepTopNLargestPlain_T = typename KeepNLargestCollection<SIZE>::KeepTopNLargestPlain_T;
 
