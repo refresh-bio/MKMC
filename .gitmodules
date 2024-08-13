@@ -4,9 +4,9 @@
 [submodule "mkmc/CLI11"]
 	path = mkmc/CLI11
 	url = https://github.com/CLIUtils/CLI11.git
-[submodule "mkmc/stats"]
-	path = mkmc/stats
+[submodule "mkmc/lib/stats"]
+	path = mkmc/lib/stats
 	url = https://github.com/refresh-bio-dependencies/stats
-[submodule "mkmc/gcem"]
-	path = mkmc/gcem
+[submodule "mkmc/lib/gcem"]
+	path = mkmc/lib/gcem
 	url = https://github.com/refresh-bio-dependencies/gcem
