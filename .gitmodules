@@ -10,3 +10,30 @@
 [submodule "mkmc/lib/gcem"]
 	path = mkmc/lib/gcem
 	url = https://github.com/refresh-bio-dependencies/gcem
+[submodule "mkmc/lib/annoy"]
+	path = mkmc/lib/annoy
+	url = https://github.com/refresh-bio-dependencies/annoy
+[submodule "mkmc/lib/hnswlib"]
+	path = mkmc/lib/hnswlib
+	url = https://github.com/refresh-bio-dependencies/hnswlib
+[submodule "mkmc/lib/umappp"]
+	path = mkmc/lib/umappp
+	url = https://github.com/refresh-bio-dependencies/umappp
+[submodule "mkmc/lib/CppIrlba"]
+	path = mkmc/lib/CppIrlba
+	url = https://github.com/refresh-bio-dependencies/CppIrlba
+[submodule "mkmc/lib/CppKmeans"]
+	path = mkmc/lib/CppKmeans
+	url = https://github.com/refresh-bio-dependencies/CppKmeans
+[submodule "mkmc/lib/aarand"]
+	path = mkmc/lib/aarand
+	url = https://github.com/refresh-bio-dependencies/aarand
+[submodule "mkmc/lib/powerit"]
+	path = mkmc/lib/powerit
+	url = https://github.com/refresh-bio-dependencies/powerit
+[submodule "mkmc/lib/knncolle"]
+	path = mkmc/lib/knncolle
+	url = https://github.com/refresh-bio-dependencies/knncolle
+[submodule "mkmc/lib/eigen"]
+	path = mkmc/lib/eigen
+	url = https://gitlab.com/libeigen/eigen.git
