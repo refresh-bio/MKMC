@@ -1,6 +1,7 @@
 #ifndef _HELPER_STRUCTURES_H
 #define _HELPER_STRUCTURES_H
 
+#include <concepts>
 #include <limits>
 #include <algorithm>
 
@@ -17,13 +18,13 @@ namespace refresh
 		{
 			std::map<ENTRY_T, size_t> data;
 
-			void add(size_t x, size_t inc)
+			void add(ENTRY_T x, size_t inc)
 			{
 				data[x] += inc;
 			}
 
 		public:
-			void add(size_t x)
+			void add(ENTRY_T x)
 			{
 				data[x]++;
 			}
@@ -40,46 +41,49 @@ namespace refresh
 
 			void merge(const compact_histogram<ENTRY_T>& ch)
 			{
-				for (const auto p : ch.hist)
+				for (const auto p : ch.data)
 					add(p.first, p.second);
 			}
 		};
 
-		template<>
-		class compact_histogram<size_t>
+		template<typename T>
+		concept U64OrSizeT = std::same_as<T, uint64_t> || std::same_as<T, size_t>;
+
+		template<U64OrSizeT ENTRY_T>
+		class compact_histogram<ENTRY_T>
 		{
 			const size_t thr = 32 << 10;
 			//			const size_t thr = 8;				// for testing
 
-			std::vector<size_t> small;
-			std::map<size_t, size_t> big;
+			std::vector<ENTRY_T> small;
+			std::map<ENTRY_T, size_t> big;
 
-			void add(size_t x, size_t inc)
+			void add(ENTRY_T x, size_t inc)
 			{
 				if (x >= thr)
 					big[x] += inc;
 				else
 				{
 					if (x >= small.size())
-						small.resize(std::min(2 * (x + 1), thr));
+						small.resize(std::min(2 * (static_cast<size_t>(x) + 1), thr));
 					small[x] += inc;
 				}
 			}
 
 		public:
-			void add(size_t x)
+			void add(ENTRY_T x)
 			{
 				if (x >= thr)
 					big[x]++;
 				else
 				{
 					if (x >= small.size())
-						small.resize(std::min(2 * (x + 1), thr));
+						small.resize(std::min(2 * (static_cast<size_t>(x) + 1), thr));
 					small[x]++;
 				}
 			}
 
-			void get_histogram(std::vector<std::pair<size_t, size_t>>& hist)
+			void get_histogram(std::vector<std::pair<ENTRY_T, size_t>>& hist)
 			{
 				hist.clear();
 
@@ -100,7 +104,7 @@ namespace refresh
 				big.clear();
 			}
 
-			void merge(const compact_histogram<size_t>& ch)
+			void merge(const compact_histogram<ENTRY_T>& ch)
 			{
 				for (size_t i = 0; i < ch.small.size(); ++i)
 					if (ch.small[i] != 0)

@@ -62,7 +62,7 @@ namespace refresh::normalization
 				hci[0] = std::make_tuple(lh[0].first, lh[0].second, (VALUE_T)lh[0].first * (VALUE_T)lh[0].second);
 
 				for (size_t j = 1; j < hci.size(); ++j)
-					hci[j] = std::make_tuple(lh[j].first, get<1>(hci[j - 1]) + lh[j].second, get<2>(hci[j - 1]) + (VALUE_T)lh[j].first * (VALUE_T)lh[j].second);
+					hci[j] = std::make_tuple(lh[j].first, std::get<1>(hci[j - 1]) + lh[j].second, std::get<2>(hci[j - 1]) + (VALUE_T)lh[j].first * (VALUE_T)lh[j].second);
 			}
 
 			// Find mappings and serialize
@@ -74,10 +74,10 @@ namespace refresh::normalization
 				lh.resize(hci.size());
 
 				// Find raw histogram
-				lh[0] = std::make_pair(get<0>(hci[0]), get<1>(hci[0]));
+				lh[0] = std::make_pair(std::get<0>(hci[0]), std::get<1>(hci[0]));
 
 				for (size_t j = 1; j < lh.size(); ++j)
-					lh[j] = std::make_pair(get<0>(hci[j]), get<1>(hci[j]) - get<1>(hci[j - 1]));
+					lh[j] = std::make_pair(std::get<0>(hci[j]), std::get<1>(hci[j]) - std::get<1>(hci[j - 1]));
 
 				mapping.clear();
 				mapping.resize(lh.size());
@@ -99,11 +99,11 @@ namespace refresh::normalization
 							continue;
 
 						auto& hck = hist_cum[k];
-						auto p = std::lower_bound(hck.begin(), hck.end(), left_side, [](const auto& v, const size_t x) {return get<1>(v) < x; });
-						auto q = std::lower_bound(hck.begin(), hck.end(), right_side, [](const auto& v, const size_t x) {return get<1>(v) < x; });
+						auto p = std::lower_bound(hck.begin(), hck.end(), left_side, [](const auto& v, const size_t x) {return std::get<1>(v) < x; });
+						auto q = std::lower_bound(hck.begin(), hck.end(), right_side, [](const auto& v, const size_t x) {return std::get<1>(v) < x; });
 
-						v += (VALUE_T)get<2>(*q) - (VALUE_T)(get<1>(*q) - right_side) * (VALUE_T)get<0>(*q);
-						v -= (VALUE_T)get<2>(*p) - (VALUE_T)(get<1>(*p) - left_side) * (VALUE_T)get<0>(*p);
+						v += (VALUE_T)std::get<2>(*q) - (VALUE_T)(std::get<1>(*q) - right_side) * (VALUE_T)std::get<0>(*q);
+						v -= (VALUE_T)std::get<2>(*p) - (VALUE_T)(std::get<1>(*p) - left_side) * (VALUE_T)std::get<0>(*p);
 					}
 
 					cum_sum += lh[j].second;

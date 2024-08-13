@@ -19,28 +19,30 @@ namespace refresh
 			size_t n;
 		};
 
-		static double pow2(size_t x)
+		inline double pow2(double x)
 		{
 			return x * x;
 		}
 
-		static double pow2(double x)
+		template<typename T>
+		double pow2(T x)
 		{
-			return x * x;
+			return pow2(static_cast<double>(x));
 		}
 
-		static double pow3(size_t x)
+		inline double pow3(double x)
 		{
 			return x * x * x;
 		}
 
-		static double pow3(double x)
+		template<typename T>
+		double pow3(T x)
 		{
-			return x * x * x;
+			return pow3(static_cast<double>(x));
 		}
 
 		template<typename Iter>
-		static double mean(Iter first, size_t n)
+		double mean(Iter first, size_t n)
 		{
 			if (n == 0)
 				return 0;
@@ -49,7 +51,7 @@ namespace refresh
 		}
 
 		template<typename Iter>
-		static double std_dev(double x, Iter first, size_t n)
+		double std_dev(double x, Iter first, size_t n)
 		{
 			if (n < 2)
 				return 0;
@@ -63,7 +65,7 @@ namespace refresh
 		}
 
 		template<typename X_Iter, typename C_Iter>
-		static bool mean_std_dev(X_Iter X_first, C_Iter C_first, size_t n_X, std::vector<mean_sd_t>& mean_sd)
+		bool mean_std_dev(X_Iter X_first, C_Iter C_first, size_t n_X, std::vector<mean_sd_t>& mean_sd)
 		{
 			size_t n_class = mean_sd.size();
 

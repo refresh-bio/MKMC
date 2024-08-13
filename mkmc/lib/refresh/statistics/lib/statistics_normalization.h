@@ -104,7 +104,7 @@ namespace refresh
 		}
 		 
 		// *************************************************************************************
-		bool serialize(const normalization_base<ENTRY_T, VALUE_T>::method_t m, std::vector<uint8_t>& data)
+		bool serialize(const typename normalization_base<ENTRY_T, VALUE_T>::method_t m, std::vector<uint8_t>& data)
 		{
 			if (!base::method_included(m) && base::no_entries == 0)
 				return false;
@@ -205,7 +205,7 @@ namespace refresh
 		}
 
 		// *************************************************************************************
-		bool deserialize(const normalization_base<ENTRY_T, VALUE_T>::method_t m, std::vector<uint8_t>& data)
+		bool deserialize(const typename normalization_base<ENTRY_T, VALUE_T>::method_t m, std::vector<uint8_t>& data)
 		{
 			if (!base::method_included(m))
 				return false;
@@ -226,7 +226,7 @@ namespace refresh
 
 		// *************************************************************************************
 		template<typename Iter1, typename Iter2>
-		void norm_entry(normalization_base<ENTRY_T, VALUE_T>::method_t method, Iter1 first1, Iter1 last1, Iter2 first2)
+		void norm_entry(typename normalization_base<ENTRY_T, VALUE_T>::method_t method, Iter1 first1, Iter1 last1, Iter2 first2)
 		{
 			if (!base::method_included(method))
 				return;
@@ -245,7 +245,7 @@ namespace refresh
 
 		// *************************************************************************************
 		template<typename Cont1, typename Cont2>
-		void norm_entry(normalization_base<ENTRY_T, VALUE_T>::method_t method, const Cont1& cont1, Cont2& cont2)
+		void norm_entry(typename normalization_base<ENTRY_T, VALUE_T>::method_t method, const Cont1& cont1, Cont2& cont2)
 		{
 			cont2.resize(cont1.size());
 			norm_entry(method, cont1.begin(), cont1.end(), cont2.begin());
