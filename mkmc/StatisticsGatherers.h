@@ -269,6 +269,7 @@ void RunUmap(std::vector<UmapBin<VALUE_T>>& umap_bins_data,
 		tot_entries += umap_bin.get().size();
 
 	refresh::umap<VALUE_T> umap;
+	umap.set_params(params.statisticsParams.umap_params);
 	umap.reserve(tot_entries);
 
 	for (auto& umap_bin : umap_bins_data)
