@@ -9,7 +9,7 @@
 #include "DumpWriter.h"
 #include "kmcdb/kmcdb.h"
 #include "KeepNLargests.h"
-
+#include "lib/refresh/statistics/lib/statistics_umap.h"
 
 
 struct StatisticsToGeneration
@@ -236,6 +236,74 @@ public:
 			params.mkmcParams.outputFileDIDSTopFasta, max_line_len_top_fasta);
 	}
 };
+
+template<typename VALUE_T>
+class UmapBin
+{
+	std::vector<std::vector<VALUE_T>> data;
+public:
+	UmapBin(size_t n_entries)
+	{
+		data.reserve(n_entries);
+	}
+	template<typename Iter>
+	void add(Iter begin, Iter end)
+	{
+		assert(data.size() < data.capacity()); //should be because I reserve in ctor
+		data.emplace_back(begin, end);
+	}
+
+	auto& get()
+	{
+		return data;
+	}
+};
+
+template<typename VALUE_T>
+void RunUmap(std::vector<UmapBin<VALUE_T>>& umap_bins_data, 
+	const std::vector<std::string>& sample_names,
+	Params& params)
+{
+	size_t tot_entries = 0;
+	for (auto& umap_bin : umap_bins_data)
+		tot_entries += umap_bin.get().size();
+
+	refresh::umap<VALUE_T> umap;
+	umap.reserve(tot_entries);
+
+	for (auto& umap_bin : umap_bins_data)
+		umap.emplace_features(std::move(umap_bin.get()));
+
+	//mkokot_TODO: actually when we collect the data we could collect it directly to destination memory
+
+	umap.run(params.statisticsParams.umap_dimensions);
+
+	const auto& umap_res = umap.result();
+
+	auto num_dimenstions = umap_res.front().size();
+
+	DumpWriter writer(params.mkmcParams.outputFileUMAP, false);
+	writer.StoreHeader(sample_names, "Dimension");
+
+	auto num_samples = params.mkmcParams.samples.size();
+
+	std::string first_col_prefix = "UMAP";
+	auto first_col_len = first_col_prefix.length() + 10; // I assume 10 is more then enough to store component/dimension number
+
+	auto max_line_len = first_col_len + 1 + params.mkmcParams.samples.size() * (refresh::numeric_conversion_max_length<double>() + 1);
+
+	OutputBuffer out(writer, max_line_len);
+
+	std::vector<double> values(num_samples);
+	for (size_t row = 0; row < num_dimenstions ; ++row)
+	{
+		std::string first_col = first_col_prefix + std::to_string(row + 1);
+		for (size_t sample_id = 0; sample_id < num_samples; ++sample_id)
+			values[sample_id] = umap_res[sample_id][row];
+		out.StoreKmer(first_col, values, StoreMethods::AsMatrixRow);
+	}
+}
+
 
 template<typename Statistics_T>
 class WritingGathererBin

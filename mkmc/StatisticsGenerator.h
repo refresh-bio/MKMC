@@ -84,13 +84,16 @@ class StatisticsGenerator
 	void initKeepNLargest(KeepNLargestCollection<SIZE>& keepNLargestCollection);
 
 	template<unsigned SIZE>
-	void processEntries(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal);
+	void processEntries(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
+		std::vector<UmapBin<double>>& umap_bins_data);
+
 	void gatherPValuesEntriesToCorrection();
 
 	void correctPValuesEntries();
 
 	template<unsigned SIZE>
-	void processEntriesAfterCorrection(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal);
+	void processEntriesAfterCorrection(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
+		std::vector<UmapBin<double>>& umap_bins_data);
 
 public:
 	StatisticsGenerator(Params& params);
@@ -129,7 +132,8 @@ void StatisticsGenerator::initKeepNLargest(KeepNLargestCollection<SIZE>& keepNLa
 }
 
 template<unsigned SIZE>
-void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal)
+void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
+	std::vector<UmapBin<double>>& umap_bins_data)
 {
 	KeepNLargestCollection<SIZE> keepNLargestCollection;
 
@@ -138,6 +142,10 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
 	{
+		UmapBin<double>* umap_bin{};
+		if (params.statisticsParams.runUMAP)
+			umap_bin = &umap_bins_data[taskData.binId];
+
 		auto bin = matrixReader->GetBin(taskData.binId);
 		std::unique_ptr<OutputBuffer> normOutputBuffer;
 
@@ -179,6 +187,9 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 			if (statisticsToGeneration.normalize)
 			{
 				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outEntry);
+
+				if (umap_bin)
+					umap_bin->add(outEntry.begin(), outEntry.end());
 
 				normOutputBuffer->StoreKmer(kmerSequence, outEntry, StoreMethods::AsMatrixRow);
 
@@ -286,7 +297,8 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 }
 
 template<unsigned SIZE>
-void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal)
+void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
+	std::vector<UmapBin<double>>& umap_bins_data)
 {
 	KeepNLargestCollection<SIZE> keepNLargestCollection;
 
@@ -295,6 +307,10 @@ void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGl
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
 	{
+		UmapBin<double>* umap_bin{};
+		if (params.statisticsParams.runUMAP)
+			umap_bin = &umap_bins_data[taskData.binId];
+
 		auto bin = matrixReader->GetBin(taskData.binId);
 
 		uint64_t dataIdx = binsIndicesForCorrection[taskData.binId];
@@ -340,6 +356,9 @@ void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGl
 			if (statisticsToGeneration.normalize)
 			{
 				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outEntry);
+
+				if (umap_bin)
+					umap_bin->add(outEntry.begin(), outEntry.end());
 
 				normOutputBuffer->StoreKmer(kmerSequence, outEntry, StoreMethods::AsMatrixRow);
 

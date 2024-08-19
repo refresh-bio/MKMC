@@ -9,7 +9,7 @@
 #include "kmc_api/kmer_api.h"
 #undef small
 #include "refresh/statistics/lib/statistics_normalization.h"
-
+#include "refresh/statistics/lib/statistics_umap.h"
 
 
 enum class OutputFileType {FASTA, Matrix};
@@ -89,6 +89,8 @@ struct MKMCParams
 	std::string outputFileANOVACorSignificantCntMatrix;
 	std::string outputFileANOVACorSignificantFasta;
 
+	std::string outputFileUMAP;
+
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
 	uint32_t nKMCWorkers = 4;
 	uint32_t maxRamGB = 16;
@@ -121,6 +123,11 @@ struct StatisticsParams
 
 	bool generateNormalization = false;
 	NormalizationMethod normalizationMethod;
+
+	bool runUMAP = false;
+	uint32_t umap_dimensions = 2;
+	refresh::umap<double>::params_t umap_params{};
+
 
 	enum class CorrelationMethod { Pearson, Spearman, Kendall };
 	std::vector<CorrelationMethod> correlationMethods;

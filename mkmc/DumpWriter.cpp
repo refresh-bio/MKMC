@@ -2,9 +2,9 @@
 
 
 
-void DumpWriter::StoreHeader(const std::vector<std::string>& sample_names)
+void DumpWriter::StoreHeader(const std::vector<std::string>& sample_names, const std::string& first_item)
 {
-	fwrite("k-mer", 1, strlen("k-mer"), out);
+	fwrite(first_item.c_str(), 1, first_item.length(), out);
 	for (const auto& sample_name : sample_names)
 	{
 		fwrite("\t", 1, strlen("\t"), out);

@@ -111,6 +111,8 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputFileANOVACorSignificant = mkmcParams.outputFilesTemplate + "_anova_cor_significant";
 	mkmcParams.outputFileANOVACorSignificantCntMatrix = mkmcParams.outputFilesTemplate + "_anova_cor_significant_matrix";
 	mkmcParams.outputFileANOVACorSignificantFasta = mkmcParams.outputFilesTemplate + "_anova_cor_significant.fa";
+
+	mkmcParams.outputFileUMAP = mkmcParams.outputFilesTemplate + "_umap";
 }
 
 
@@ -174,6 +176,8 @@ void Params::adjustAnotherParams()
 	{
 		std::cerr << "Warning: some output files types were given multiple times." << std::endl;
 	}
+
+	statisticsParams.umap_params.num_threads = mkmcParams.nThreads;
 }
 
 

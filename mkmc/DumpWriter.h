@@ -29,7 +29,7 @@ public:
 		setvbuf(out, nullptr, _IONBF, 0);
 	}
 
-	void StoreHeader(const std::vector<std::string>& sample_names);
+	void StoreHeader(const std::vector<std::string>& sample_names, const std::string& first_item = "k-mer");
 
 	void Write(char* data, size_t size)
 	{

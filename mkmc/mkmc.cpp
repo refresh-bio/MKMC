@@ -130,6 +130,34 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	app.add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy")->default_val(statisticsParams.generateEntropy);
 
+	auto umap = app.add_flag("--umap", statisticsParams.runUMAP, "run umap on normalized matrix")->needs(n);
+
+	app.add_option("--umap-dimensions", statisticsParams.umap_dimensions, "number of dimension for umap")->needs(umap)->default_val(statisticsParams.umap_dimensions);
+
+	app.add_option("--umap-local_connectivity", statisticsParams.umap_params.local_connectivity, "local_connectivity parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.local_connectivity);
+	app.add_option("--umap-bandwidth", statisticsParams.umap_params.bandwidth, "bandwidth parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.bandwidth);
+
+	app.add_option("--umap-mix_ratio", statisticsParams.umap_params.mix_ratio, "mix_ratio parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.mix_ratio);
+	app.add_option("--umap-spread", statisticsParams.umap_params.spread, "spread parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.spread);
+	app.add_option("--umap-min_dist", statisticsParams.umap_params.min_dist, "min_dist parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.min_dist);
+	app.add_option("--umap-a", statisticsParams.umap_params.a, "a parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.a);
+	app.add_option("--umap-b", statisticsParams.umap_params.b, "b parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.b);
+	app.add_option("--umap-repulsion_strength", statisticsParams.umap_params.repulsion_strength, "repulsion_strength parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.repulsion_strength);
+
+	std::map<std::string, umappp::InitMethod> umapInitMethodValuesMap{ { "spectral", umappp::InitMethod::SPECTRAL }, { "spectral_only", umappp::InitMethod::SPECTRAL_ONLY }, { "random", umappp::InitMethod::RANDOM }, { "none", umappp::InitMethod::NONE } };
+
+	app.add_option("--umap-initialize", statisticsParams.classificationMethods, "initialize parameter of umap")->transform(CLI::CheckedTransformer(umapInitMethodValuesMap))->needs(umap);
+	app.add_option("--umap-num_epochs", statisticsParams.umap_params.num_epochs, "num_epochs parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.num_epochs);
+	app.add_option("--umap-learning_rate", statisticsParams.umap_params.learning_rate, "learning_rate parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.learning_rate);
+
+	app.add_option("--umap-negative_sample_rate", statisticsParams.umap_params.negative_sample_rate, "negative_sample_rate parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.negative_sample_rate);
+	app.add_option("--umap-seed", statisticsParams.umap_params.seed, "seed parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.seed);
+
+	//this will be set with the "main" or "global" number of threads
+	//app.add_option("--umap-num_threads", statisticsParams.umap_params.num_threads, "num_threads parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.num_threads);
+
+	app.add_option("--umap-parallel_optimization", statisticsParams.umap_params.parallel_optimization, "num_threads parameter of parallel_optimization")->needs(umap)->default_val(statisticsParams.umap_params.parallel_optimization);
+
 	CLI::Option_group* optionalGroup = app.add_option_group("optional parameters");
 
 	std::map<std::string, KMC::InputFileType> inputValuesMap{ {"fa", KMC::InputFileType::FASTA }, {"fq", KMC::InputFileType::FASTQ }, { "mf", KMC::InputFileType::MULTILINE_FASTA } };

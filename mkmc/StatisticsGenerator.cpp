@@ -294,11 +294,22 @@ void StatisticsGenerator::generateStatisticsParallel()
 		tasksPool.reset();
 		openReaders(); // reopen
 		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
+
+			std::vector<UmapBin<double>> umap_bins_data;
+
+			if (params.statisticsParams.runUMAP)
+			{
+				umap_bins_data.reserve(params.stage1Params.GetNBins());
+				for (uint32_t bin_id = 0; bin_id < params.stage1Params.GetNBins(); ++bin_id)
+					umap_bins_data.emplace_back(nOutputKmersPerBin[bin_id]);
+			}
+
 			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
+
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
-				threads[i_thred] = std::thread([this, &SIZE, &keepNLargestCollectionGlobal]
-					{ this->processEntriesAfterCorrection<SIZE>(keepNLargestCollectionGlobal); });
+				threads[i_thred] = std::thread([this, &SIZE, &keepNLargestCollectionGlobal, &umap_bins_data]
+					{ this->processEntriesAfterCorrection<SIZE>(keepNLargestCollectionGlobal, umap_bins_data); });
 			}
 			for (std::thread& thread : threads)
 			{
@@ -306,18 +317,31 @@ void StatisticsGenerator::generateStatisticsParallel()
 			}
 
 			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
+
+			if (params.statisticsParams.runUMAP)
+				RunUmap(umap_bins_data, cnt_matrix_output_header, params);
 		});
 	}
 	else
 	{
 		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
+
+			std::vector<UmapBin<double>> umap_bins_data;
+
+			if (params.statisticsParams.runUMAP)
+			{
+				umap_bins_data.reserve(params.stage1Params.GetNBins());
+				for (uint32_t bin_id = 0; bin_id < params.stage1Params.GetNBins(); ++bin_id)
+					umap_bins_data.emplace_back(nOutputKmersPerBin[bin_id]);
+			}
+
 			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
 
 			std::vector<std::thread> threads(params.mkmcParams.nThreads);
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
-				threads[i_thred] = std::thread([this, &SIZE, &keepNLargestCollectionGlobal]
-					{ this->processEntries<SIZE>(keepNLargestCollectionGlobal); });
+				threads[i_thred] = std::thread([this, &SIZE, &keepNLargestCollectionGlobal,&umap_bins_data]
+					{ this->processEntries<SIZE>(keepNLargestCollectionGlobal, umap_bins_data); });
 			}
 			for (std::thread& thread : threads)
 			{
@@ -325,6 +349,9 @@ void StatisticsGenerator::generateStatisticsParallel()
 			}
 
 			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
+
+			if (params.statisticsParams.runUMAP)
+				RunUmap(umap_bins_data, cnt_matrix_output_header, params);
 		});
 	}
 }

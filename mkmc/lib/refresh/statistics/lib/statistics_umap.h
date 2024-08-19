@@ -75,6 +75,33 @@ namespace refresh
 			return true;
 		}
 
+		//mkokot_TODO: this will be removed later, I just need a wraper that directly writes to appropriate memory
+		bool try_emplace(input_mode_t requested_mode, std::vector<std::vector<VALUE_T>>&& data)
+		{
+			if (data.empty())
+				return false;
+
+			if (input_mode == input_mode_t::unknown)
+			{
+				input_mode = requested_mode;
+				input_vector_size = std::distance(data.front().begin(), data.front().end());
+			}
+			else if (input_mode != requested_mode)
+				return false;
+
+			if (std::distance(data.front().begin(), data.front().end()) != input_vector_size)
+				return false;
+
+			input_data.insert(input_data.begin(),
+				std::make_move_iterator(data.begin()),
+				std::make_move_iterator(data.end()));
+
+			data.clear();
+			data.shrink_to_fit();
+
+			return true;
+		}
+
 		void clear()
 		{
 			vec_clear(input_data);
@@ -88,6 +115,12 @@ namespace refresh
 
 	public:
 		umap() = default;
+
+		//mkokot_TODO: this will be removed later, I just need a wraper that directly writes to appropriate memory
+		void reserve(size_t size)
+		{
+			input_data.reserve(size);
+		}
 
 		void reset()
 		{
@@ -105,7 +138,13 @@ namespace refresh
 		{
 			return try_add(input_mode_t::feature_oriented, first, last);
 		}
-			
+
+		//mkokot_TODO: this will be removed later, I just need a wraper that directly writes to appropriate memory
+		bool emplace_features(std::vector<std::vector<VALUE_T>>&& features)
+		{
+			return try_emplace(input_mode_t::feature_oriented, std::move(features));
+		}
+
 		bool run(size_t no_dimensions = 2)
 		{
 			if (input_mode == input_mode_t::unknown)
