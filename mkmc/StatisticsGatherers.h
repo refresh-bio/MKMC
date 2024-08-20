@@ -238,48 +238,15 @@ public:
 };
 
 template<typename VALUE_T>
-class UmapBin
-{
-	std::vector<std::vector<VALUE_T>> data;
-public:
-	UmapBin(size_t n_entries)
-	{
-		data.reserve(n_entries);
-	}
-	template<typename Iter>
-	void add(Iter begin, Iter end)
-	{
-		assert(data.size() < data.capacity()); //should be because I reserve in ctor
-		data.emplace_back(begin, end);
-	}
-
-	auto& get()
-	{
-		return data;
-	}
-};
-
-template<typename VALUE_T>
-void RunUmap(std::vector<UmapBin<VALUE_T>>& umap_bins_data, 
+void RunUmap(refresh::umap_direct<VALUE_T>* umap,
 	const std::vector<std::string>& sample_names,
 	Params& params)
 {
-	size_t tot_entries = 0;
-	for (auto& umap_bin : umap_bins_data)
-		tot_entries += umap_bin.get().size();
+	assert(umap);
 
-	refresh::umap<VALUE_T> umap;
-	umap.set_params(params.statisticsParams.umap_params);
-	umap.reserve(tot_entries);
+	umap->run(params.statisticsParams.umap_dimensions);
 
-	for (auto& umap_bin : umap_bins_data)
-		umap.emplace_features(std::move(umap_bin.get()));
-
-	//mkokot_TODO: actually when we collect the data we could collect it directly to destination memory
-
-	umap.run(params.statisticsParams.umap_dimensions);
-
-	const auto& umap_res = umap.result();
+	const auto& umap_res = umap->result();
 
 	auto num_dimenstions = umap_res.front().size();
 

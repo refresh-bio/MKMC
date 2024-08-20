@@ -75,33 +75,6 @@ namespace refresh
 			return true;
 		}
 
-		//mkokot_TODO: this will be removed later, I just need a wraper that directly writes to appropriate memory
-		bool try_emplace(input_mode_t requested_mode, std::vector<std::vector<VALUE_T>>&& data)
-		{
-			if (data.empty())
-				return false;
-
-			if (input_mode == input_mode_t::unknown)
-			{
-				input_mode = requested_mode;
-				input_vector_size = std::distance(data.front().begin(), data.front().end());
-			}
-			else if (input_mode != requested_mode)
-				return false;
-
-			if (std::distance(data.front().begin(), data.front().end()) != input_vector_size)
-				return false;
-
-			input_data.insert(input_data.begin(),
-				std::make_move_iterator(data.begin()),
-				std::make_move_iterator(data.end()));
-
-			data.clear();
-			data.shrink_to_fit();
-
-			return true;
-		}
-
 		void clear()
 		{
 			vec_clear(input_data);
@@ -115,12 +88,6 @@ namespace refresh
 
 	public:
 		umap() = default;
-
-		//mkokot_TODO: this will be removed later, I just need a wraper that directly writes to appropriate memory
-		void reserve(size_t size)
-		{
-			input_data.reserve(size);
-		}
 
 		void reset()
 		{
@@ -137,12 +104,6 @@ namespace refresh
 		bool add_feature(Iter first, Iter last)
 		{
 			return try_add(input_mode_t::feature_oriented, first, last);
-		}
-
-		//mkokot_TODO: this will be removed later, I just need a wraper that directly writes to appropriate memory
-		bool emplace_features(std::vector<std::vector<VALUE_T>>&& features)
-		{
-			return try_emplace(input_mode_t::feature_oriented, std::move(features));
 		}
 
 		bool run(size_t no_dimensions = 2)
@@ -216,6 +177,91 @@ namespace refresh
 					ret_data[i].emplace_back(umap_out_data[k++]);
 
 			return true;
+		}
+
+		std::vector<std::vector<VALUE_T>>& result()
+		{
+			return ret_data;
+		}
+
+		params_t get_defaults() const
+		{
+			return params_t();
+		}
+
+		params_t get_params() const
+		{
+			return params;
+		}
+
+		void set_params(params_t& new_params)
+		{
+			params = new_params;
+		}
+	};
+
+	template<typename VALUE_T>
+	class umap_direct
+	{
+		using entry_t = std::vector<VALUE_T>;
+
+		size_t no_objects;
+		size_t no_features;
+		using params_t = typename umap<VALUE_T>::params_t;
+		params_t params;
+		std::unique_ptr<VALUE_T[]> umap_in_data; //unique_ptr instead of std::vector to avoid memory initialization
+		std::vector<VALUE_T> umap_out_data;
+		std::vector<entry_t> ret_data;
+	public:
+		umap_direct(size_t no_objects, size_t no_features) :
+			no_objects(no_objects),
+			no_features(no_features),
+			umap_in_data(std::make_unique_for_overwrite<VALUE_T[]>(no_objects* no_features))
+		{
+
+		}
+
+		void add(size_t object_idx, size_t feature_idx, const VALUE_T value)
+		{
+			umap_in_data[object_idx * no_features + feature_idx] = value;
+		}
+
+		void run(size_t no_dimensions = 2)
+		{
+			umappp::Umap um;
+
+			um.set_local_connectivity(params.local_connectivity);
+			um.set_bandwidth(params.bandwidth);
+			um.set_mix_ratio(params.mix_ratio);
+			um.set_spread(params.spread);
+			um.set_min_dist(params.min_dist);
+			um.set_a(params.a);
+			um.set_b(params.b);
+			um.set_repulsion_strength(params.repulsion_strength);
+			um.set_initialize(params.initialize);
+			um.set_num_epochs(params.num_epochs);
+			um.set_learning_rate(params.learning_rate);
+			um.set_negative_sample_rate(params.negative_sample_rate);
+			um.set_num_neighbors(params.num_neighbors);
+			um.set_seed(params.seed);
+			um.set_num_threads(params.num_threads);
+			um.set_parallel_optimization(params.parallel_optimization);
+
+
+			// Prepare space for UMAP results
+			umap_out_data.resize(no_dimensions * no_objects);
+
+			// Run UMAP
+			um.run(no_features, no_objects, umap_in_data.get(), no_dimensions, umap_out_data.data());
+
+			ret_data.clear();
+			ret_data.shrink_to_fit();
+			ret_data.resize(no_objects);
+
+			size_t k = 0;
+			for (size_t i = 0; i < no_objects; ++i)
+				for (size_t j = 0; j < no_dimensions; ++j)
+					ret_data[i].emplace_back(umap_out_data[k++]);
 		}
 
 		std::vector<std::vector<VALUE_T>>& result()
