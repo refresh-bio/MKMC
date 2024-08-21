@@ -311,6 +311,8 @@ void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGl
 	{
 		auto bin = matrixReader->GetBin(taskData.binId);
 
+		//mkokot_TODO: maybe we can just use kmer_idx, this would make this method
+		//even more similar to processEntries, so maybe easier to refactor...
 		uint64_t dataIdx = binsIndicesForCorrection[taskData.binId];
 		const uint64_t dataIdxEnd = binsIndicesForCorrection[taskData.binId + 1];
 
