@@ -25,6 +25,26 @@
 #include "kmcdb/kmcdb.h"
 #include "refresh/statistics/lib/statistics_normalization.h"
 
+inline void StoreTotCnt(std::vector<std::vector<uint64>>& tot_cnts,
+	const std::vector<std::string>& sample_names,
+	const Params& params)
+{
+	//reduce
+	for (size_t i = 1; i < tot_cnts.size(); ++i)
+		for (size_t sample_id = 0; sample_id < tot_cnts.front().size(); ++sample_id)
+			tot_cnts[0][sample_id] += tot_cnts[i][sample_id];
+
+	DumpWriter writer(params.mkmcParams.outputFileTotCnt, false);
+	writer.StoreHeader(sample_names, "measure");
+
+	std::string first_col = "tot_cnt";
+	auto first_col_len = first_col.length();
+
+	auto max_line_len = first_col_len + 1 + params.mkmcParams.samples.size() * (refresh::numeric_conversion_max_length<uint64_t>() + 1);
+	OutputBuffer out(writer, max_line_len);
+	out.StoreKmer(first_col, tot_cnts[0], StoreMethods::AsMatrixRow);
+}
+
 template<unsigned SIZE>
 class Dump
 {
@@ -59,7 +79,7 @@ class Dump
 	void serializeNormalizationAndDump();
 
 	template<typename Generators_T, typename Filters_T>
-	void dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
+	void dumpToFile(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
 
 public:
 	Dump(const Params& params) :
@@ -76,14 +96,14 @@ public:
 	void dumpToFileParallel();
 
 	template<typename Generators_T>
-	void operator()();
+	void operator()(std::vector<uint64_t>& tot_cnts);
 };
 
 
 
 template<unsigned SIZE>
 template<typename Generators_T, typename Filters_T>
-void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
+void Dump<SIZE>::dumpToFile(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
 {
 	std::vector<KMCFileWrapper<SIZE>> samples;
 	for (size_t sample_id = 0; sample_id < params.mkmcParams.kmcOutputFiles.size(); ++sample_id)
@@ -160,6 +180,9 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 				{
 					if (filter.keepKMer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts }))
 					{
+						for (size_t i = 0; i < kMersCounts.size(); ++i)
+							tot_cnts[i] += kMersCounts[i];
+
 						fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 						normalizationLearning.add_entry(kMersCounts);
 					}
@@ -174,6 +197,9 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, StatisticsParams::NormalizationLearn
 
 	if (filter.keepKMer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts }))
 	{
+		for (size_t i = 0; i < kMersCounts.size(); ++i)
+			tot_cnts[i] += kMersCounts[i];
+
 		fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
 		normalizationLearning.add_entry(kMersCounts);
 	}
@@ -309,13 +335,22 @@ void Dump<SIZE>::dumpToFileParallel()
 
 	std::vector<std::thread> threads(params.mkmcParams.nThreads);
 
+	std::vector<std::string> sampleNames;
+	sampleNames.reserve(params.mkmcParams.samples.size());
+	for (const auto& sample : params.mkmcParams.samples)
+		sampleNames.push_back(sample.name);
+
+	std::vector<std::vector<uint64_t>> tot_cnts(params.mkmcParams.nThreads,
+		std::vector<uint64_t>(sampleNames.size()));
+
 	if (params.mkmcParams.outputFileTypes.empty())
 	{
 		using Generators_T = PerformGenerate<BinFileGenerator>;
 		Generators_T::initWriters(params, config);
 		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 		{
-			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+			threads[i_thred] = std::thread([this, &tot_cnts_thread = tot_cnts[i_thred]]
+				{ this->operator() < Generators_T > (tot_cnts_thread); });
 		}
 
 		for (std::thread& thread : threads)
@@ -330,7 +365,8 @@ void Dump<SIZE>::dumpToFileParallel()
 		Generators_T::initWriters(params, config);
 		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 		{
-			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+			threads[i_thred] = std::thread([this, &tot_cnts_thread = tot_cnts[i_thred]]
+				{ this->operator() < Generators_T > (tot_cnts_thread); });
 		}
 
 		for (std::thread& thread : threads)
@@ -345,7 +381,8 @@ void Dump<SIZE>::dumpToFileParallel()
 		Generators_T::initWriters(params, config);
 		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 		{
-			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+			threads[i_thred] = std::thread([this, &tot_cnts_thread = tot_cnts[i_thred]]
+				{ this->operator() < Generators_T > (tot_cnts_thread); });
 		}
 
 		for (std::thread& thread : threads)
@@ -360,7 +397,8 @@ void Dump<SIZE>::dumpToFileParallel()
 		Generators_T::initWriters(params, config);
 		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 		{
-			threads[i_thred] = std::thread([this] { this->operator() < Generators_T > (); });
+			threads[i_thred] = std::thread([this, &tot_cnts_thread = tot_cnts[i_thred]]
+				{ this->operator() < Generators_T > (tot_cnts_thread); });
 		}
 		
 		for (std::thread& thread : threads)
@@ -369,7 +407,7 @@ void Dump<SIZE>::dumpToFileParallel()
 		}
 		Generators_T::closeWriters();
 	}
-
+	StoreTotCnt(tot_cnts, sampleNames, params);
 	if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
 		serializeNormalizationAndDump();
 }
@@ -377,7 +415,7 @@ void Dump<SIZE>::dumpToFileParallel()
 
 template<unsigned SIZE>
 template<typename Generators_T>
-void Dump<SIZE>::operator()()
+void Dump<SIZE>::operator()(std::vector<uint64_t>& tot_cnts)
 {
 	Generators_T fileGenerators(params);
 	TaskData taskData;
@@ -399,12 +437,12 @@ void Dump<SIZE>::operator()()
 		{
 			assert(sequencesToFilterReader);
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
-			dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, fileGenerators, sequencesToFilterReader->GetBin(taskData.binId));
+			dumpToFile<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearnings, fileGenerators, sequencesToFilterReader->GetBin(taskData.binId));
 		}
 		else
 		{
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
-			dumpToFile<Generators_T, Filters>(taskData.binId, currentBinNormalizationLearnings, fileGenerators, nullptr);
+			dumpToFile<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearnings, fileGenerators, nullptr);
 		}
 		normalizationLearningMutex.lock();
 		normalizationLearning.merge_with(&currentBinNormalizationLearnings, &currentBinNormalizationLearnings + 1);

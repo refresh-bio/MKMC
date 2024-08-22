@@ -113,6 +113,8 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputFileANOVACorSignificantFasta = mkmcParams.outputFilesTemplate + "_anova_cor_significant.fa";
 
 	mkmcParams.outputFileUMAP = mkmcParams.outputFilesTemplate + "_umap";
+
+	mkmcParams.outputFileTotCnt = mkmcParams.outputFilesTemplate + "_tot_cnt";
 }
 
 

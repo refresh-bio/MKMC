@@ -91,6 +91,8 @@ struct MKMCParams
 
 	std::string outputFileUMAP;
 
+	std::string outputFileTotCnt;
+
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
 	uint32_t nKMCWorkers = 4;
 	uint32_t maxRamGB = 16;
