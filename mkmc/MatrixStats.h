@@ -70,7 +70,7 @@ public:
 		auto id = archive.get_stream_id(name);
 		if (id == -1)
 			return false;
-		size_t meta;
+		uint64_t meta;
 		if (!archive.get_part(id, data, meta))
 			throw std::runtime_error("Cannot read data from stream: " + name);
 
