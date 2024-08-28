@@ -168,7 +168,7 @@ struct DefaultKMCParams
 
 struct Phenotypes
 {
-	PhenotypeReader<int64_t> correlationPhenotype;
+	PhenotypeReader<double> correlationPhenotype;
 	DifferentialAnalysisPhenotypeReader differentialAnalysisPhenotype; 
 };
 

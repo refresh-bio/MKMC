@@ -64,7 +64,7 @@ class StatisticsGenerator
 
 	std::vector<uint8_t> normalizationData;
 
-	const std::vector<int64_t>& correlationPhenotype;
+	const std::vector<double>& correlationPhenotype;
 	const std::vector<uint32_t>& differentialAnalysisPhenotype;
 	size_t differentialAnalysisNClasses;
 
