@@ -514,7 +514,7 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 		kendallOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
 
 		if (mainWritingGatherer.params.statisticsParams.nTop)
-			keepNLargestCollection.spearman->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+			keepNLargestCollection.kendall->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 	}
 
 	if (mainWritingGatherer.statisticsToGeneration.entropy)
