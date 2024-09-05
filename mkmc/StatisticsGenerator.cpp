@@ -309,8 +309,8 @@ void StatisticsGenerator::generateStatisticsParallel()
 
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
-				threads[i_thred] = std::thread([this, &SIZE, &keepNLargestCollectionGlobal, &umap]
-					{ this->processEntriesAfterCorrection<SIZE>(keepNLargestCollectionGlobal, umap.get()); });
+				threads[i_thred] = std::thread([this, &keepNLargestCollectionGlobal, &umap]
+					{ this->processEntriesAfterCorrection<decltype(SIZE)::value>(keepNLargestCollectionGlobal, umap.get()); });
 			}
 			for (std::thread& thread : threads)
 			{
@@ -342,8 +342,8 @@ void StatisticsGenerator::generateStatisticsParallel()
 			std::vector<std::thread> threads(params.mkmcParams.nThreads);
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
-				threads[i_thred] = std::thread([this, &SIZE, &keepNLargestCollectionGlobal,&umap]
-					{ this->processEntries<SIZE>(keepNLargestCollectionGlobal, umap.get()); });
+				threads[i_thred] = std::thread([this, &keepNLargestCollectionGlobal,&umap]
+					{ this->processEntries<decltype(SIZE)::value>(keepNLargestCollectionGlobal, umap.get()); });
 			}
 			for (std::thread& thread : threads)
 			{
