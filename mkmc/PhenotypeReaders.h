@@ -96,7 +96,6 @@ void PhenotypeReader<Phenotype_T>::readPhenotype()
 		exit(1);
 	}
 
-	//@Maciej: I have changed it this way because params was incomplete type here, I
 	auto no_samples = PhenotypeReaderHelpers::get_no_samples(params);
 	if (phenotype.size() != no_samples)
 	{

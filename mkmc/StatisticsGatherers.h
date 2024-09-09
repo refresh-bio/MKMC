@@ -311,8 +311,7 @@ class WritingGathererBin
 
 	size_t getMaxLineLength() const
 	{
-		//return kmerLength + 1 + refresh::numeric_conversion_max_length<Statistics_T>();
-		return kmerLength + 1 + refresh::numeric_conversion_max_length<Statistics_T>() + 1; //@Maciej: I have added 1 since we also store EOL after value, right?
+		return kmerLength + 1 + refresh::numeric_conversion_max_length<Statistics_T>() + 1; //+ 1 since we also store EOL after value
 	}
 
 	size_t getMaxLineLengthForFasta() const

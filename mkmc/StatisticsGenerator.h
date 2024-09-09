@@ -78,7 +78,6 @@ class StatisticsGenerator
 
 	size_t getMaxNormLineLength() const
 	{
-		//@Maciej: I have added 1 after k-mer len as a separator
 		return params.stage1Params.GetKmerLen() + 1 + params.mkmcParams.samples.size() * (refresh::numeric_conversion_max_length<out_kmcdb_value_type>() + 1);
 	}
 
