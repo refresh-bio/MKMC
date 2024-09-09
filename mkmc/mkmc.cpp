@@ -66,7 +66,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	stage1Params.SetCutoffMax(defaultKMCParams.cx);
 	stage1Params.SetCounterMax(defaultKMCParams.cs);
 
-	CLI::Option* p = nullptr, * n = nullptr, * cor = nullptr, * differentialAnalysis = nullptr, * c = nullptr;
+	CLI::Option* p = nullptr, * n = nullptr, * cor = nullptr, * differentialAnalysis = nullptr, *pvalCorr, * c = nullptr;
 
 	app.add_option("input_samples_file", mkmcParams.inputFileName, "file with a list of samples names with input files names in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
 	app.add_option("output_files", mkmcParams.outputFilesTemplate, "file where the matrix of k-mers counts or FASTA file will be dumped")->required();
@@ -78,15 +78,20 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	app.add_option_function("-k", kCallback, "k-mer length")->check(CLI::Range(KMC::CfgConsts::min_k, KMC::CfgConsts::max_k))->default_val(defaultKMCParams.k);
 
-	app.add_option("--thr", filterParams.minCountThreshold, "filter out k-mers occuring less than specified number of times...")->check(CLI::PositiveNumber)->default_val(filterParams.minCountThreshold);
-	app.add_option("--thr_rat", filterParams.minKmersAboveThresholdRatio, "... in a specified ratio of the input files (see example)")->check(CLI::Range(0.0, 1.0))->default_val(filterParams.minKmersAboveThresholdRatio);
+	app.add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy");
+
+	app.add_option("--n_top", statisticsParams.nTop, "select a number of top k-mers (for correlations using an absolute value)")->default_val(statisticsParams.nTop); // needs --corr or --diff
+
+	CLI::Option_group* filteringGroup = app.add_option_group("k-mers filtering");
+	filteringGroup->add_option("--thr", filterParams.minCountThreshold, "filter out k-mers occuring less than specified number of times...")->check(CLI::PositiveNumber)->default_val(filterParams.minCountThreshold);
+	filteringGroup->add_option("--thr_rat", filterParams.minKmersAboveThresholdRatio, "... in a specified ratio of the input files (see example)")->check(CLI::Range(0.0, 1.0))->default_val(filterParams.minKmersAboveThresholdRatio);
 
 	std::function<void(const decltype(filterParams.inputKmersSequencesToFilterOut)&)> fltCallback = [&](const decltype(filterParams.inputKmersSequencesToFilterOut)& fileName)
 	{
 		filterParams.inputKmersSequencesToFilterOut = fileName;
 		filterParams.filterKmersSequences = true;
 	};
-	app.add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only")->check(CLI::ExistingFile);
+	filteringGroup->add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only")->check(CLI::ExistingFile);
 
 	std::map<std::string, StatisticsParams::NormalizationMethod> valuesMap{ {"deseq", StatisticsParams::NormalizationMethod::deseq2}, {"freq", StatisticsParams::NormalizationMethod::frequency_count }, {"q", StatisticsParams::NormalizationMethod::quantile } };
 	std::function<void(const decltype(statisticsParams.normalizationMethod)&)> nCallback = [&](const decltype(statisticsParams.normalizationMethod)& normalizationMethod)
@@ -94,22 +99,23 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 		statisticsParams.normalizationMethod = normalizationMethod;
 		statisticsParams.generateNormalization = true;
 	};
-	n = app.add_option_function("-n", nCallback, "generate normalized counts (DESeq2/frequency count/quantile normalization)")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
+
+	CLI::Option_group* correlationGroup = app.add_option_group("correlation and normalization");
+	n = correlationGroup->add_option_function("-n", nCallback, "generate normalized counts (DESeq2/frequency count/quantile normalization)")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
 
 	std::map<std::string, StatisticsParams::CorrelationMethod> correlationValuesMap{ {"pearson", StatisticsParams::CorrelationMethod::Pearson }, { "spearman", StatisticsParams::CorrelationMethod::Spearman }, {"kendall", StatisticsParams::CorrelationMethod::Kendall } };
-	cor = app.add_option("--cor", statisticsParams.correlationMethods, "compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
+	cor = correlationGroup->add_option("--cor", statisticsParams.correlationMethods, "compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
 
 	std::function<void(const std::string&)> pCallback = [&](const std::string& fileName)
 	{
 		phenotypes.correlationPhenotype.setFileName(fileName);
 	};
-	p = app.add_option_function("-p", pCallback, "set a phenotype file (a set of integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
+	p = correlationGroup->add_option_function("-p", pCallback, "set a phenotype file (a set of integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
 
-	app.add_option("--n_top", statisticsParams.nTop, "select top_n k-mers (for correlations using absolute value)")->default_val(statisticsParams.nTop);
-
+	CLI::Option_group* diffGroup = app.add_option_group("differential k-mers analysis");
 	typedef StatisticsParams::DifferentialAnalysisMethod DAMethod;
 	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"ttest", DAMethod::TTest }, {"snr", DAMethod::SNR }, {"wrs", DAMethod::WilcoxonRankSum }, {"dids", DAMethod::DIDS }, {"anova", DAMethod::ANOVA } };
-	differentialAnalysis = app.add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
+	differentialAnalysis = diffGroup->add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
 
 	typedef StatisticsParams::DifferentialAnalysisCorrectionMethod CorrectionMethod;
 	std::map<std::string, StatisticsParams::DifferentialAnalysisCorrectionMethod> differentialAnalysisCorrectionValuesMap{ { "b", CorrectionMethod::Bonferroni }, { "hb", CorrectionMethod::HolmBonferroni }, { "bh", CorrectionMethod::BenjaminiHochberg }, { "by", CorrectionMethod::BenjaminiYekutieli } };
@@ -118,47 +124,47 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 		statisticsParams.classificationPValueCorrection = classificationPValueCorrection;
 		statisticsParams.correctPvalues = true;
 	};
-	app.add_option_function("--pcorr", pcorrCallback, "correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni)")->transform(CLI::CheckedTransformer(differentialAnalysisCorrectionValuesMap))->needs(differentialAnalysis);
+	pvalCorr = diffGroup->add_option_function("--pval_corr", pcorrCallback, "correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni)")->transform(CLI::CheckedTransformer(differentialAnalysisCorrectionValuesMap))->needs(differentialAnalysis);
 
-	app.add_option("--max_corrected_pval", statisticsParams.maxCorrectedPval, "if --pcorr is used significant k-mers (with corrected p-val <= max_corrected_pval) are also stored in separate files")->check(CLI::Range(0.0, 1.0))->default_val(statisticsParams.maxCorrectedPval);
+	diffGroup->add_option("--max_corrected_pval", statisticsParams.maxCorrectedPval, "significant k-mers (with corrected p-val <= max_corrected_pval) are stored also in additional files")->check(CLI::Range(0.0, 1.0))->default_val(statisticsParams.maxCorrectedPval)->needs(pvalCorr);
 
 	std::function<void(const std::string&)> cCallback = [&](const std::string& fileName)
 	{
 		phenotypes.differentialAnalysisPhenotype.setFileName(fileName);
 	};
-	c = app.add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
+	c = diffGroup->add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
+	
+	CLI::Option_group* umapGroup = app.add_option_group("dimentionality reduction with UMAP algorithm");
 
-	app.add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy")->default_val(statisticsParams.generateEntropy);
+	auto umap = umapGroup->add_flag("--umap", statisticsParams.runUMAP, "run dimentionality reduction on normalized matrix with UMAP")->needs(n);
 
-	auto umap = app.add_flag("--umap", statisticsParams.runUMAP, "run umap on normalized matrix")->needs(n);
+	umapGroup->add_option("--umap-dimensions", statisticsParams.umap_dimensions, "number of output dimensions")->needs(umap)->default_val(statisticsParams.umap_dimensions);
 
-	app.add_option("--umap-dimensions", statisticsParams.umap_dimensions, "number of dimension for umap")->needs(umap)->default_val(statisticsParams.umap_dimensions);
+	umapGroup->add_option("--umap-local_connectivity", statisticsParams.umap_params.local_connectivity, "local_connectivity parameter")->needs(umap)->default_val(statisticsParams.umap_params.local_connectivity);
+	umapGroup->add_option("--umap-bandwidth", statisticsParams.umap_params.bandwidth, "bandwidth parameter")->needs(umap)->default_val(statisticsParams.umap_params.bandwidth);
 
-	app.add_option("--umap-local_connectivity", statisticsParams.umap_params.local_connectivity, "local_connectivity parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.local_connectivity);
-	app.add_option("--umap-bandwidth", statisticsParams.umap_params.bandwidth, "bandwidth parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.bandwidth);
-
-	app.add_option("--umap-mix_ratio", statisticsParams.umap_params.mix_ratio, "mix_ratio parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.mix_ratio);
-	app.add_option("--umap-spread", statisticsParams.umap_params.spread, "spread parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.spread);
-	app.add_option("--umap-min_dist", statisticsParams.umap_params.min_dist, "min_dist parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.min_dist);
-	app.add_option("--umap-a", statisticsParams.umap_params.a, "a parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.a);
-	app.add_option("--umap-b", statisticsParams.umap_params.b, "b parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.b);
-	app.add_option("--umap-repulsion_strength", statisticsParams.umap_params.repulsion_strength, "repulsion_strength parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.repulsion_strength);
+	umapGroup->add_option("--umap-mix_ratio", statisticsParams.umap_params.mix_ratio, "mix_ratio parameter")->needs(umap)->default_val(statisticsParams.umap_params.mix_ratio);
+	umapGroup->add_option("--umap-spread", statisticsParams.umap_params.spread, "spread parameter")->needs(umap)->default_val(statisticsParams.umap_params.spread);
+	umapGroup->add_option("--umap-min_dist", statisticsParams.umap_params.min_dist, "min_dist parameter")->needs(umap)->default_val(statisticsParams.umap_params.min_dist);
+	umapGroup->add_option("--umap-a", statisticsParams.umap_params.a, "a parameter")->needs(umap)->default_val(statisticsParams.umap_params.a);
+	umapGroup->add_option("--umap-b", statisticsParams.umap_params.b, "b parameter")->needs(umap)->default_val(statisticsParams.umap_params.b);
+	umapGroup->add_option("--umap-repulsion_strength", statisticsParams.umap_params.repulsion_strength, "repulsion_strength parameter")->needs(umap)->default_val(statisticsParams.umap_params.repulsion_strength);
 
 	std::map<std::string, umappp::InitMethod> umapInitMethodValuesMap{ { "spectral", umappp::InitMethod::SPECTRAL }, { "spectral_only", umappp::InitMethod::SPECTRAL_ONLY }, { "random", umappp::InitMethod::RANDOM }, { "none", umappp::InitMethod::NONE } };
 
-	app.add_option("--umap-initialize", statisticsParams.classificationMethods, "initialize parameter of umap")->transform(CLI::CheckedTransformer(umapInitMethodValuesMap))->needs(umap);
-	app.add_option("--umap-num_epochs", statisticsParams.umap_params.num_epochs, "num_epochs parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.num_epochs);
-	app.add_option("--umap-learning_rate", statisticsParams.umap_params.learning_rate, "learning_rate parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.learning_rate);
+	umapGroup->add_option("--umap-initialize", statisticsParams.classificationMethods, "initialize parameter")->transform(CLI::CheckedTransformer(umapInitMethodValuesMap))->needs(umap);
+	umapGroup->add_option("--umap-num_epochs", statisticsParams.umap_params.num_epochs, "num_epochs parameter")->needs(umap)->default_val(statisticsParams.umap_params.num_epochs); // default -1
+	umapGroup->add_option("--umap-learning_rate", statisticsParams.umap_params.learning_rate, "learning_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.learning_rate);
 
-	app.add_option("--umap-negative_sample_rate", statisticsParams.umap_params.negative_sample_rate, "negative_sample_rate parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.negative_sample_rate);
-	app.add_option("--umap-seed", statisticsParams.umap_params.seed, "seed parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.seed);
+	umapGroup->add_option("--umap-negative_sample_rate", statisticsParams.umap_params.negative_sample_rate, "negative_sample_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.negative_sample_rate);
+	umapGroup->add_option("--umap-seed", statisticsParams.umap_params.seed, "seed parameter")->needs(umap)->default_val(statisticsParams.umap_params.seed);
 
 	//this will be set with the "main" or "global" number of threads
-	//app.add_option("--umap-num_threads", statisticsParams.umap_params.num_threads, "num_threads parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.num_threads);
+	//umapGroup->add_option("--umap-num_threads", statisticsParams.umap_params.num_threads, "num_threads parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.num_threads);
 
-	app.add_option("--umap-parallel_optimization", statisticsParams.umap_params.parallel_optimization, "num_threads parameter of parallel_optimization")->needs(umap)->default_val(statisticsParams.umap_params.parallel_optimization);
+	umapGroup->add_option("--umap-parallel_optimization", statisticsParams.umap_params.parallel_optimization, "parallel_optimization parameter")->needs(umap)->default_val(statisticsParams.umap_params.parallel_optimization);
 
-	CLI::Option_group* optionalGroup = app.add_option_group("optional parameters");
+	CLI::Option_group* optionalGroup = app.add_option_group("additional parameters");
 
 	std::map<std::string, KMC::InputFileType> inputValuesMap{ {"fa", KMC::InputFileType::FASTA }, {"fq", KMC::InputFileType::FASTQ }, { "mf", KMC::InputFileType::MULTILINE_FASTA } };
 	optionalGroup->add_option("-f", mkmcParams.inputFileType, "input format (FASTA, FASTQ or multi-FASTA); mixing files is not supported")->transform(CLI::CheckedTransformer(inputValuesMap, CLI::ignore_case))->default_val(mkmcParams.inputFileType)->default_str("fq");

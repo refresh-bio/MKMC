@@ -23,18 +23,48 @@ Positionals:
 Options:
  - `-h,--help` - Print this help message and exit
  - `-k UINT:UINT in [1 - 256] [25]` - k-mer length
+ - `--entropy` - generate k-mers counts entropy
+ - `--n_top UINT [10000]` - select a number of top k-mers (for correlations using an absolute value)
+ 
+[Option Group: k-mers filtering]
+  Options:
  - `--thr UINT:POSITIVE [1]` -  filter out k-mers occuring less than specified number of times...
  - `--thr_rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
  - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only
+ 
+[Option Group: correlation and normalization]
+  Options:
  - `-n ENUM:value in {deseq,freq,q}` - generate normalized counts (DESeq2/frequency count/quantile normalization)
  - `--cor ENUM:value in {kendall,pearson,spearman}` Needs: `-n` `-p` - compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a set of integers, one in each line)
+ 
+[Option Group: differential k-mers analysis]
+  Options:
  - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` Needs: `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))
- - `--pcorr ENUM:value in {b,bh,by,hb}` Needs: `-diff` - correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni)
+ - `--pval_corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni)
+ - `--max_corrected_pval FLOAT:FLOAT in [0 - 1] [0.05]` Needs: `--pval_corr` - significant k-mers (with corrected p-val <= max_corrected_pval) are stored also in additional files
  - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)
- - `--entropy` - generate k-mers counts entropy
 
-[Option Group: optional parameters]
+[Option Group: dimentionality reduction with UMAP algorithm]
+  Options:
+ - `--umap` Needs: `-n` - run dimentionality reduction on normalized matrix with UMAP
+ - `--umap-dimensions UINT [2]` Needs: `--umap` - number of output dimensions
+ - `--umap-local_connectivity FLOAT [1]` Needs: `--umap` - local_connectivity parameter
+ - `--umap-bandwidth FLOAT [1]` Needs: `--umap` - `bandwidth` parameter
+ - `--umap-mix_ratio FLOAT [1]` Needs: `--umap` - `mix_ratio` parameter
+ - `--umap-spread FLOAT [1]` Needs: `--umap` - `spread` parameter
+ - `--umap-min_dist FLOAT [0.01]` Needs: `--umap` - `min_dist` parameter
+ - `--umap-a FLOAT [0]` Needs: `--umap` - `a` parameter
+ - `--umap-b FLOAT [0]` Needs: `--umap` - `b` parameter
+ - `--umap-repulsion_strength FLOAT [1]` Needs: `--umap` - `repulsion_strength` parameter
+ - `--umap-initialize ENUM:value in {none,random,spectral,spectral_only}` Needs: `--umap` - `initialize` parameter
+ - `--umap-num_epochs INT [-1]` Needs: `--umap` - `num_epochs` parameter
+ - `--umap-learning_rate FLOAT [1]` Needs: `--umap` - `learning_rate` parameter
+ - `--umap-negative_sample_rate FLOAT [5]` Needs: `--umap` - `negative_sample_rate` parameter
+ - `--umap-seed UINT [1234567890]` Needs: `--umap` - `seed` parameter
+ - `--umap-parallel_optimization INT [0]` Needs: `--umap` - `parallel_optimization` parameter
+
+[Option Group: additional parameters]
   Options:	
  - `-f ENUM:value in {fa,fq,mf} [fq]` - input format (FASTA, FASTQ or multi-FASTA); mixing files is not supported
  - `-o ENUM:value in {fa,matrix} [matrix]  ...` - output format (FASTA or matrix)
