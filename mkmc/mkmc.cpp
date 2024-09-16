@@ -33,7 +33,7 @@ public:
 	template<unsigned SIZE>
 	void Run()
 	{
-		std::vector<std::string> tasks = { params.mkmcParams.outputBinFile };
+		std::vector<std::string> tasks = { params.mkmcParams.outputMatrixBinFile };
 		const auto& outputFileTypes = params.mkmcParams.outputFileTypes;
 		if (std::find(outputFileTypes.begin(), outputFileTypes.end(), OutputFileType::Matrix) != outputFileTypes.end())
 			tasks.push_back(params.mkmcParams.outputMatrixFile);
@@ -93,14 +93,14 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	filteringGroup->add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only")->check(CLI::ExistingFile);
 
+	CLI::Option_group* correlationGroup = app.add_option_group("correlation and normalization");
+
 	std::map<std::string, StatisticsParams::NormalizationMethod> valuesMap{ {"deseq", StatisticsParams::NormalizationMethod::deseq2}, {"freq", StatisticsParams::NormalizationMethod::frequency_count }, {"q", StatisticsParams::NormalizationMethod::quantile } };
 	std::function<void(const decltype(statisticsParams.normalizationMethod)&)> nCallback = [&](const decltype(statisticsParams.normalizationMethod)& normalizationMethod)
 	{
 		statisticsParams.normalizationMethod = normalizationMethod;
 		statisticsParams.generateNormalization = true;
 	};
-
-	CLI::Option_group* correlationGroup = app.add_option_group("correlation and normalization");
 	n = correlationGroup->add_option_function("-n", nCallback, "generate normalized counts (DESeq2/frequency count/quantile normalization)")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
 
 	std::map<std::string, StatisticsParams::CorrelationMethod> correlationValuesMap{ {"pearson", StatisticsParams::CorrelationMethod::Pearson }, { "spearman", StatisticsParams::CorrelationMethod::Spearman }, {"kendall", StatisticsParams::CorrelationMethod::Kendall } };

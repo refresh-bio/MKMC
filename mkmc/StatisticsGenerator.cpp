@@ -9,7 +9,7 @@ void StatisticsGenerator::openReaders()
 {
 	try
 	{
-		matrixMetadataReader = std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.outputBinFile, false);
+		matrixMetadataReader = std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.outputMatrixBinFile, false);
 		matrixReader = std::make_unique<kmcdb::ReaderSortedPlainForListing<uint64_t>>(*matrixMetadataReader);
 	}
 	catch (const std::runtime_error& ex)
@@ -284,7 +284,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 		pValuesCorrectedData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsIndicesForCorrection.back()));
 		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred) // probably some threads will be idle
 		{
-			threads[i_thred] = std::thread([this,i_thred] { this->correctPValuesEntries(); });
+			threads[i_thred] = std::thread([this] { this->correctPValuesEntries(); });
 		}
 		for (std::thread& thread : threads)
 		{

@@ -728,6 +728,6 @@ void WritingGatherer<Statistics_T>::initWriting(
 		config,
 		representation_config,
 		params.mkmcParams.outputStatsBinFile,
-		params.mkmcParams.outputBinFile,
+		params.mkmcParams.outputMatrixBinFile,
 		sample_names);
 }

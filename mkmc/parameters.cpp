@@ -54,7 +54,7 @@ void Params::generateTempAndOutputFilesNames()
 	filterParams.kmersSequencesToFilterOutDB = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter";
 	mutableParams.kmersSequencesToFilterOut = mkmcParams.tmpPath + static_cast<char>(std::filesystem::path::preferred_separator) + "filter.fa";
 
-	mkmcParams.outputBinFile = mkmcParams.outputFilesTemplate + ".kmcdb";
+	mkmcParams.outputMatrixBinFile = mkmcParams.outputFilesTemplate + ".kmcdb";
 	mkmcParams.outputStatsBinFile = mkmcParams.outputFilesTemplate + "_norm+cor.kmcdb"; 
 	mkmcParams.outputMatrixFile = mkmcParams.outputFilesTemplate + "_matrix";
 	mkmcParams.outputFASTAFile = mkmcParams.outputFilesTemplate + ".fa";

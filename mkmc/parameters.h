@@ -31,7 +31,8 @@ struct MKMCParams
 	std::vector<std::string> kmcTmpDirs;
 
 	std::string outputFilesTemplate;
-	std::string outputBinFile;
+
+	std::string outputMatrixBinFile;
 	std::string outputStatsBinFile;
 	std::string outputFASTAFile;
 	std::string outputMatrixFile;

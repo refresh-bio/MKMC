@@ -57,7 +57,7 @@ public:
 				kmcDBWriter = new kmcdb::WriterSortedPlain<uint64_t>(
 					config,
 					representation_config,
-					params.mkmcParams.outputBinFile,
+					params.mkmcParams.outputMatrixBinFile,
 					"",
 					sample_names);
 			}
