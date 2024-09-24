@@ -558,7 +558,7 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 			{
 				if (value <= maxCorrectedPval)
 				{
-					wilcoxonRankSumOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+					wilcoxonRankSumSignificantOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
 					wilcoxonRankSumSignificantCntMatrixOutputBuffer->StoreKmer(kmerSeq, original_counts, StoreMethods::AsMatrixRow);
 					wilcoxonRankSumSignificantFastaOutputBuffer->StoreKmer(kmerSeq, original_counts, StoreMethods::AsFastaRecord);
 				}
