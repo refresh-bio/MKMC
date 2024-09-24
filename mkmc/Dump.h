@@ -407,7 +407,9 @@ void Dump<SIZE>::dumpToFileParallel()
 		}
 		Generators_T::closeWriters();
 	}
-	StoreTotCnt(tot_cnts, sampleNames, params);
+	if (params.mkmcParams.totCntGeneration)
+		StoreTotCnt(tot_cnts, sampleNames, params);
+
 	if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
 		serializeNormalizationAndDump();
 }

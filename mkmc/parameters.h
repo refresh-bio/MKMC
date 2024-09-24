@@ -92,6 +92,7 @@ struct MKMCParams
 
 	std::string outputFileUMAP;
 
+	bool totCntGeneration = false;
 	std::string outputFileTotCnt;
 
 	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());

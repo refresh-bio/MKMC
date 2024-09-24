@@ -17,7 +17,7 @@ The easiest way to get the program is to download the most recent version from t
 
 Positionals:
   - `input_samples_file TEXT:FILE REQUIRED` - file with a list of samples names with input files names in specified (`-f` parameter) format (gzipped or not)
-  - `output_files TEXT REQUIRED` - file where the matrix of k-mers counts or FASTA file will be dumped
+  - `output_files TEXT REQUIRED` - template (prefix) of output files names
   - `temp_dir TEXT:DIR REQUIRED` - a directory where temporary files will be stored
 
 Options:
@@ -25,6 +25,7 @@ Options:
  - `-k UINT:UINT in [1 - 256] [25]` - k-mer length
  - `--entropy` - generate k-mers counts entropy
  - `--n_top UINT [10000]` - select a number of top k-mers (for correlations using an absolute value)
+ - `--tot_cnt` - generate samples counts sums file
  
 [Option Group: k-mers filtering]
   Options:

@@ -69,7 +69,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	CLI::Option* p = nullptr, * n = nullptr, * cor = nullptr, * differentialAnalysis = nullptr, *pvalCorr, * c = nullptr;
 
 	app.add_option("input_samples_file", mkmcParams.inputFileName, "file with a list of samples names with input files names in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
-	app.add_option("output_files", mkmcParams.outputFilesTemplate, "file where the matrix of k-mers counts or FASTA file will be dumped")->required();
+	app.add_option("output_files", mkmcParams.outputFilesTemplate, "template (prefix) of output files names")->required();
 	app.add_option("temp_dir", mkmcParams.tmpPath, "a directory where temporary files will be stored")->required();
 
 	std::function<void(const uint32_t&)> kCallback = [&](const uint32_t& k)
@@ -81,6 +81,8 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	app.add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy");
 
 	app.add_option("--n_top", statisticsParams.nTop, "select a number of top k-mers (for correlations using an absolute value)")->default_val(statisticsParams.nTop); // needs --corr or --diff
+
+	app.add_flag("--tot_cnt", mkmcParams.totCntGeneration, "generate samples counts sums file");
 
 	CLI::Option_group* filteringGroup = app.add_option_group("k-mers filtering");
 	filteringGroup->add_option("--thr", filterParams.minCountThreshold, "filter out k-mers occuring less than specified number of times...")->check(CLI::PositiveNumber)->default_val(filterParams.minCountThreshold);
