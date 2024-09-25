@@ -12,19 +12,17 @@ The easiest way to get the program is to download the most recent version from t
 
 #### General usage:
 ```
-./mkmc [OPTIONS] input_samples_file output_files temp_dir
+./mkmc [OPTIONS] input_samples_file output_files_template temp_dir
 ```
 
 Positionals:
   - `input_samples_file TEXT:FILE REQUIRED` - file with a list of samples names with input files names in specified (`-f` parameter) format (gzipped or not)
-  - `output_files TEXT REQUIRED` - template (prefix) of output files names
+  - `output_files_template TEXT REQUIRED` - template (prefix) of output files names
   - `temp_dir TEXT:DIR REQUIRED` - a directory where temporary files will be stored
 
 Options:
  - `-h,--help` - Print this help message and exit
  - `-k UINT:UINT in [1 - 256] [25]` - k-mer length
- - `--entropy` - generate k-mers counts entropy
- - `--n_top UINT [10000]` - select a number of top k-mers (for correlations using an absolute value)
  - `--tot_cnt` - generate samples counts sums file
  
 [Option Group: k-mers filtering]
@@ -45,6 +43,11 @@ Options:
  - `--pval_corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni)
  - `--max_corrected_pval FLOAT:FLOAT in [0 - 1] [0.05]` Needs: `--pval_corr` - significant k-mers (with corrected p-val <= max_corrected_pval) are stored also in additional files
  - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)
+ 
+[Option Group: other statistical parameters]
+  Options:
+ - `--entropy` - generate k-mers counts entropy
+ - `--n_top UINT [10000]` - select a number of top k-mers (for correlations using an absolute value)
 
 [Option Group: dimentionality reduction with UMAP algorithm]
   Options:

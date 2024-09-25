@@ -69,7 +69,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	CLI::Option* p = nullptr, * n = nullptr, * cor = nullptr, * differentialAnalysis = nullptr, *pvalCorr, * c = nullptr;
 
 	app.add_option("input_samples_file", mkmcParams.inputFileName, "file with a list of samples names with input files names in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
-	app.add_option("output_files", mkmcParams.outputFilesTemplate, "template (prefix) of output files names")->required();
+	app.add_option("output_files_template", mkmcParams.outputFilesTemplate, "template (prefix) of output files names")->required();
 	app.add_option("temp_dir", mkmcParams.tmpPath, "a directory where temporary files will be stored")->required();
 
 	std::function<void(const uint32_t&)> kCallback = [&](const uint32_t& k)
@@ -77,10 +77,6 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 		stage1Params.SetKmerLen(k);
 	};
 	app.add_option_function("-k", kCallback, "k-mer length")->check(CLI::Range(KMC::CfgConsts::min_k, KMC::CfgConsts::max_k))->default_val(defaultKMCParams.k);
-
-	app.add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy");
-
-	app.add_option("--n_top", statisticsParams.nTop, "select a number of top k-mers (for correlations using an absolute value)")->default_val(statisticsParams.nTop); // needs --corr or --diff
 
 	app.add_flag("--tot_cnt", mkmcParams.totCntGeneration, "generate samples counts sums file");
 
@@ -135,6 +131,12 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 		phenotypes.differentialAnalysisPhenotype.setFileName(fileName);
 	};
 	c = diffGroup->add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
+
+	CLI::Option_group* otherStatsGroup = app.add_option_group("other statistical parameters");
+
+	otherStatsGroup->add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy");
+
+	otherStatsGroup->add_option("--n_top", statisticsParams.nTop, "select a number of top k-mers (for correlations using an absolute value)")->default_val(statisticsParams.nTop); // needs --corr or --diff
 	
 	CLI::Option_group* umapGroup = app.add_option_group("dimentionality reduction with UMAP algorithm");
 
