@@ -305,8 +305,6 @@ class WritingGathererBin
 	std::unique_ptr<OutputBuffer> anovaSignificantCntMatrixOutputBuffer;
 	std::unique_ptr<OutputBuffer> anovaSignificantFastaOutputBuffer;
 
-	kmcdb::BinWriterSortedPlain<Statistics_T>* outBin;
-
 	const StatisticsToGeneration& statisticsToGeneration;
 
 	size_t getMaxLineLength() const
@@ -378,8 +376,6 @@ class WritingGatherer
 		std::unique_ptr<DumpWriter> anovaSignificantFasta;
 	} writers;
 
-	std::unique_ptr<kmcdb::WriterSortedPlain<Statistics_T>> kmcdbWriter;
-
 	const StatisticsToGeneration& statisticsToGeneration;
 
 public:
@@ -420,7 +416,6 @@ WritingGathererBin<Statistics_T>::WritingGathererBin(WritingGatherer<Statistics_
 	kmerLength(kmerLength),
 	numSamples(numSamples),
 	maxCorrectedPval(maxCorrectedPval),
-	outBin(mainWritingGatherer.kmcdbWriter->GetBin(binId)),
 	statisticsToGeneration(statisticsToGeneration)
 {
 	if (statisticsToGeneration.pearson)
@@ -588,8 +583,6 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 			}
 		}
 	}
-
-	outBin->AddKmer(kmer, outEntry.data());
 }
 
 
@@ -723,11 +716,4 @@ void WritingGatherer<Statistics_T>::initWriting(
 	}
 
 	kmcdb::ConfigSortedPlain representation_config{};
-
-	kmcdbWriter = std::make_unique<kmcdb::WriterSortedPlain<Statistics_T>>(
-		config,
-		representation_config,
-		params.mkmcParams.outputStatsBinFile,
-		params.mkmcParams.outputMatrixBinFile,
-		sample_names);
 }

@@ -33,7 +33,6 @@ struct MKMCParams
 	std::string outputFilesTemplate;
 
 	std::string outputMatrixBinFile;
-	std::string outputStatsBinFile;
 	std::string outputFASTAFile;
 	std::string outputMatrixFile;
 	std::vector<OutputFileType> outputFileTypes;
