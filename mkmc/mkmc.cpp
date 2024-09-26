@@ -122,9 +122,9 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 		statisticsParams.classificationPValueCorrection = classificationPValueCorrection;
 		statisticsParams.correctPvalues = true;
 	};
-	pvalCorr = diffGroup->add_option_function("--pval_corr", pcorrCallback, "correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni)")->transform(CLI::CheckedTransformer(differentialAnalysisCorrectionValuesMap))->needs(differentialAnalysis);
+	pvalCorr = diffGroup->add_option_function("--pval_corr", pcorrCallback, "correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files")->transform(CLI::CheckedTransformer(differentialAnalysisCorrectionValuesMap))->needs(differentialAnalysis);
 
-	diffGroup->add_option("--max_corrected_pval", statisticsParams.maxCorrectedPval, "significant k-mers (with corrected p-val <= max_corrected_pval) are stored also in additional files")->check(CLI::Range(0.0, 1.0))->default_val(statisticsParams.maxCorrectedPval)->needs(pvalCorr);
+	diffGroup->add_option("--max_corrected_pval", statisticsParams.maxCorrectedPval, "statistical significance for --pval_corr parameter")->check(CLI::Range(0.0, 1.0))->default_val(statisticsParams.maxCorrectedPval)->needs(pvalCorr);
 
 	std::function<void(const std::string&)> cCallback = [&](const std::string& fileName)
 	{
