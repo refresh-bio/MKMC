@@ -98,7 +98,6 @@ struct MKMCParams
 	uint32_t nKMCWorkers = 4;
 	uint32_t maxRamGB = 16;
 	bool maxRamGBUserDefined = false;
-	const uint32_t countSymbols = 10; // for 4G
 
 	uint32_t nKMCBins = 512;
 

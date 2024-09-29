@@ -202,7 +202,7 @@ public:
 		};
 
 		auto max_line_len_top = getMaxLineLength(params.stage1Params.GetKmerLen());
-		auto max_line_len_top_matrix = getMaxLineLengthForCntMatrix(params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size());
+		auto max_line_len_top_matrix = getMaxLineLengthForCntMatrix(params.stage1Params.GetKmerLen(), static_cast<uint32_t>(params.mkmcParams.samples.size()));
 		auto max_line_len_top_fasta = getMaxLineLengthForFasta(params.stage1Params.GetKmerLen());
 
 		flush_for(global.pearson,

@@ -88,7 +88,7 @@ class StatisticsGenerator
 	void processEntries(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
 		refresh::umap_direct<double>* umap);
 
-	void gatherPValuesEntriesToCorrection();
+	void createPValuesEntriesToCorrection();
 
 	void correctPValuesEntries();
 
@@ -177,7 +177,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 		std::string kmerSequence(kmer_len, ' ');
 
 		kmcdb::CKmer<SIZE> kmer;
-		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outBin = gatherer.getBin(taskData.binId);
+		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outGahtererBin = gatherer.getBin(taskData.binId);
 		for (auto kmer_idx = binsIndicesForCorrection[taskData.binId]; bin->NextKmer(kmer, inMatrixEntry.data()); ++kmer_idx)
 		{
 			kmer.to_string(kmer_len, kmerSequence.data());
@@ -291,7 +291,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 
 			++progress_bar_updater;
 
-			outBin->writeKmer(outEntry, kmer, kmerSequence, inMatrixEntry, keepNLargestCollection);
+			outGahtererBin->writeKmer(outEntry, kmer, kmerSequence, inMatrixEntry, keepNLargestCollection);
 		}
 	}
 	keepNLargestCollectionGlobal.Add(keepNLargestCollection);
@@ -347,7 +347,7 @@ void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGl
 		std::string kmerSequence(kmer_len, ' ');
 
 		kmcdb::CKmer<SIZE> kmer;
-		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outBin = gatherer.getBin(taskData.binId);
+		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outGathererBin = gatherer.getBin(taskData.binId);
 		for (auto kmer_idx = binsIndicesForCorrection[taskData.binId]; bin->NextKmer(kmer, inMatrixEntry.data()); ++kmer_idx)
 		{
 			kmer.to_string(kmer_len, kmerSequence.data());
@@ -447,7 +447,7 @@ void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGl
 			++dataIdx;
 			++progress_bar_updater;
 
-			outBin->writeKmer(outEntry, kmer, kmerSequence, inMatrixEntry, keepNLargestCollection);
+			outGathererBin->writeKmer(outEntry, kmer, kmerSequence, inMatrixEntry, keepNLargestCollection);
 		}
 
 		assert(dataIdx == dataIdxEnd);

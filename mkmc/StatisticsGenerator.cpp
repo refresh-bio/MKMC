@@ -111,7 +111,7 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 
 	statisticsToGeneration.differentialAnalysis = statisticsToGeneration.tTest || statisticsToGeneration.snr || statisticsToGeneration.wilcoxonRankSum || statisticsToGeneration.dids || statisticsToGeneration.anova;
 
-	statisticsToGeneration.nResults = statisticsToGeneration.nStatistics + (params.statisticsParams.generateNormalization ? params.mkmcParams.samples.size() : 0);
+	statisticsToGeneration.nResults = statisticsToGeneration.nStatistics + (params.statisticsParams.generateNormalization ? static_cast<uint32_t>(params.mkmcParams.samples.size()) : 0);
 
 	if (statisticsToGeneration.tTest)
 		++statisticsToGeneration.nStatisticsWithPValues;
@@ -126,7 +126,7 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 
 
 
-void StatisticsGenerator::gatherPValuesEntriesToCorrection()
+void StatisticsGenerator::createPValuesEntriesToCorrection()
 {
 	assert(statisticsToGeneration.differentialAnalysis);
 	TaskData taskData;
@@ -274,7 +274,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 		std::vector<std::thread> threads(params.mkmcParams.nThreads);
 		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 		{
-			threads[i_thred] = std::thread([this] { this->gatherPValuesEntriesToCorrection(); });
+			threads[i_thred] = std::thread([this] { this->createPValuesEntriesToCorrection(); });
 		}
 		for (std::thread& thread : threads)
 		{

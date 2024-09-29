@@ -184,6 +184,7 @@
     <ClInclude Include="KeepNLargests.h" />
     <ClInclude Include="KMCFileWrapper.h" />
     <ClInclude Include="KMCRunner.h" />
+    <ClInclude Include="Logger.h" />
     <ClInclude Include="PhenotypeReaders.h" />
     <ClInclude Include="MatrixStats.h" />
     <ClInclude Include="SequenceFilterInit.h" />
@@ -195,6 +196,7 @@
     <ClInclude Include="SamplesFileReader.h" />
     <ClInclude Include="TasksPool.h" />
     <ClInclude Include="time.hpp" />
+    <ClInclude Include="Version.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

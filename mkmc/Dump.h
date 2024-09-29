@@ -211,7 +211,7 @@ bool Dump<SIZE>::inputIsConsistent()
 {
 	if (samplesMetadata.empty())
 		return true;
-	uint32_t k = samplesMetadata.front()->GetConfig().kmer_len;
+	uint64_t k = samplesMetadata.front()->GetConfig().kmer_len;
 	uint64_t signatureLen = samplesMetadata.front()->GetConfig().signature_len;
 	auto signatureSelectionScheme = samplesMetadata.front()->GetConfig().signature_selection_scheme;
 	auto signatureToBinMapping = samplesMetadata.front()->GetConfig().signature_to_bin_mapping;
