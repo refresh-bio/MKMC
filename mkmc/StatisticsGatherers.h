@@ -33,7 +33,6 @@ struct StatisticsToGeneration
 
 	uint32_t nStatistics = 0;
 	uint32_t nStatisticsWithPValues = 0;
-	uint32_t nResults = 0; // sum of nStatistics and number of normalized samples
 };
 
 
@@ -485,7 +484,7 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 	const std::vector<VALUE_T>& original_counts,
 	KeepNLargestCollection<SIZE>& keepNLargestCollection)
 {
-	size_t valuesIdx = statisticsToGeneration.nResults - statisticsToGeneration.nStatistics;
+	size_t valuesIdx = 0;
 	if (mainWritingGatherer.statisticsToGeneration.pearson)
 	{
 		auto value = outEntry[valuesIdx++];
@@ -583,6 +582,7 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 			}
 		}
 	}
+	assert(valuesIdx == statisticsToGeneration.nStatistics);
 }
 
 

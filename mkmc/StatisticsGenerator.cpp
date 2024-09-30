@@ -111,8 +111,6 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 
 	statisticsToGeneration.differentialAnalysis = statisticsToGeneration.tTest || statisticsToGeneration.snr || statisticsToGeneration.wilcoxonRankSum || statisticsToGeneration.dids || statisticsToGeneration.anova;
 
-	statisticsToGeneration.nResults = statisticsToGeneration.nStatistics + (params.statisticsParams.generateNormalization ? static_cast<uint32_t>(params.mkmcParams.samples.size()) : 0);
-
 	if (statisticsToGeneration.tTest)
 		++statisticsToGeneration.nStatisticsWithPValues;
 	if (statisticsToGeneration.wilcoxonRankSum)

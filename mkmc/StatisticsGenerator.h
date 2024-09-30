@@ -165,11 +165,13 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 		refresh::scorers scorer;
 
 		std::vector<uint64_t> inMatrixEntry;
-		std::vector<out_kmcdb_value_type> outEntry; // normalized counts and statistics
+		std::vector<out_kmcdb_value_type> outNormEntry; // normalized stats
+		std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
 		std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
 
 		inMatrixEntry.resize(num_samples);
-		outEntry.resize(statisticsToGeneration.nResults);
+		outNormEntry.resize(num_samples);
+		outStatsEntry.resize(statisticsToGeneration.nStatistics);
 
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
@@ -184,50 +186,48 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 
 			if (statisticsToGeneration.normalize)
 			{
-				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outEntry);
+				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormEntry);
 
 				if (umap)
 				{
-					for (size_t sample_id = 0; sample_id < outEntry.size(); ++sample_id)
-						umap->add(sample_id, kmer_idx, outEntry[sample_id]);
+					for (size_t sample_id = 0; sample_id < outNormEntry.size(); ++sample_id)
+						umap->add(sample_id, kmer_idx, outNormEntry[sample_id]);
 				}
 
-				normOutputBuffer->StoreKmer(kmerSequence, outEntry, StoreMethods::AsMatrixRow);
-
-				outEntry.resize(statisticsToGeneration.nResults); // space for statistics
+				normOutputBuffer->StoreKmer(kmerSequence, outNormEntry, StoreMethods::AsMatrixRow);
 			}
 
-			size_t outStatsEntryIdx = statisticsToGeneration.nResults - statisticsToGeneration.nStatistics;
+			size_t outStatsEntryIdx = 0;
 
 			if (statisticsToGeneration.pearson)
 			{
 				assert(statisticsToGeneration.normalize);
 				const double pearson = refresh::correlation::pearson_n(
-					outEntry.begin(),
+					outNormEntry.begin(),
 					correlationPhenotype.begin(),
 					num_samples);
 
-				outEntry[outStatsEntryIdx++] = pearson;
+				outStatsEntry[outStatsEntryIdx++] = pearson;
 			}
 			if (statisticsToGeneration.spearman)
 			{
 				assert(statisticsToGeneration.normalize);
 				const double spearman = correlation.spearman_n(
-					outEntry.begin(),
+					outNormEntry.begin(),
 					correlationPhenotype.begin(),
 					num_samples);
 
-				outEntry[outStatsEntryIdx++] = spearman;
+				outStatsEntry[outStatsEntryIdx++] = spearman;
 			}
 			if (statisticsToGeneration.kendall)
 			{
 				assert(statisticsToGeneration.normalize);
 				const double kendall = refresh::correlation::kendall_tau_n(
-					outEntry.begin(),
+					outNormEntry.begin(),
 					correlationPhenotype.begin(),
 					num_samples);
 
-				outEntry[outStatsEntryIdx++] = kendall;
+				outStatsEntry[outStatsEntryIdx++] = kendall;
 			}
 
 			if (statisticsToGeneration.entropy)
@@ -236,7 +236,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 					inMatrixEntry.begin(),
 					num_samples);
 
-				outEntry[outStatsEntryIdx++] = entropy;
+				outStatsEntry[outStatsEntryIdx++] = entropy;
 			}
 			if (statisticsToGeneration.differentialAnalysis)
 			{
@@ -247,7 +247,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 						differentialAnalysisPhenotype.begin(),
 						num_samples).p_value;
 
-					outEntry[outStatsEntryIdx++] = tTestPValue;
+					outStatsEntry[outStatsEntryIdx++] = tTestPValue;
 				}
 				if (statisticsToGeneration.snr)
 				{
@@ -256,7 +256,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 						differentialAnalysisPhenotype.begin(),
 						num_samples);
 
-					outEntry[outStatsEntryIdx++] = snr;
+					outStatsEntry[outStatsEntryIdx++] = snr;
 				}
 				if (statisticsToGeneration.wilcoxonRankSum)
 				{
@@ -265,7 +265,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 						differentialAnalysisPhenotype.begin(),
 						num_samples).p_value;
 
-					outEntry[outStatsEntryIdx++] = wilcoxonRankSumPValue;
+					outStatsEntry[outStatsEntryIdx++] = wilcoxonRankSumPValue;
 				}
 				if (statisticsToGeneration.dids)
 				{
@@ -275,7 +275,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 						differentialAnalysisNClasses,
 						num_samples);
 
-					outEntry[outStatsEntryIdx++] = dids;
+					outStatsEntry[outStatsEntryIdx++] = dids;
 				}
 				if (statisticsToGeneration.anova)
 				{
@@ -285,13 +285,14 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 						differentialAnalysisNClasses,
 						num_samples).p_value;
 
-					outEntry[outStatsEntryIdx++] = anovaPValue;
+					outStatsEntry[outStatsEntryIdx++] = anovaPValue;
 				}
 			}
+			assert(outStatsEntryIdx == statisticsToGeneration.nStatistics);
 
 			++progress_bar_updater;
 
-			outGahtererBin->writeKmer(outEntry, kmer, kmerSequence, inMatrixEntry, keepNLargestCollection);
+			outGahtererBin->writeKmer(outStatsEntry, kmer, kmerSequence, inMatrixEntry, keepNLargestCollection);
 		}
 	}
 	keepNLargestCollectionGlobal.Add(keepNLargestCollection);
@@ -335,11 +336,13 @@ void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGl
 		refresh::scorers scorer;
 
 		std::vector<uint64_t> inMatrixEntry;
-		std::vector<out_kmcdb_value_type> outEntry; // normalized counts and statistics
+		std::vector<out_kmcdb_value_type> outNormEntry; // normalized counts
+		std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
 		std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
 
 		inMatrixEntry.resize(num_samples);
-		outEntry.resize(statisticsToGeneration.nResults);
+		outNormEntry.resize(num_samples);
+		outStatsEntry.resize(statisticsToGeneration.nStatistics);
 
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
@@ -354,51 +357,49 @@ void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGl
 
 			if (statisticsToGeneration.normalize)
 			{
-				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outEntry);
+				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormEntry);
 
 				if (umap)
 				{
-					for (size_t sample_id = 0; sample_id < outEntry.size(); ++sample_id)
-						umap->add(sample_id, kmer_idx, outEntry[sample_id]);
+					for (size_t sample_id = 0; sample_id < outNormEntry.size(); ++sample_id)
+						umap->add(sample_id, kmer_idx, outNormEntry[sample_id]);
 				}
 
-				normOutputBuffer->StoreKmer(kmerSequence, outEntry, StoreMethods::AsMatrixRow);
-
-				outEntry.resize(statisticsToGeneration.nResults); // space for statistics
+				normOutputBuffer->StoreKmer(kmerSequence, outNormEntry, StoreMethods::AsMatrixRow);
 			}
 
-			size_t outStatsEntryIdx = statisticsToGeneration.nResults - statisticsToGeneration.nStatistics;
+			size_t outStatsEntryIdx = 0;
 			size_t outPValuesAlgIdx = 0;
 
 			if (statisticsToGeneration.pearson)
 			{
 				assert(statisticsToGeneration.normalize);
 				const double pearson = refresh::correlation::pearson_n(
-					outEntry.begin(),
+					outNormEntry.begin(),
 					correlationPhenotype.begin(),
 					num_samples);
 
-				outEntry[outStatsEntryIdx++] = pearson;
+				outStatsEntry[outStatsEntryIdx++] = pearson;
 			}
 			if (statisticsToGeneration.spearman)
 			{
 				assert(statisticsToGeneration.normalize);
 				const double spearman = correlation.spearman_n(
-					outEntry.begin(),
+					outNormEntry.begin(),
 					correlationPhenotype.begin(),
 					num_samples);
 
-				outEntry[outStatsEntryIdx++] = spearman;
+				outStatsEntry[outStatsEntryIdx++] = spearman;
 			}
 			if (statisticsToGeneration.kendall)
 			{
 				assert(statisticsToGeneration.normalize);
 				const double kendall = refresh::correlation::kendall_tau_n(
-					outEntry.begin(),
+					outNormEntry.begin(),
 					correlationPhenotype.begin(),
 					num_samples);
 
-				outEntry[outStatsEntryIdx++] = kendall;
+				outStatsEntry[outStatsEntryIdx++] = kendall;
 			}
 
 			if (statisticsToGeneration.entropy)
@@ -407,13 +408,13 @@ void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGl
 					inMatrixEntry.begin(),
 					num_samples);
 
-				outEntry[outStatsEntryIdx++] = entropy;
+				outStatsEntry[outStatsEntryIdx++] = entropy;
 			}
 			if (statisticsToGeneration.differentialAnalysis)
 			{
 				if (statisticsToGeneration.tTest)
 				{
-					outEntry[outStatsEntryIdx++] = pValuesCorrectedData[outPValuesAlgIdx++][dataIdx];
+					outStatsEntry[outStatsEntryIdx++] = pValuesCorrectedData[outPValuesAlgIdx++][dataIdx];
 				}
 				if (statisticsToGeneration.snr)
 				{
@@ -422,11 +423,11 @@ void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGl
 						differentialAnalysisPhenotype.begin(),
 						num_samples);
 
-					outEntry[outStatsEntryIdx++] = snr;
+					outStatsEntry[outStatsEntryIdx++] = snr;
 				}
 				if (statisticsToGeneration.wilcoxonRankSum)
 				{
-					outEntry[outStatsEntryIdx++] = pValuesCorrectedData[outPValuesAlgIdx++][dataIdx];
+					outStatsEntry[outStatsEntryIdx++] = pValuesCorrectedData[outPValuesAlgIdx++][dataIdx];
 				}
 				if (statisticsToGeneration.dids)
 				{
@@ -436,18 +437,19 @@ void StatisticsGenerator::processEntriesAfterCorrection(KeepNLargestCollectionGl
 						differentialAnalysisNClasses,
 						num_samples);
 
-					outEntry[outStatsEntryIdx++] = dids;
+					outStatsEntry[outStatsEntryIdx++] = dids;
 				}
 				if (statisticsToGeneration.anova)
 				{
-					outEntry[outStatsEntryIdx++] = pValuesCorrectedData[outPValuesAlgIdx++][dataIdx];
+					outStatsEntry[outStatsEntryIdx++] = pValuesCorrectedData[outPValuesAlgIdx++][dataIdx];
 				}
 			}
+			assert(outStatsEntryIdx == statisticsToGeneration.nStatistics);
 
 			++dataIdx;
 			++progress_bar_updater;
 
-			outGathererBin->writeKmer(outEntry, kmer, kmerSequence, inMatrixEntry, keepNLargestCollection);
+			outGathererBin->writeKmer(outStatsEntry, kmer, kmerSequence, inMatrixEntry, keepNLargestCollection);
 		}
 
 		assert(dataIdx == dataIdxEnd);
