@@ -121,78 +121,6 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 
 
 
-
-
-
-void StatisticsGenerator::createPValuesEntriesToCorrection()
-{
-	assert(statisticsToGeneration.differentialAnalysis);
-	TaskData taskData;
-	while (tasksPool.getTask(taskData))
-	{
-		auto bin = matrixReader->GetBin(taskData.binId);
-
-		uint64_t dataIdx = binsIndicesForCorrection[taskData.binId];
-		const uint64_t dataIdxEnd = binsIndicesForCorrection[taskData.binId + 1];
-
-		refresh::statistical_test statistics;
-		refresh::scorers scorer;
-
-		std::vector<uint64_t> inMatrixEntry;
-		std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
-
-		inMatrixEntry.resize(num_samples);
-
-		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
-
-		auto kmer_len = params.stage1Params.GetKmerLen();
-
-		kmcdb::DispatchKmerSize<MAX_K>(kmer_len, [&](auto SIZE) {
-			kmcdb::CKmer<SIZE> kmer;
-			while (bin->NextKmer(kmer, inMatrixEntry.data()))
-			{
-				size_t outPValuesDataIdx = 0;
-
-				if (statisticsToGeneration.tTest)
-				{
-					const double tTestPValue = statistics.t_test_n(
-						inMatrixEntry.begin(),
-						differentialAnalysisPhenotype.begin(),
-						num_samples).p_value;
-
-					pValuesData[outPValuesDataIdx++][dataIdx] = tTestPValue;
-				}
-				if (statisticsToGeneration.wilcoxonRankSum)
-				{
-					const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test_n(
-						inMatrixEntry.begin(),
-						differentialAnalysisPhenotype.begin(),
-						num_samples).p_value;
-
-					pValuesData[outPValuesDataIdx++][dataIdx] = wilcoxonRankSumPValue;
-				}
-				if (statisticsToGeneration.anova)
-				{
-					const double anovaPValue = scorer.anova_n(
-						inMatrixEntry.begin(),
-						differentialAnalysisPhenotype.begin(),
-						differentialAnalysisNClasses,
-						num_samples).p_value;
-
-					pValuesData[outPValuesDataIdx][dataIdx] = anovaPValue;
-				}
-
-				++dataIdx;
-				++progress_bar_updater;
-			}
-			});
-
-		assert(dataIdx == dataIdxEnd);
-	}
-}
-
-
-
 void StatisticsGenerator::correctPValuesEntries()
 {
 	typedef StatisticsParams::DifferentialAnalysisCorrectionMethod CorrectionMethod;
@@ -270,14 +198,33 @@ void StatisticsGenerator::generateStatisticsParallel()
 		pValuesData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsIndicesForCorrection.back()));
 
 		std::vector<std::thread> threads(params.mkmcParams.nThreads);
-		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
-		{
-			threads[i_thred] = std::thread([this] { this->createPValuesEntriesToCorrection(); });
-		}
-		for (std::thread& thread : threads)
-		{
-			thread.join();
-		}
+
+		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
+			std::unique_ptr<refresh::umap_direct<double>> umap;
+			if (params.statisticsParams.runUMAP)
+			{
+				umap = std::make_unique<refresh::umap_direct<double>>(
+					cnt_matrix_output_header.size(), //number of samples
+					binsIndicesForCorrection.back() //number of k-mers
+					);
+				umap->set_params(params.statisticsParams.umap_params);
+			}
+			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
+
+			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+			{
+				threads[i_thred] = std::thread([this, &keepNLargestCollectionGlobal, &umap] { this->processEntriesWhenCorrection<decltype(SIZE)::value>(keepNLargestCollectionGlobal, umap.get()); });
+			}
+			for (std::thread& thread : threads)
+			{
+				thread.join();
+			}
+
+			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
+
+			if (umap)
+				RunUmap(umap.get(), cnt_matrix_output_header, params);
+		});
 
 		pValuesCorrectedData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsIndicesForCorrection.back()));
 		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred) // probably some threads will be idle
@@ -292,33 +239,15 @@ void StatisticsGenerator::generateStatisticsParallel()
 		tasksPool.reset();
 		openReaders(); // reopen
 		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
-
-			std::unique_ptr<refresh::umap_direct<double>> umap;
-			if (params.statisticsParams.runUMAP)
-			{
-				umap = std::make_unique<refresh::umap_direct<double>>(
-					cnt_matrix_output_header.size(), //number of samples
-					binsIndicesForCorrection.back() //number of k-mers
-				);
-				umap->set_params(params.statisticsParams.umap_params);
-			}
-
-			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
-
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
-				threads[i_thred] = std::thread([this, &keepNLargestCollectionGlobal, &umap]
-					{ this->processEntriesAfterCorrection<decltype(SIZE)::value>(keepNLargestCollectionGlobal, umap.get()); });
+				threads[i_thred] = std::thread([this]
+					{ this->safeCorrectedPValuesEntries<decltype(SIZE)::value>(); });
 			}
 			for (std::thread& thread : threads)
 			{
 				thread.join();
 			}
-
-			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
-
-			if (umap)
-				RunUmap(umap.get(), cnt_matrix_output_header, params);
 		});
 	}
 	else
