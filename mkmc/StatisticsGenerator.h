@@ -233,7 +233,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 			if (statisticsToGeneration.entropy)
 			{
 				const double entropy = entropyObj.entropy_n(
-					inMatrixEntry.begin(),
+					outNormEntry.begin(),
 					num_samples);
 
 				outStatsEntry[outStatsEntryIdx++] = entropy;
@@ -243,7 +243,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 				if (statisticsToGeneration.tTest)
 				{
 					const double tTestPValue = statistics.t_test_n(
-						inMatrixEntry.begin(),
+						outNormEntry.begin(),
 						differentialAnalysisPhenotype.begin(),
 						num_samples).p_value;
 
@@ -252,7 +252,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 				if (statisticsToGeneration.snr)
 				{
 					const double snr = statistics.SNR_test_n(
-						inMatrixEntry.begin(),
+						outNormEntry.begin(),
 						differentialAnalysisPhenotype.begin(),
 						num_samples);
 
@@ -261,7 +261,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 				if (statisticsToGeneration.wilcoxonRankSum)
 				{
 					const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test_n(
-						inMatrixEntry.begin(),
+						outNormEntry.begin(),
 						differentialAnalysisPhenotype.begin(),
 						num_samples).p_value;
 
@@ -270,7 +270,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 				if (statisticsToGeneration.dids)
 				{
 					const double dids = scorer.dids_n(
-						inMatrixEntry.begin(),
+						outNormEntry.begin(),
 						differentialAnalysisPhenotype.begin(),
 						differentialAnalysisNClasses,
 						num_samples);
@@ -280,7 +280,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 				if (statisticsToGeneration.anova)
 				{
 					const double anovaPValue = scorer.anova_n(
-						inMatrixEntry.begin(),
+						outNormEntry.begin(),
 						differentialAnalysisPhenotype.begin(),
 						differentialAnalysisNClasses,
 						num_samples).p_value;
@@ -400,7 +400,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			if (statisticsToGeneration.entropy)
 			{
 				const double entropy = entropyObj.entropy_n(
-					inMatrixEntry.begin(),
+					outNormEntry.begin(),
 					num_samples);
 
 				outStatsEntry[outStatsIdx++] = entropy;
@@ -409,7 +409,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			if (statisticsToGeneration.tTest)
 			{
 				const double tTestPValue = statistics.t_test_n(
-					inMatrixEntry.begin(),
+					outNormEntry.begin(),
 					differentialAnalysisPhenotype.begin(),
 					num_samples).p_value;
 
@@ -418,7 +418,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			if (statisticsToGeneration.snr)
 			{
 				const double snr = statistics.SNR_test_n(
-					inMatrixEntry.begin(),
+					outNormEntry.begin(),
 					differentialAnalysisPhenotype.begin(),
 					num_samples);
 
@@ -427,7 +427,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			if (statisticsToGeneration.wilcoxonRankSum)
 			{
 				const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test_n(
-					inMatrixEntry.begin(),
+					outNormEntry.begin(),
 					differentialAnalysisPhenotype.begin(),
 					num_samples).p_value;
 
@@ -436,7 +436,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			if (statisticsToGeneration.dids)
 			{
 				const double dids = scorer.dids_n(
-					inMatrixEntry.begin(),
+					outNormEntry.begin(),
 					differentialAnalysisPhenotype.begin(),
 					differentialAnalysisNClasses,
 					num_samples);
@@ -446,7 +446,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			if (statisticsToGeneration.anova)
 			{
 				const double anovaPValue = scorer.anova_n(
-					inMatrixEntry.begin(),
+					outNormEntry.begin(),
 					differentialAnalysisPhenotype.begin(),
 					differentialAnalysisNClasses,
 					num_samples).p_value;

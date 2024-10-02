@@ -233,7 +233,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, reduce carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 
 	cor->needs(n)->needs(p);
-	differentialAnalysis->needs(c);
+	differentialAnalysis->needs(n)->needs(c);
 
 	app.footer("Warning: k-mers order in output files is not specified and may vary between runnings.\n\n"
 		"Example: to run MKMC, type:\n"
