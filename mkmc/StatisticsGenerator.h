@@ -71,8 +71,7 @@ class StatisticsGenerator
 	std::vector<std::vector<out_kmcdb_value_type>> pValuesData; // first index: algorithm, second: entries
 	std::vector<std::vector<out_kmcdb_value_type>> pValuesCorrectedData; // first index: algorithm, second: entries
 
-	//mkokot_TODO: I am using this also for umap, so maybe change a name of this variable, like binsOffsets
-	std::vector<uint64_t> binsIndicesForCorrection; // (of size no. of bins + 1) contains indices of first entries for every bin; the last element contains number of all the entries
+	std::vector<uint64_t> binsOffsets; // (of size no. of bins + 1) contains indices of first entries for every bin; the last element contains number of all the entries
 
 	StatisticsToGeneration statisticsToGeneration;
 
@@ -140,6 +139,18 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 
 	initKeepNLargest(keepNLargestCollection);
 
+	const std::size_t num_samples = params.mkmcParams.samples.size();
+
+	std::vector<uint64_t> inMatrixEntry;
+	std::vector<out_kmcdb_value_type> outNormEntry; // normalized stats
+	std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
+	inMatrixEntry.resize(num_samples);
+	outNormEntry.resize(num_samples);
+	outStatsEntry.resize(statisticsToGeneration.nStatistics);
+
+	const auto kmer_len = params.stage1Params.GetKmerLen();
+	std::string kmerSequence(kmer_len, ' ');
+
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
 	{
@@ -164,23 +175,11 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 		refresh::statistical_test statistics;
 		refresh::scorers scorer;
 
-		std::vector<uint64_t> inMatrixEntry;
-		std::vector<out_kmcdb_value_type> outNormEntry; // normalized stats
-		std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
-		std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
-
-		inMatrixEntry.resize(num_samples);
-		outNormEntry.resize(num_samples);
-		outStatsEntry.resize(statisticsToGeneration.nStatistics);
-
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
-
-		auto kmer_len = params.stage1Params.GetKmerLen();
-		std::string kmerSequence(kmer_len, ' ');
 
 		kmcdb::CKmer<SIZE> kmer;
 		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outGahtererBin = gatherer.getBin(taskData.binId);
-		for (auto kmer_idx = binsIndicesForCorrection[taskData.binId]; bin->NextKmer(kmer, inMatrixEntry.data()); ++kmer_idx)
+		for (auto kmer_idx = binsOffsets[taskData.binId]; bin->NextKmer(kmer, inMatrixEntry.data()); ++kmer_idx)
 		{
 			kmer.to_string(kmer_len, kmerSequence.data());
 
@@ -311,13 +310,25 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 
 	initKeepNLargest(keepNLargestCollection);
 
+	const std::size_t num_samples = params.mkmcParams.samples.size();
+
+	std::vector<uint64_t> inMatrixEntry;
+	std::vector<out_kmcdb_value_type> outNormEntry; // normalized counts
+	std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
+	inMatrixEntry.resize(num_samples);
+	outNormEntry.resize(num_samples);
+	outStatsEntry.resize(statisticsToGeneration.nStatistics - statisticsToGeneration.nStatisticsWithPValues);
+
+	const auto kmer_len = params.stage1Params.GetKmerLen();
+	std::string kmerSequence(kmer_len, ' ');
+
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
 	{
 		auto bin = matrixReader->GetBin(taskData.binId);
 
-		uint64_t outPValuesToCorrectIdx = binsIndicesForCorrection[taskData.binId];
-		const uint64_t outPValuesToCorrectIdxEnd = binsIndicesForCorrection[taskData.binId + 1];
+		uint64_t outPValuesToCorrectIdx = binsOffsets[taskData.binId];
+		const uint64_t outPValuesToCorrectIdxEnd = binsOffsets[taskData.binId + 1];
 
 		std::unique_ptr<OutputBuffer> normOutputBuffer = std::make_unique<OutputBuffer>(*normWriter, getMaxNormLineLength());
 
@@ -333,19 +344,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 		refresh::statistical_test statistics;
 		refresh::scorers scorer;
 
-		std::vector<uint64_t> inMatrixEntry;
-		std::vector<out_kmcdb_value_type> outNormEntry; // normalized counts
-		std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
-		std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
-
-		inMatrixEntry.resize(num_samples);
-		outNormEntry.resize(num_samples);
-		outStatsEntry.resize(statisticsToGeneration.nStatistics - statisticsToGeneration.nStatisticsWithPValues);
-
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
-
-		auto kmer_len = params.stage1Params.GetKmerLen();
-		std::string kmerSequence(kmer_len, ' ');
 
 		kmcdb::CKmer<SIZE> kmer;
 		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outGathererBin = gatherer.getBin(taskData.binId, false, true);
@@ -471,27 +470,25 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 template<unsigned SIZE>
 void StatisticsGenerator::safeCorrectedPValuesEntries()
 {
-	std::ptrdiff_t num_samples = static_cast<std::ptrdiff_t>(params.mkmcParams.samples.size());
+	const std::size_t num_samples = params.mkmcParams.samples.size();
 
 	std::vector<uint64_t> inMatrixEntry;
+	std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
 	inMatrixEntry.resize(num_samples);
+	outStatsEntry.resize(statisticsToGeneration.nStatistics);
+
+	const auto kmer_len = params.stage1Params.GetKmerLen();
+	std::string kmerSequence(kmer_len, ' ');
 
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
 	{
 		auto bin = matrixReader->GetBin(taskData.binId);
 
-		uint64_t outPValuesToCorrectIdx = binsIndicesForCorrection[taskData.binId];
-		const uint64_t outPValuesToCorrectIdxEnd = binsIndicesForCorrection[taskData.binId + 1];
-
-		std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
-
-		outStatsEntry.resize(statisticsToGeneration.nStatistics);
+		uint64_t outPValuesToCorrectIdx = binsOffsets[taskData.binId];
+		const uint64_t outPValuesToCorrectIdxEnd = binsOffsets[taskData.binId + 1];
 
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
-
-		auto kmer_len = params.stage1Params.GetKmerLen();
-		std::string kmerSequence(kmer_len, ' ');
 
 		kmcdb::CKmer<SIZE> kmer;
 		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outGathererBin = gatherer.getBin(taskData.binId, true, false);

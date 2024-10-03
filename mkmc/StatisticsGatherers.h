@@ -239,7 +239,7 @@ public:
 template<typename VALUE_T>
 void RunUmap(refresh::umap_direct<VALUE_T>* umap,
 	const std::vector<std::string>& sample_names,
-	Params& params)
+	const Params& params)
 {
 	assert(umap);
 
@@ -304,8 +304,6 @@ class WritingGathererBin
 	std::unique_ptr<OutputBuffer> anovaSignificantCntMatrixOutputBuffer;
 	std::unique_ptr<OutputBuffer> anovaSignificantFastaOutputBuffer;
 
-	const StatisticsToGeneration& statisticsToGeneration;
-
 	size_t getMaxLineLength() const
 	{
 		return kmerLength + 1 + refresh::numeric_conversion_max_length<Statistics_T>() + 1; //+ 1 since we also store EOL after value
@@ -324,7 +322,6 @@ class WritingGathererBin
 	}
 
 	WritingGathererBin(WritingGatherer<Statistics_T>& mainWritingGatherer,
-		const StatisticsToGeneration& statisticsToGeneration,
 		const uint32_t kmerLength,
 		uint32_t binId,
 		uint32_t numSamples,
@@ -337,7 +334,7 @@ public:
 	void writeKmer(
 		const std::vector<Statistics_T>& outEntry, // outEntry - normalized values (if any) followed by statistics
 		const kmcdb::CKmer<SIZE>& kmer,
-		const std::string kmerSeq,
+		const std::string& kmerSeq,
 		const std::vector<VALUE_T>& original_counts,
 		KeepNLargestCollection<SIZE>* keepNLargestCollection = nullptr);
 
@@ -349,7 +346,7 @@ template<typename Statistics_T>
 class WritingGatherer
 {
 	friend WritingGathererBin<Statistics_T>;
-	Params& params;
+	const Params& params;
 
 	struct
 	{
@@ -380,14 +377,13 @@ class WritingGatherer
 	const StatisticsToGeneration& statisticsToGeneration;
 
 public:
-	WritingGatherer(Params& params, const StatisticsToGeneration& statisticsToGeneration) :
+	WritingGatherer(const Params& params, const StatisticsToGeneration& statisticsToGeneration) :
 		params(params),
 		statisticsToGeneration(statisticsToGeneration)
 	{}
 
 	void initWriting(
 		const std::unique_ptr<kmcdb::MetadataReader>& matrixMetadataReader,
-		std::vector<std::string> sample_names, // pass sample_names by value
 		const std::vector<std::string>& cnt_matrix_output_header);
 
 	std::unique_ptr<WritingGathererBin<Statistics_T>> getBin(
@@ -398,7 +394,6 @@ public:
 		// explicit new calling is necessary due to constructor's privacy
 		return std::unique_ptr<WritingGathererBin<Statistics_T>>(new WritingGathererBin<Statistics_T>(
 			*this,
-			statisticsToGeneration,
 			params.stage1Params.GetKmerLen(),
 			binId,
 			static_cast<uint32_t>(params.mkmcParams.samples.size()),
@@ -414,7 +409,6 @@ public:
 template<typename Statistics_T>
 WritingGathererBin<Statistics_T>::WritingGathererBin(
 	WritingGatherer<Statistics_T>& mainWritingGatherer,
-	const StatisticsToGeneration& statisticsToGeneration,
 	const uint32_t kmerLength,
 	uint32_t binId,
 	uint32_t numSamples,
@@ -424,23 +418,22 @@ WritingGathererBin<Statistics_T>::WritingGathererBin(
 	mainWritingGatherer(mainWritingGatherer),
 	kmerLength(kmerLength),
 	numSamples(numSamples),
-	maxCorrectedPval(maxCorrectedPval),
-	statisticsToGeneration(statisticsToGeneration)
+	maxCorrectedPval(maxCorrectedPval)
 {
 	assert(gatherCorrected && gatherNotCorrected || mainWritingGatherer.params.statisticsParams.correctPvalues); // safe separately only if correction is performed
 	assert(gatherCorrected || gatherNotCorrected);
 
-	if (gatherNotCorrected && statisticsToGeneration.pearson)
+	if (gatherNotCorrected && mainWritingGatherer.writers.pearson)
 		pearsonOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.pearson, getMaxLineLength());
-	if (gatherNotCorrected && statisticsToGeneration.spearman)
+	if (gatherNotCorrected && mainWritingGatherer.writers.spearman)
 		spearmanOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.spearman, getMaxLineLength());
-	if (gatherNotCorrected && statisticsToGeneration.kendall)
+	if (gatherNotCorrected && mainWritingGatherer.writers.kendall)
 		kendallOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.kendall, getMaxLineLength());
 
-	if (gatherNotCorrected && statisticsToGeneration.entropy)
+	if (gatherNotCorrected && mainWritingGatherer.writers.entropy)
 		entropyOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.entropy, getMaxLineLength());
 
-	if (gatherCorrected && statisticsToGeneration.tTest)
+	if (gatherCorrected && mainWritingGatherer.writers.tTest)
 	{
 		tTestOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.tTest, getMaxLineLength());
 		if (mainWritingGatherer.writers.tTestSignificant)
@@ -453,9 +446,9 @@ WritingGathererBin<Statistics_T>::WritingGathererBin(
 			tTestSignificantFastaOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.tTestSignificantFasta, getMaxLineLengthForFasta());
 		}
 	}
-	if (gatherNotCorrected && statisticsToGeneration.snr)
+	if (gatherNotCorrected && mainWritingGatherer.writers.snr)
 		snrOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.snr, getMaxLineLength());
-	if (gatherCorrected && statisticsToGeneration.wilcoxonRankSum)
+	if (gatherCorrected && mainWritingGatherer.writers.wilcoxonRankSum)
 	{
 		wilcoxonRankSumOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.wilcoxonRankSum, getMaxLineLength());
 		if (mainWritingGatherer.writers.wilcoxonRankSumSignificant)
@@ -469,9 +462,9 @@ WritingGathererBin<Statistics_T>::WritingGathererBin(
 		}
 	}
 
-	if (gatherNotCorrected && statisticsToGeneration.dids)
+	if (gatherNotCorrected && mainWritingGatherer.writers.dids)
 		didsOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.dids, getMaxLineLength());
-	if (gatherCorrected && statisticsToGeneration.anova)
+	if (gatherCorrected && mainWritingGatherer.writers.anova)
 	{
 		anovaOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.anova, getMaxLineLength());
 		if (mainWritingGatherer.writers.anovaSignificant)
@@ -493,7 +486,7 @@ template<unsigned SIZE, typename VALUE_T>
 void WritingGathererBin<Statistics_T>::writeKmer(
 	const std::vector<Statistics_T>& outEntry,
 	const kmcdb::CKmer<SIZE>& kmer,
-	const std::string kmerSeq,
+	const std::string& kmerSeq,
 	const std::vector<VALUE_T>& original_counts,
 	KeepNLargestCollection<SIZE>* keepNLargestCollection/* = nullptr*/)
 {
@@ -602,48 +595,29 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 template<typename Statistics_T>
 void WritingGatherer<Statistics_T>::initWriting(
 	const std::unique_ptr<kmcdb::MetadataReader>& matrixMetadataReader,
-	std::vector<std::string> sample_names,
 	const std::vector<std::string>& cnt_matrix_output_header)
 {
-	kmcdb::Config config;
-	config.num_bins = matrixMetadataReader->GetConfig().num_bins;
-	config.signature_len = matrixMetadataReader->GetConfig().signature_len;
-	config.signature_selection_scheme = matrixMetadataReader->GetConfig().signature_selection_scheme;
-	config.signature_to_bin_mapping = matrixMetadataReader->GetConfig().signature_to_bin_mapping;
-	config.kmer_len = matrixMetadataReader->GetConfig().kmer_len;
-	config.num_samples = sample_names.size();
-	config.num_bytes_single_value = { sizeof(Statistics_T) };
-
-	config.num_samples += params.statisticsParams.correlationMethods.size(); //I will add this correlations as a new columns
-	config.num_samples += params.statisticsParams.generateEntropy ? 1 : 0;
-	config.num_samples += params.statisticsParams.classificationMethods.size();
-	//this make sense because those all of the same type (currently double)
-
 	const bool multiThreadedGeneration = params.mkmcParams.nThreads > 1;
 
 	if (statisticsToGeneration.pearson)
 	{
 		writers.pearson = std::make_unique<DumpWriter>(params.mkmcParams.outputFilePearson, multiThreadedGeneration);
 		writers.pearson->StoreHeader({ "pearson_cor" });
-		sample_names.emplace_back("pearson_cor");
 	}
 	if (statisticsToGeneration.spearman)
 	{
 		writers.spearman = std::make_unique<DumpWriter>(params.mkmcParams.outputFileSpearman, multiThreadedGeneration);
 		writers.spearman->StoreHeader({ "spearman_cor" });
-		sample_names.emplace_back("spearman_cor");
 	}
 	if (statisticsToGeneration.kendall)
 	{
 		writers.kendall = std::make_unique<DumpWriter>(params.mkmcParams.outputFileKendall, multiThreadedGeneration);
 		writers.kendall->StoreHeader({ "kendall_cor" });
-		sample_names.emplace_back("kendall_cor");
 	}
 	if (statisticsToGeneration.entropy)
 	{
 		writers.entropy = std::make_unique<DumpWriter>(params.mkmcParams.outputFileEntropy, multiThreadedGeneration);
 		writers.entropy->StoreHeader({ "entropy" });
-		sample_names.emplace_back("entropy");
 	}
 	if (statisticsToGeneration.tTest)
 	{
@@ -651,7 +625,6 @@ void WritingGatherer<Statistics_T>::initWriting(
 		{
 			writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCor, multiThreadedGeneration);
 			writers.tTest->StoreHeader({ "ttest_analysis_p_val_cor" });
-			sample_names.emplace_back("ttest_analysis_cor");
 
 			writers.tTestSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCorSignificant, multiThreadedGeneration);
 			writers.tTestSignificant->StoreHeader({ "ttest_analysis_p_val_cor" });
@@ -660,20 +633,17 @@ void WritingGatherer<Statistics_T>::initWriting(
 			writers.tTestSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
 
 			writers.tTestSignificantFasta = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCorSignificantFasta, multiThreadedGeneration);
-
 		}
 		else
 		{
 			writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTest, multiThreadedGeneration);
 			writers.tTest->StoreHeader({ "ttest_analysis_p_val" });
-			sample_names.emplace_back("ttest_analysis");
 		}
 	}
 	if (statisticsToGeneration.snr)
 	{
 		writers.snr = std::make_unique<DumpWriter>(params.mkmcParams.outputFileSNR, multiThreadedGeneration);
 		writers.snr->StoreHeader({ "snr_analysis" });
-		sample_names.emplace_back("snr_analysis");
 	}
 	if (statisticsToGeneration.wilcoxonRankSum)
 	{
@@ -681,7 +651,6 @@ void WritingGatherer<Statistics_T>::initWriting(
 		{
 			writers.wilcoxonRankSum = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCor, multiThreadedGeneration);
 			writers.wilcoxonRankSum->StoreHeader({ "wrs_analysis_p_val_cor" });
-			sample_names.emplace_back("wrs_analysis_cor");
 
 			writers.wilcoxonRankSumSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificant, multiThreadedGeneration);
 			writers.wilcoxonRankSumSignificant->StoreHeader({ "wrs_analysis_p_val_cor" });
@@ -695,14 +664,12 @@ void WritingGatherer<Statistics_T>::initWriting(
 		{
 			writers.wilcoxonRankSum = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSum, multiThreadedGeneration);
 			writers.wilcoxonRankSum->StoreHeader({ "wrs_analysis_p_val" });
-			sample_names.emplace_back("wrs_analysis");
 		}
 	}
 	if (statisticsToGeneration.dids)
 	{
 		writers.dids = std::make_unique<DumpWriter>(params.mkmcParams.outputFileDIDS, multiThreadedGeneration);
 		writers.dids->StoreHeader({ "dids_analysis" });
-		sample_names.emplace_back("dids_analysis");
 	}
 	if (statisticsToGeneration.anova)
 	{
@@ -710,7 +677,6 @@ void WritingGatherer<Statistics_T>::initWriting(
 		{
 			writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACor, multiThreadedGeneration);
 			writers.anova->StoreHeader({ "anova_analysis_p_val_cor" });
-			sample_names.emplace_back("anova_analysis_cor");
 
 			writers.anovaSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACorSignificant, multiThreadedGeneration);
 			writers.anovaSignificant->StoreHeader({ "anova_analysis_p_val_cor" });
@@ -724,7 +690,6 @@ void WritingGatherer<Statistics_T>::initWriting(
 		{
 			writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVA, multiThreadedGeneration);
 			writers.anova->StoreHeader({ "anova_analysis_p_val" });
-			sample_names.emplace_back("anova_analysis");
 		}
 	}
 

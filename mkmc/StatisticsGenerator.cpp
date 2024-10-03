@@ -39,9 +39,9 @@ void StatisticsGenerator::fillTaskData()
 		for (uint32_t i = 0; i < statisticsToGeneration.nStatisticsWithPValues; ++i)
 			correctTasksData.push_back(CorrectTaskData{ i });
 
-	for (size_t it = 1; it < binsIndicesForCorrection.size(); ++it) // fragmentsBegins[0] = 0
+	for (size_t it = 1; it < binsOffsets.size(); ++it) // fragmentsBegins[0] = 0
 	{
-		binsIndicesForCorrection[it] = binsIndicesForCorrection[it - 1] + nOutputKmersPerBin[it - 1]; // increase previous index by a size of the next bin
+		binsOffsets[it] = binsOffsets[it - 1] + nOutputKmersPerBin[it - 1]; // increase previous index by a size of the next bin
 	}
 
 	uint64_t progressBarTicks = params.mkmcParams.verbosity_level == 0 ? 0 : std::accumulate(nOutputKmersPerBin.begin(), nOutputKmersPerBin.end(), 0ull);
@@ -54,7 +54,7 @@ void StatisticsGenerator::fillTaskData()
 		params.mkmcParams.verbosity_level == 0);
 
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return nOutputKmersPerBin[a.binId] > nOutputKmersPerBin[b.binId]; });
-	// correctTasksData does need to be sorted
+	// correctTasksData does not need to be sorted
 }
 
 
@@ -67,7 +67,7 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 	correlationPhenotype(params.phenotypes.correlationPhenotype.getPhenotype()),
 	differentialAnalysisPhenotype(params.phenotypes.differentialAnalysisPhenotype.getMappedPhenotype()),
 	differentialAnalysisNClasses(params.phenotypes.differentialAnalysisPhenotype.getClassesNumber()),
-	binsIndicesForCorrection(params.stage1Params.GetNBins() + 1)
+	binsOffsets(params.stage1Params.GetNBins() + 1)
 {
 
 	auto is_correlation_method = [&](StatisticsParams::CorrelationMethod method)
@@ -173,7 +173,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 		normWriter->StoreHeader(sample_names);
 	} // otherwise: no normalization in output
 
-	gatherer.initWriting(matrixMetadataReader, sample_names, cnt_matrix_output_header);
+	gatherer.initWriting(matrixMetadataReader, cnt_matrix_output_header);
 
 	if (params.statisticsParams.generateNormalization)
 	{
@@ -195,7 +195,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 
 	if (params.statisticsParams.correctPvalues)
 	{
-		pValuesData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsIndicesForCorrection.back()));
+		pValuesData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
 
 		std::vector<std::thread> threads(params.mkmcParams.nThreads);
 
@@ -205,7 +205,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 			{
 				umap = std::make_unique<refresh::umap_direct<double>>(
 					cnt_matrix_output_header.size(), //number of samples
-					binsIndicesForCorrection.back() //number of k-mers
+					binsOffsets.back() //number of k-mers
 					);
 				umap->set_params(params.statisticsParams.umap_params);
 			}
@@ -226,7 +226,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 				RunUmap(umap.get(), cnt_matrix_output_header, params);
 		});
 
-		pValuesCorrectedData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsIndicesForCorrection.back()));
+		pValuesCorrectedData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
 		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred) // probably some threads will be idle
 		{
 			threads[i_thred] = std::thread([this] { this->correctPValuesEntries(); });
@@ -259,7 +259,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 			{
 				umap = std::make_unique<refresh::umap_direct<double>>(
 					cnt_matrix_output_header.size(), //number of samples
-					binsIndicesForCorrection.back() //number of k-mers
+					binsOffsets.back() //number of k-mers
 				);
 				umap->set_params(params.statisticsParams.umap_params);
 			}
