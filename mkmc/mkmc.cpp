@@ -7,7 +7,7 @@
 #include "kmc_core/kmc_runner.h"
 #include "parameters.h"
 #include "KMCRunner.h"
-#include "Dump.h"
+#include "Merger.h"
 #include "Finish.h"
 #include "Start.h"
 #include "Version.h"
@@ -19,14 +19,14 @@
 
 
 
-class DumpRunner
+class MergerRunner
 {
 	Params& params;
-	Timer& dump_timer;
+	Timer& merger_timer;
 public:
-	DumpRunner(Params& params, Timer& dump_timer):
+	MergerRunner(Params& params, Timer& merger_timer):
 		params(params),
-		dump_timer(dump_timer)
+		merger_timer(merger_timer)
 	{
 
 	}
@@ -40,12 +40,12 @@ public:
 		if (std::find(outputFileTypes.begin(), outputFileTypes.end(), OutputFileType::FASTA) != outputFileTypes.end())
 			tasks.push_back(params.mkmcParams.outputFASTAFile);
 
-		std::cerr << "\nStarting dumping to " << (tasks.size() > 1 ? "files " : "file ") << MessagesUtilities::generateStartingSentence(tasks) << '\n';
+		std::cerr << "\nStarting merging samples and dumping to " << (tasks.size() > 1 ? "files " : "file ") << MessagesUtilities::generateStartingSentence(tasks) << '\n';
 
-		Dump<SIZE> dump(params);
-		dump_timer.startTimer();
-		dump.dumpToFileParallel();
-		dump_timer.stopTimer();
+		Merger<SIZE> merger(params);
+		merger_timer.startTimer();
+		merger.mergeParallel();
+		merger_timer.stopTimer();
 	}
 };
 
@@ -273,7 +273,7 @@ int main(int argc, char** argv)
 
 	try
 	{
-		Timer sequence_filter_init, kmc_timer, dump_timer, statistics_timer;
+		Timer sequence_filter_init, kmc_timer, merger_timer, statistics_timer;
 
 		Start start(params);
 		start.verifyFiles();
@@ -292,7 +292,7 @@ int main(int argc, char** argv)
 		kmcRunner.runKMCParallel();
 		kmc_timer.stopTimer();
 
-		DumpRunner dump_runner(params, dump_timer);
+		MergerRunner dump_runner(params, merger_timer);
 		DispatchKmerSize(params.stage1Params.GetKmerLen(), dump_runner);
 
 		if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
@@ -327,9 +327,9 @@ int main(int argc, char** argv)
 		std::cerr << "\nk-mer counting:\n";
 		std::cerr << "\tStart: " << kmc_timer.getStartTime() << "\n";
 		std::cerr << "\tEnd:   " << kmc_timer.getStopTime() << "\n";
-		std::cerr << "Dumping:\n";
-		std::cerr << "\tStart: " << dump_timer.getStartTime() << "\n";
-		std::cerr << "\tEnd:   " << dump_timer.getStopTime() << "\n";
+		std::cerr << "Merging and dumping:\n";
+		std::cerr << "\tStart: " << merger_timer.getStartTime() << "\n";
+		std::cerr << "\tEnd:   " << merger_timer.getStopTime() << "\n";
 
 		if (params.statisticsParams.generateNormalization)
 		{

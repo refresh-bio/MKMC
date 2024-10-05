@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-#include "Dump.h"
+#include "Merger.h"
 #include "parameters.h"
 #include "DumpWriter.h"
 #include "kmcdb/kmcdb.h"

@@ -46,7 +46,7 @@ inline void StoreTotCnt(std::vector<std::vector<uint64>>& tot_cnts,
 }
 
 template<unsigned SIZE>
-class Dump
+class Merger
 {
 	const Params& params;
 
@@ -76,13 +76,13 @@ class Dump
 
 	bool inputIsConsistent();
 	void fillTaskData();
-	void serializeNormalizationAndDump();
+	void serializeNormalizationAndSave();
 
 	template<typename Generators_T, typename Filters_T>
-	void dumpToFile(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
+	void mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
 
 public:
-	Dump(const Params& params) :
+	Merger(const Params& params) :
 		params(params), tasksPool(tasksData)
 	{
 		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
@@ -93,7 +93,7 @@ public:
 		normalizationLearning.initialize();
 	}
 
-	void dumpToFileParallel();
+	void mergeParallel();
 
 	template<typename Generators_T>
 	void operator()(std::vector<uint64_t>& tot_cnts);
@@ -103,7 +103,7 @@ public:
 
 template<unsigned SIZE>
 template<typename Generators_T, typename Filters_T>
-void Dump<SIZE>::dumpToFile(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
+void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
 {
 	std::vector<KMCFileWrapper<SIZE>> samples;
 	for (size_t sample_id = 0; sample_id < params.mkmcParams.kmcOutputFiles.size(); ++sample_id)
@@ -207,7 +207,7 @@ void Dump<SIZE>::dumpToFile(uint32_t binId, std::vector<uint64_t>& tot_cnts, Sta
 
 
 template<unsigned SIZE>
-bool Dump<SIZE>::inputIsConsistent()
+bool Merger<SIZE>::inputIsConsistent()
 {
 	if (samplesMetadata.empty())
 		return true;
@@ -234,7 +234,7 @@ bool Dump<SIZE>::inputIsConsistent()
 }
 
 template<unsigned SIZE>
-inline void Dump<SIZE>::fillTaskData()
+inline void Merger<SIZE>::fillTaskData()
 {
 	tasksData.reserve(params.stage1Params.GetNBins());
 	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
@@ -292,7 +292,7 @@ inline void Dump<SIZE>::fillTaskData()
 }
 
 template<unsigned SIZE>
-void Dump<SIZE>::serializeNormalizationAndDump()
+void Merger<SIZE>::serializeNormalizationAndSave()
 {
 	std::vector<uint8_t> deseq2NormalizationData, frequencyNormalizationData, quantileNormalizationData;
 
@@ -309,7 +309,7 @@ void Dump<SIZE>::serializeNormalizationAndDump()
 }
 
 template<unsigned SIZE>
-void Dump<SIZE>::dumpToFileParallel()
+void Merger<SIZE>::mergeParallel()
 {
 	fillTaskData();
 
@@ -411,13 +411,13 @@ void Dump<SIZE>::dumpToFileParallel()
 		StoreTotCnt(tot_cnts, sampleNames, params);
 
 	if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
-		serializeNormalizationAndDump();
+		serializeNormalizationAndSave();
 }
 
 
 template<unsigned SIZE>
 template<typename Generators_T>
-void Dump<SIZE>::operator()(std::vector<uint64_t>& tot_cnts)
+void Merger<SIZE>::operator()(std::vector<uint64_t>& tot_cnts)
 {
 	Generators_T fileGenerators(params);
 	TaskData taskData;
@@ -439,12 +439,12 @@ void Dump<SIZE>::operator()(std::vector<uint64_t>& tot_cnts)
 		{
 			assert(sequencesToFilterReader);
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
-			dumpToFile<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearnings, fileGenerators, sequencesToFilterReader->GetBin(taskData.binId));
+			mergeToGenerators<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearnings, fileGenerators, sequencesToFilterReader->GetBin(taskData.binId));
 		}
 		else
 		{
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
-			dumpToFile<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearnings, fileGenerators, nullptr);
+			mergeToGenerators<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearnings, fileGenerators, nullptr);
 		}
 		normalizationLearningMutex.lock();
 		normalizationLearning.merge_with(&currentBinNormalizationLearnings, &currentBinNormalizationLearnings + 1);

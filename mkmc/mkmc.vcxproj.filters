@@ -63,7 +63,7 @@
     <ClInclude Include="parameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Dump.h">
+    <ClInclude Include="Merger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Filter.h">

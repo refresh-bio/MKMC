@@ -175,7 +175,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Dump.h" />
+    <ClInclude Include="Merger.h" />
     <ClInclude Include="DumpWriter.h" />
     <ClInclude Include="FileGenerators.h" />
     <ClInclude Include="Filter.h" />
