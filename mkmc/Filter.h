@@ -109,6 +109,9 @@ bool FilterSequences<KmersSamplesData_T>::keepKMer(const KmersSamplesData_T& kme
 	{
 		return false;
 	}
+
+	const bool kmersEqual = !(kmcFile.First() < kmersData.kmer);
 	kmcFile.Next();
-	return true;
+
+	return kmersEqual;
 }
