@@ -231,8 +231,8 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 
 			if (statisticsToGeneration.entropy)
 			{
-				const double entropy = entropyObj.entropy_n(
-					outNormEntry.begin(),
+				const double entropy = entropyObj.entropy_scaled_n(
+					inMatrixEntry.begin(),
 					num_samples);
 
 				outStatsEntry[outStatsEntryIdx++] = entropy;
@@ -241,8 +241,13 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 			{
 				if (statisticsToGeneration.tTest)
 				{
+					std::vector<uint64_t> inMatrixEntryScaled;
+					inMatrixEntryScaled.reserve((inMatrixEntry.size()));
+					for (auto entry : inMatrixEntry)
+						inMatrixEntryScaled.push_back(std::log2(entry + 1));
+
 					const double tTestPValue = statistics.t_test_n(
-						outNormEntry.begin(),
+						inMatrixEntryScaled.begin(),
 						differentialAnalysisPhenotype.begin(),
 						num_samples).p_value;
 
@@ -398,8 +403,8 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 
 			if (statisticsToGeneration.entropy)
 			{
-				const double entropy = entropyObj.entropy_n(
-					outNormEntry.begin(),
+				const double entropy = entropyObj.entropy_scaled_n(
+					inMatrixEntry.begin(),
 					num_samples);
 
 				outStatsEntry[outStatsIdx++] = entropy;
@@ -407,8 +412,13 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 
 			if (statisticsToGeneration.tTest)
 			{
+				std::vector<uint64_t> inMatrixEntryScaled;
+				inMatrixEntryScaled.reserve((inMatrixEntry.size()));
+				for (auto entry : inMatrixEntry)
+					inMatrixEntryScaled.push_back(std::log2(entry + 1));
+
 				const double tTestPValue = statistics.t_test_n(
-					outNormEntry.begin(),
+					inMatrixEntryScaled.begin(),
 					differentialAnalysisPhenotype.begin(),
 					num_samples).p_value;
 

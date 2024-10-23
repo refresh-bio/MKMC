@@ -39,7 +39,7 @@ Options:
  
 [Option Group: differential k-mers analysis]
   Options:
- - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` Needs: `-n` `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))
+ - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` Needs: `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need `-n`
  - `--pval_corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files
  - `--max_corrected_pval FLOAT:FLOAT in [0 - 1] [0.05]` Needs: `--pval_corr` - statistical significance for --pval_corr parameter
  - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)

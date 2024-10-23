@@ -30,6 +30,13 @@ namespace refresh
 
 		// *************************************************************************************
 		template<typename Iter>
+		double entropy_scaled(Iter first, Iter last)
+		{
+			return entropy_scaled_n(first, std::distance(first, last));
+		}
+
+		// *************************************************************************************
+		template<typename Iter>
 		double entropy_n(Iter first, size_t n)
 		{
 			size_t sum_C = 0;
@@ -39,6 +46,25 @@ namespace refresh
 			{
 				sum_C += *first;
 				sum_Ci_ln_Ci += (double) *first * flog.log(*first);
+			}
+
+			double H_k_e = -sum_Ci_ln_Ci / sum_C + flog.log(sum_C);
+			double H_k = H_k_e / ln2;
+
+			return H_k;
+		}
+
+		// *************************************************************************************
+		template<typename Iter>
+		double entropy_scaled_n(Iter first, size_t n)
+		{
+			size_t sum_C = 0;
+			double sum_Ci_ln_Ci = 0;
+
+			for (size_t i = 0; i < n; ++i, ++first)
+			{
+				sum_C += (*first + 1);
+				sum_Ci_ln_Ci += (double)(*first + 1) * flog.log(*first + 1);
 			}
 
 			double H_k_e = -sum_Ci_ln_Ci / sum_C + flog.log(sum_C);

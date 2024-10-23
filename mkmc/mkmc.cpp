@@ -113,7 +113,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	CLI::Option_group* diffGroup = app.add_option_group("differential k-mers analysis");
 	typedef StatisticsParams::DifferentialAnalysisMethod DAMethod;
 	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"ttest", DAMethod::TTest }, {"snr", DAMethod::SNR }, {"wrs", DAMethod::WilcoxonRankSum }, {"dids", DAMethod::DIDS }, {"anova", DAMethod::ANOVA } };
-	differentialAnalysis = diffGroup->add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test))")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
+	differentialAnalysis = diffGroup->add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need -n")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
 
 	typedef StatisticsParams::DifferentialAnalysisCorrectionMethod CorrectionMethod;
 	std::map<std::string, StatisticsParams::DifferentialAnalysisCorrectionMethod> differentialAnalysisCorrectionValuesMap{ { "b", CorrectionMethod::Bonferroni }, { "hb", CorrectionMethod::HolmBonferroni }, { "bh", CorrectionMethod::BenjaminiHochberg }, { "by", CorrectionMethod::BenjaminiYekutieli } };
@@ -233,7 +233,7 @@ void createArguments(int argc, char** argv, Params& params, CLI::App& app)
 	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, reduce carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 
 	cor->needs(n)->needs(p);
-	differentialAnalysis->needs(n)->needs(c);
+	differentialAnalysis->needs(c);
 
 	app.footer("Warning: k-mers order in output files is not specified and may vary between runnings.\n\n"
 		"Example: to run MKMC, type:\n"
@@ -257,6 +257,12 @@ int main(int argc, char** argv)
 
 	createArguments(argc, argv, params, app);
 	CLI11_PARSE(app, argc, argv);
+
+	if (!params.statisticsParams.generateNormalization && (params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
+	{
+		std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
+		exit(1);
+	}
 
 	if (!params.readAdditionalParamsFromFiles())
 	{
