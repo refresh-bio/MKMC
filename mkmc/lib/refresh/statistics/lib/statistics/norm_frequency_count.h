@@ -45,7 +45,10 @@ namespace refresh::normalization
 			mult_factor.resize(no_series);
 
 			for (size_t i = 0; i < mult_factor.size(); ++i)
-				mult_factor[i] = (VALUE_T)1.0 / (VALUE_T)counts[i];
+				if (counts[i])
+					mult_factor[i] = (VALUE_T)1.0 / (VALUE_T)counts[i];
+				else
+					mult_factor[i] = (VALUE_T)0.0;
 
 			// Serialize
 			for (auto x : mult_factor)
