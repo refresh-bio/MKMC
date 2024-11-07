@@ -179,6 +179,8 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 
 		kmcdb::CKmer<SIZE> kmer;
 		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outGahtererBin = gatherer.getBin(taskData.binId);
+
+		std::vector<double> inMatrixEntryScaled(num_samples); // for t-test
 		for (auto kmer_idx = binsOffsets[taskData.binId]; bin->NextKmer(kmer, inMatrixEntry.data()); ++kmer_idx)
 		{
 			kmer.to_string(kmer_len, kmerSequence.data());
@@ -241,10 +243,8 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 			{
 				if (statisticsToGeneration.tTest)
 				{
-					std::vector<uint64_t> inMatrixEntryScaled;
-					inMatrixEntryScaled.reserve((inMatrixEntry.size()));
-					for (auto entry : inMatrixEntry)
-						inMatrixEntryScaled.push_back(std::log2(entry + 1));
+					for (size_t it = 0; it < num_samples; ++it)
+						inMatrixEntryScaled[it] = std::log2(inMatrixEntry[it] + 1);
 
 					const double tTestPValue = statistics.t_test_n(
 						inMatrixEntryScaled.begin(),
@@ -353,6 +353,8 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 
 		kmcdb::CKmer<SIZE> kmer;
 		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outGathererBin = gatherer.getBin(taskData.binId, false, true);
+
+		std::vector<double> inMatrixEntryScaled(num_samples); // for t-test
 		while (bin->NextKmer(kmer, inMatrixEntry.data()))
 		{
 			kmer.to_string(kmer_len, kmerSequence.data());
@@ -412,10 +414,8 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 
 			if (statisticsToGeneration.tTest)
 			{
-				std::vector<uint64_t> inMatrixEntryScaled;
-				inMatrixEntryScaled.reserve((inMatrixEntry.size()));
-				for (auto entry : inMatrixEntry)
-					inMatrixEntryScaled.push_back(std::log2(entry + 1));
+				for (size_t it = 0; it < num_samples; ++it)
+					inMatrixEntryScaled[it] = std::log2(inMatrixEntry[it] + 1);
 
 				const double tTestPValue = statistics.t_test_n(
 					inMatrixEntryScaled.begin(),
