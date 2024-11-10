@@ -51,7 +51,7 @@ public:
 
 
 
-void createArguments(int argc, char** argv, Params& params, CLI::App& app)
+void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 {
 	DefaultKMCParams& defaultKMCParams = params.defaultKMCParams;
 	KMC::Stage1Params& stage1Params = params.stage1Params;
@@ -255,8 +255,28 @@ int main(int argc, char** argv)
 	Params params;
 	CLI::App app{ "Multi - KMC (MKMC) ver. " MKMC_VER };
 
-	createArguments(argc, argv, params, app);
-	CLI11_PARSE(app, argc, argv);
+	configureArguments(argc, argv, params, app);
+	
+	// Add -- separator before positionals
+	try {
+			(app).parse(argc, argv);
+	}
+	catch (const CLI::ParseError& e) {
+		std::string helpText;
+		if (e.get_name() == "CallForHelp")
+			helpText = app.help();
+		else if (e.get_name() == "CallForAllHelp")
+			helpText = app.help("", CLI::AppFormatMode::All);
+		else
+			return (app).exit(e);
+
+		// Replace string
+		size_t startPos = helpText.find("[OPTIONS]");
+		if (startPos != std::string::npos)
+			helpText.replace(startPos, std::string("[OPTIONS]").length(), "[OPTIONS] --");
+		std::cout << helpText;
+		return e.get_exit_code();
+	}
 
 	if (!params.statisticsParams.generateNormalization && (params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
 	{

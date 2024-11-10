@@ -12,7 +12,7 @@ The easiest way to get the program is to download the most recent version from t
 
 #### General usage:
 ```
-./mkmc [OPTIONS] input_samples_file output_files_template temp_dir
+./mkmc [OPTIONS] -- input_samples_file output_files_template temp_dir
 ```
 
 Positionals:
@@ -69,7 +69,7 @@ Options:
  - `--umap-parallel_optimization INT [0]` Needs: `--umap` - `parallel_optimization` parameter
 
 [Option Group: additional parameters]
-  Options:	
+  Options:
  - `-f ENUM:value in {fa,fq,mf} [fq]` - input format (FASTA, FASTQ or multi-FASTA); mixing files is not supported
  - `-o ENUM:value in {fa,matrix} [matrix]  ...` - output format (FASTA or matrix)
  - `-b` - turn off transformation of k-mers into canonical form
