@@ -34,19 +34,19 @@ Options:
 [Option Group: correlation and normalization]
   Options:
  - `-n ENUM:value in {deseq,freq,q}` - generate normalized counts (DESeq2/frequency count/quantile normalization)
- - `--cor ENUM:value in {kendall,pearson,spearman}` Needs: `-n` `-p` - compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
+ - `--cor ENUM:value in {kendall,pearson,spearman}` ... Needs: `-n` `-p` - compute correlation cofficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a set of integers, one in each line)
  
 [Option Group: differential k-mers analysis]
   Options:
- - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` Needs: `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need `-n`
- - `--pval_corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files
+ - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` ... Needs: `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need `-n`; counts for T-Test are increased by 1 and logarithmized
+ - `--pval_corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files
  - `--max_corrected_pval FLOAT:FLOAT in [0 - 1] [0.05]` Needs: `--pval_corr` - statistical significance for --pval_corr parameter
  - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)
  
 [Option Group: other statistical parameters]
   Options:
- - `--entropy` - generate k-mers counts entropy
+ - `--entropy` - generate k-mers counts entropy; counts are increased by 1
  - `--n_top UINT [10000]` - select a number of top k-mers (for correlations using an absolute value)
 
 [Option Group: dimentionality reduction with UMAP algorithm]
@@ -61,7 +61,7 @@ Options:
  - `--umap-a FLOAT [0]` Needs: `--umap` - `a` parameter
  - `--umap-b FLOAT [0]` Needs: `--umap` - `b` parameter
  - `--umap-repulsion_strength FLOAT [1]` Needs: `--umap` - `repulsion_strength` parameter
- - `--umap-initialize ENUM:value in {none,random,spectral,spectral_only}` Needs: `--umap` - `initialize` parameter
+ - `--umap-initialize ENUM:value in {none,random,spectral,spectral_only}` ... Needs: `--umap` - `initialize` parameter
  - `--umap-num_epochs INT [-1]` Needs: `--umap` - `num_epochs` parameter
  - `--umap-learning_rate FLOAT [1]` Needs: `--umap` - `learning_rate` parameter
  - `--umap-negative_sample_rate FLOAT [5]` Needs: `--umap` - `negative_sample_rate` parameter
@@ -70,7 +70,7 @@ Options:
 
 [Option Group: additional parameters]
   Options:
- - `-f ENUM:value in {fa,fq,mf} [fq]` - input format (FASTA, FASTQ or multi-FASTA); mixing files is not supported
+ - `-f ENUM:value in {fa,fq,mf} [fq]` - input format (FASTA, FASTQ or multi-FASTA); mixing files formats is not supported
  - `-o ENUM:value in {fa,matrix} [matrix]  ...` - output format (FASTA or matrix)
  - `-b` - turn off transformation of k-mers into canonical form
  - `--ci UINT:POSITIVE [1]` - exclude k-mers occurring less than specified number of times (if k-mer occurs less than --ci times in a sample, it gets counter 0, but for this sample only)
@@ -85,7 +85,7 @@ Options:
 [Option Group: debug parameters]
   Options:
  - `--keep` - keep temporary files
- - `--on UINT:POSITIVE [512]` - number of internal bins, reduce carefully
+ - `--on UINT:POSITIVE [512]` - number of internal bins, modify carefully
 
 Warning: k-mers order in output files is not specified and may vary between runnings
 

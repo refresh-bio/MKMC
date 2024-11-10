@@ -102,7 +102,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	n = correlationGroup->add_option_function("-n", nCallback, "generate normalized counts (DESeq2/frequency count/quantile normalization)")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
 
 	std::map<std::string, StatisticsParams::CorrelationMethod> correlationValuesMap{ {"pearson", StatisticsParams::CorrelationMethod::Pearson }, { "spearman", StatisticsParams::CorrelationMethod::Spearman }, {"kendall", StatisticsParams::CorrelationMethod::Kendall } };
-	cor = correlationGroup->add_option("--cor", statisticsParams.correlationMethods, "compute correlation cofficients with specified methods, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
+	cor = correlationGroup->add_option("--cor", statisticsParams.correlationMethods, "compute correlation cofficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
 
 	std::function<void(const std::string&)> pCallback = [&](const std::string& fileName)
 	{
@@ -113,7 +113,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	CLI::Option_group* diffGroup = app.add_option_group("differential k-mers analysis");
 	typedef StatisticsParams::DifferentialAnalysisMethod DAMethod;
 	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"ttest", DAMethod::TTest }, {"snr", DAMethod::SNR }, {"wrs", DAMethod::WilcoxonRankSum }, {"dids", DAMethod::DIDS }, {"anova", DAMethod::ANOVA } };
-	differentialAnalysis = diffGroup->add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need -n")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
+	differentialAnalysis = diffGroup->add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need -n; counts for T-Test are increased by 1 and logarithmized")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
 
 	typedef StatisticsParams::DifferentialAnalysisCorrectionMethod CorrectionMethod;
 	std::map<std::string, StatisticsParams::DifferentialAnalysisCorrectionMethod> differentialAnalysisCorrectionValuesMap{ { "b", CorrectionMethod::Bonferroni }, { "hb", CorrectionMethod::HolmBonferroni }, { "bh", CorrectionMethod::BenjaminiHochberg }, { "by", CorrectionMethod::BenjaminiYekutieli } };
@@ -122,7 +122,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 		statisticsParams.classificationPValueCorrection = classificationPValueCorrection;
 		statisticsParams.correctPvalues = true;
 	};
-	pvalCorr = diffGroup->add_option_function("--pval_corr", pcorrCallback, "correct p-values of differential k-mers analysis with a specified method (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files")->transform(CLI::CheckedTransformer(differentialAnalysisCorrectionValuesMap))->needs(differentialAnalysis);
+	pvalCorr = diffGroup->add_option_function("--pval_corr", pcorrCallback, "correct p-values of differential k-mers analysis (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files")->transform(CLI::CheckedTransformer(differentialAnalysisCorrectionValuesMap))->needs(differentialAnalysis);
 
 	diffGroup->add_option("--max_corrected_pval", statisticsParams.maxCorrectedPval, "statistical significance for --pval_corr parameter")->check(CLI::Range(0.0, 1.0))->default_val(statisticsParams.maxCorrectedPval)->needs(pvalCorr);
 
@@ -134,7 +134,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	CLI::Option_group* otherStatsGroup = app.add_option_group("other statistical parameters");
 
-	otherStatsGroup->add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy");
+	otherStatsGroup->add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy; counts are increased by 1");
 
 	otherStatsGroup->add_option("--n_top", statisticsParams.nTop, "select a number of top k-mers (for correlations using an absolute value)")->default_val(statisticsParams.nTop); // needs --corr or --diff
 	
@@ -171,7 +171,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	CLI::Option_group* optionalGroup = app.add_option_group("additional parameters");
 
 	std::map<std::string, KMC::InputFileType> inputValuesMap{ {"fa", KMC::InputFileType::FASTA }, {"fq", KMC::InputFileType::FASTQ }, { "mf", KMC::InputFileType::MULTILINE_FASTA } };
-	optionalGroup->add_option("-f", mkmcParams.inputFileType, "input format (FASTA, FASTQ or multi-FASTA); mixing files is not supported")->transform(CLI::CheckedTransformer(inputValuesMap, CLI::ignore_case))->default_val(mkmcParams.inputFileType)->default_str("fq");
+	optionalGroup->add_option("-f", mkmcParams.inputFileType, "input format (FASTA, FASTQ or multi-FASTA); mixing files formats is not supported")->transform(CLI::CheckedTransformer(inputValuesMap, CLI::ignore_case))->default_val(mkmcParams.inputFileType)->default_str("fq");
 
 	std::map<std::string, OutputFileType> outputValuesMap{ {"fa", OutputFileType::FASTA }, {"matrix", OutputFileType::Matrix } };
 	optionalGroup->add_option("-o", mkmcParams.outputFileTypes, "output format (FASTA or matrix)")->transform(CLI::CheckedTransformer(outputValuesMap, CLI::ignore_case));
@@ -230,7 +230,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
 	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files");
 
-	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, reduce carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
+	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 
 	cor->needs(n)->needs(p);
 	differentialAnalysis->needs(c);
