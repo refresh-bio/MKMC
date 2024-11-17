@@ -249,7 +249,8 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 					const double tTestPValue = statistics.t_test_n(
 						inMatrixEntryScaled.begin(),
 						differentialAnalysisPhenotype.begin(),
-						num_samples).p_value;
+						num_samples,
+						false).p_value;
 
 					outStatsEntry[outStatsEntryIdx++] = tTestPValue;
 				}
@@ -420,7 +421,8 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 				const double tTestPValue = statistics.t_test_n(
 					inMatrixEntryScaled.begin(),
 					differentialAnalysisPhenotype.begin(),
-					num_samples).p_value;
+					num_samples,
+					false).p_value;
 
 				pValuesData[outPValuesToCorrectAlg++][outPValuesToCorrectIdx] = tTestPValue;
 			}
