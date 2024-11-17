@@ -171,7 +171,7 @@ namespace refresh
 				ret.df = stats_details::pow2(a0 + a1) / (stats_details::pow2(a0) / (mean_sd[0].n - 1) + stats_details::pow2(a1) / (mean_sd[1].n - 1));
 			}
 
-			ret.p_value = std::clamp<double>(2.0 * (1.0 - stats::pt(ret.statistic, ret.df, false)), 0, 1);
+			ret.p_value = std::clamp<double>(2.0 * (1.0 - stats::pt(fabs(ret.statistic), ret.df, false)), 0, 1);
 
 			return ret;
 		}
