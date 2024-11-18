@@ -223,7 +223,14 @@ void StatisticsGenerator::generateStatisticsParallel()
 			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
 
 			if (umap)
-				RunUmap(umap.get(), cnt_matrix_output_header, params);
+				try
+				{
+					RunUmap(umap.get(), cnt_matrix_output_header, params);
+				}
+				catch (const std::length_error&)
+				{
+					std::cerr << "Error: Cannot run UMAP. Try to tight filtering criteria" << std::endl;
+				}
 		});
 
 		pValuesCorrectedData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
@@ -280,7 +287,14 @@ void StatisticsGenerator::generateStatisticsParallel()
 			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
 
 			if (umap)
-				RunUmap(umap.get(), cnt_matrix_output_header, params);
+				try
+				{
+					RunUmap(umap.get(), cnt_matrix_output_header, params);
+				}
+				catch (const std::length_error&)
+				{
+					std::cerr << "Error: Cannot run UMAP. Try to tight filtering criteria" << std::endl;
+				}
 		});
 	}
 }
