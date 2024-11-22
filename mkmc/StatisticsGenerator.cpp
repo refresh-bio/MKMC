@@ -23,13 +23,13 @@ void StatisticsGenerator::openReaders()
 
 void StatisticsGenerator::fillTaskData()
 {
-	tasksData.reserve(params.stage1Params.GetNBins());
+	tasksData.reserve(matrixMetadataReader->GetConfig().num_bins);
 	if (params.statisticsParams.correctPvalues)
 		correctTasksData.reserve(statisticsToGeneration.nStatisticsWithPValues);
 
-	nOutputKmersPerBin.reserve(params.stage1Params.GetNBins());
+	nOutputKmersPerBin.reserve(matrixMetadataReader->GetConfig().num_bins);
 	
-	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
+	for (uint32_t i = 0; i < matrixMetadataReader->GetConfig().num_bins; ++i)
 	{
 		tasksData.push_back(TaskData{ i });
 		nOutputKmersPerBin.push_back(matrixReader->GetBin(i)->GetBinMetadata().total_kmers);
@@ -38,6 +38,8 @@ void StatisticsGenerator::fillTaskData()
 	if (params.statisticsParams.correctPvalues)
 		for (uint32_t i = 0; i < statisticsToGeneration.nStatisticsWithPValues; ++i)
 			correctTasksData.push_back(CorrectTaskData{ i });
+
+	binsOffsets.resize(matrixMetadataReader->GetConfig().num_bins + 1);
 
 	for (size_t it = 1; it < binsOffsets.size(); ++it) // fragmentsBegins[0] = 0
 	{
@@ -66,8 +68,7 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 	gatherer(params, statisticsToGeneration),
 	correlationPhenotype(params.phenotypes.correlationPhenotype.getPhenotype()),
 	differentialAnalysisPhenotype(params.phenotypes.differentialAnalysisPhenotype.getMappedPhenotype()),
-	differentialAnalysisNClasses(params.phenotypes.differentialAnalysisPhenotype.getClassesNumber()),
-	binsOffsets(params.stage1Params.GetNBins() + 1)
+	differentialAnalysisNClasses(params.phenotypes.differentialAnalysisPhenotype.getClassesNumber())
 {
 
 	auto is_correlation_method = [&](StatisticsParams::CorrelationMethod method)
