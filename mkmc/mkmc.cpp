@@ -248,6 +248,22 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 
 
+void checkArguments(const Params& params)
+{
+	if (!params.statisticsParams.generateNormalization && (params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
+	{
+		std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
+		exit(1);
+	}
+
+	if (params.mkmcParams.samples.size() <= 8 && std::find(params.statisticsParams.classificationMethods.begin(), params.statisticsParams.classificationMethods.end(), StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum) != params.statisticsParams.classificationMethods.end())
+	{
+		std::cerr << "Warning: Wilcoxon-rank sum (Mann-Whitney U test) uses approximate algorithm, thus for less than 9 samples its results may be slightly different than in e.g. SciPy.\n";
+	}
+}
+
+
+
 //----------------------------------------------------------------------------------
 // Main function
 int main(int argc, char** argv)
@@ -278,11 +294,7 @@ int main(int argc, char** argv)
 		return e.get_exit_code();
 	}
 
-	if (!params.statisticsParams.generateNormalization && (params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
-	{
-		std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
-		exit(1);
-	}
+	checkArguments(params);
 
 	if (!params.readAdditionalParamsFromFiles())
 	{
