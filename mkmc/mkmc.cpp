@@ -248,6 +248,16 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 
 
+void checkArguments(const Params& params)
+{
+	if (params.mkmcParams.samples.size() <= 8 && std::find(params.statisticsParams.classificationMethods.begin(), params.statisticsParams.classificationMethods.end(), StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum) != params.statisticsParams.classificationMethods.end())
+	{
+		std::cerr << "Warning: Wilcoxon-rank sum (Mann-Whitney U test) uses approximate algorithm, thus for less than 9 samples its results may be slightly different than in e.g. SciPy.\n";
+	}
+}
+
+
+
 //----------------------------------------------------------------------------------
 // Main function
 int main(int argc, char** argv)
@@ -288,6 +298,8 @@ int main(int argc, char** argv)
 	{
 		std::exit(1);
 	}
+
+	checkArguments(params);
 
 	params.generateTempAndOutputFilesNames();
 	params.adjustKMCPerformanceParams();
