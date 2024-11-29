@@ -236,18 +236,16 @@ bool Merger<SIZE>::inputIsConsistent()
 template<unsigned SIZE>
 inline void Merger<SIZE>::fillTaskData()
 {
-	tasksData.reserve(params.stage1Params.GetNBins());
-	for (uint32_t i = 0; i < params.stage1Params.GetNBins(); ++i)
-	{
-		tasksData.push_back(TaskData{ i });
-	}
-
 	uint64_t biggestSampleKmersCount = 0;
 
-	std::vector<uint64_t> samplesBeginSize(params.mkmcParams.nKMCBins);
+	std::vector<uint64_t> samplesBeginSize;
 
-	samplesMetadata.reserve(params.stage1Params.GetNBins());
-	samplesReaders.reserve(params.stage1Params.GetNBins());
+	//mkokot_TODO: Macku ten reserve to chyba na l. sampli powiniene byc a nie na liczbe binow, prawda?
+	//Generalnie na GetNBins nie mozna polegac bo kmc moglo sobie wybrac inna liczbe binow (tzn. 1 jak wlacza small k opt)
+	//samplesMetadata.reserve(params.stage1Params.GetNBins());
+	//samplesReaders.reserve(params.stage1Params.GetNBins());
+	samplesMetadata.reserve(params.mkmcParams.kmcOutputFiles.size());
+	samplesReaders.reserve(params.mkmcParams.kmcOutputFiles.size());
 
 	uint64_t totKmersAllSamples = 0;
 
@@ -259,6 +257,10 @@ inline void Merger<SIZE>::fillTaskData()
 			kmcdb::MetadataReader& metadata_reader = *samplesMetadata.back();
 			samplesReaders.emplace_back(std::make_unique<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>(metadata_reader));
 			kmcdb::ReaderSortedWithLUTForListing<uint64_t>& reader = *samplesReaders.back();
+
+			if (i == 0) //we need to get number of bins from readers, not from config because KMC could enable small k opt and use 1 bin
+				samplesBeginSize.resize(metadata_reader.GetConfig().num_bins);
+
 			uint64_t totKmers = 0;
 			for (uint32_t bin_id = 0; bin_id < metadata_reader.GetConfig().num_bins; ++bin_id)
 				totKmers += reader.GetBin(bin_id)->GetBinMetadata().total_kmers;
@@ -286,6 +288,12 @@ inline void Merger<SIZE>::fillTaskData()
 	}
 
 	progress_bar = std::make_unique<ProgressBar>(params.mkmcParams.verbosity_level == 0 ? 0 : totKmersAllSamples, "Dumping", std::cerr, params.mkmcParams.verbosity_level == 0);
+
+	tasksData.reserve(samplesMetadata.front()->GetConfig().num_bins);
+	for (uint32_t i = 0; i < samplesMetadata.front()->GetConfig().num_bins; ++i)
+	{
+		tasksData.push_back(TaskData{ i });
+	}
 
 	// sorting is performed in the following manner: first biggest bins are dumped, then smaller; but the sorting is performed basing on the biggest sample only
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return samplesBeginSize[a.binId] > samplesBeginSize[b.binId]; });
