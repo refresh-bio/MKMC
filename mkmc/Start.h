@@ -15,5 +15,5 @@ public:
 		params(params)
 	{}
 
-	void verifyFiles();
+	bool verifyFiles();
 };

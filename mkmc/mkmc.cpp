@@ -291,7 +291,7 @@ int main(int argc, char** argv)
 	if (!params.statisticsParams.generateNormalization && (params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
 	{
 		std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
-		exit(1);
+		std::exit(1);
 	}
 
 	if (!params.readAdditionalParamsFromFiles())
@@ -309,12 +309,18 @@ int main(int argc, char** argv)
 	if (params.mkmcParams.verbosity_level > 0)
 		Logger::Inst().Enable();
 
+	Start start(params);
+	Finish finish(params);
+
 	try
 	{
 		Timer sequence_filter_init, kmc_timer, merger_timer, statistics_timer;
 
-		Start start(params);
-		start.verifyFiles();
+		if (!start.verifyFiles())
+		{
+			finish.finishProcessing();
+			std::exit(1);
+		}
 
 		if (params.filterParams.filterKmersSequences)
 		{
@@ -353,7 +359,6 @@ int main(int argc, char** argv)
 			statistics_timer.stopTimer();
 		}
 
-		Finish finish(params);
 		finish.finishProcessing();
 
 		if (params.mutableParams.createdFastaFile)
@@ -379,5 +384,7 @@ int main(int argc, char** argv)
 	catch (const std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
+		finish.finishProcessing();
+		std::exit(1);
 	}
 }

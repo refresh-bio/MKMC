@@ -23,12 +23,12 @@ bool Start::canCreateFileInPath(const std::string& path)
 		return canCreateFile(path + static_cast<char>(std::filesystem::path::preferred_separator) + name);
 }
 
-void Start::verifyFiles()
+bool Start::verifyFiles()
 {
 	if (!canCreateFile(params.mkmcParams.outputFilesTemplate))
 	{
 		std::cerr << "Error: Cannot create output file: " << params.mkmcParams.outputFilesTemplate << "." << std::endl;
-		exit(1);
+		return false;
 	}
 
 	if (!std::filesystem::exists(params.mkmcParams.tmpPath))
@@ -36,7 +36,7 @@ void Start::verifyFiles()
 		if (!std::filesystem::create_directory(params.mkmcParams.tmpPath))
 		{
 			std::cerr << "Error: the specified directory " << params.mkmcParams.tmpPath << " does not exist and it cannot be created." << std::endl;
-			exit(1);
+			return false;
 		}
 		else
 		{
@@ -49,7 +49,7 @@ void Start::verifyFiles()
 	else if (!std::filesystem::is_directory(params.mkmcParams.tmpPath))
 	{
 		std::cerr << "Error: " << params.mkmcParams.tmpPath << "exists, but is not a directory." << std::endl;
-		exit(1);
+		return false;
 	}
 
 	if (!canCreateFileInPath(params.stage1Params.GetTmpPath()))
@@ -57,6 +57,8 @@ void Start::verifyFiles()
 		std::cerr << "Error: Cannot create file in the specified working directory: " << params.stage1Params.GetTmpPath() << "." << std::endl;
 		if (params.mutableParams.tmpDirCreated)
 			std::filesystem::remove(params.mkmcParams.tmpPath);
-		exit(1);
+		return false;
 	}
+
+	return true;
 }
