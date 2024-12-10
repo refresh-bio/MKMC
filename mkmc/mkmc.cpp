@@ -263,36 +263,43 @@ void checkArguments(const Params& params)
 int main(int argc, char** argv)
 {
 	Params params;
-	CLI::App app{ "Multi - KMC (MKMC) ver. " MKMC_VER };
 
-	configureArguments(argc, argv, params, app);
-	
-	// Add -- separator before positionals
-	try {
-			(app).parse(argc, argv);
-	}
-	catch (const CLI::ParseError& e) {
-		std::string helpText;
-		if (e.get_name() == "CallForHelp")
-			helpText = app.help();
-		else if (e.get_name() == "CallForAllHelp")
-			helpText = app.help("", CLI::AppFormatMode::All);
-		else
-			return (app).exit(e);
-
-		// Replace string
-		size_t startPos = helpText.find("[OPTIONS]");
-		if (startPos != std::string::npos)
-			helpText.replace(startPos, std::string("[OPTIONS]").length(), "[OPTIONS] --");
-		std::cout << helpText;
-		return e.get_exit_code();
-	}
-
-	if (!params.statisticsParams.generateNormalization && (params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
+	// CLI arguments handling
 	{
-		std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
-		std::exit(1);
+		CLI::App app{ "Multi - KMC (MKMC) ver. " MKMC_VER };
+
+		configureArguments(argc, argv, params, app);
+
+		// Add -- separator before positionals
+		try {
+			(app).parse(argc, argv);
+		}
+		catch (const CLI::ParseError& e) {
+			std::string helpText;
+			if (e.get_name() == "CallForHelp")
+				helpText = app.help();
+			else if (e.get_name() == "CallForAllHelp")
+				helpText = app.help("", CLI::AppFormatMode::All);
+			else
+				return (app).exit(e);
+
+			// Replace string
+			size_t startPos = helpText.find("[OPTIONS]");
+			if (startPos != std::string::npos)
+				helpText.replace(startPos, std::string("[OPTIONS]").length(), "[OPTIONS] --");
+			std::cout << helpText;
+			return e.get_exit_code();
+		}
+
+		if (!params.statisticsParams.generateNormalization && (params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
+		{
+			std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
+			std::exit(1);
+		}
 	}
+
+	if (params.mkmcParams.verbosity_level > 0)
+		Logger::Inst().Enable();
 
 	if (!params.readAdditionalParamsFromFiles())
 	{
@@ -305,9 +312,6 @@ int main(int argc, char** argv)
 	params.adjustKMCPerformanceParams();
 	params.adjustAnotherParams();
 	params.readPhenotypes();
-
-	if (params.mkmcParams.verbosity_level > 0)
-		Logger::Inst().Enable();
 
 	Start start(params);
 	Finish finish(params);

@@ -141,7 +141,7 @@ void Params::adjustKMCPerformanceParams()
 		mKMCWorkersReduced = true;
 	}
 
-	if (mkmcParams.nKMCWorkersUserSet && mKMCWorkersReduced)
+	if (mkmcParams.nKMCWorkersUserSet && mKMCWorkersReduced && mkmcParams.verbosity_level > 0)
 	{
 		std::cerr << "Warning: number of workers is too huge, reduced to " << mkmcParams.nKMCWorkers << "." << std::endl;
 	}
@@ -156,7 +156,7 @@ void Params::adjustKMCPerformanceParams()
 
 void Params::adjustAnotherParams()
 {
-	if (mkmcParams.maxRamGBUserDefined && stage1Params.GetRamOnlyMode())
+	if (mkmcParams.maxRamGBUserDefined && stage1Params.GetRamOnlyMode() && mkmcParams.verbosity_level > 0)
 	{
 		std::cerr << "Warning: when -r parameter is given, the limit specified with -m may be exceeded." << std::endl;
 	}
