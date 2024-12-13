@@ -45,7 +45,7 @@ public:
 
 		if (params.filterParams.filterKmersSequences)
 		{
-			tasksData.push_back(TaskData{ { params.mutableParams.kmersSequencesToFilterOut }, params.filterParams.kmersSequencesToFilterOutDB, mkmcParams.tmpPath, KMC::InputFileType::FASTA });
+			tasksData.push_back(TaskData{ { params.mutableParams.kmersSequencesToFilterOut }, params.filterParams.kmersSequencesToFilterOutDB, mkmcParams.tmpPath, KMC::InputFileType::MULTILINE_FASTA });
 		}
 	}
 
