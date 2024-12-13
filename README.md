@@ -29,7 +29,7 @@ Options:
   Options:
  - `--thr UINT:POSITIVE [1]` -  filter out k-mers occuring less than specified number of times...
  - `--thr_rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
- - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only
+ - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only; if `-b` is not set, the k-mers are converted to canonical form
  
 [Option Group: correlation and normalization]
   Options:
@@ -72,7 +72,7 @@ Options:
   Options:
  - `-f ENUM:value in {fa,fq,mf} [fq]` - input format (FASTA, FASTQ or multi-FASTA); mixing files formats is not supported
  - `-o ENUM:value in {fa,matrix} [matrix]  ...` - output format (FASTA or matrix)
- - `-b` - turn off transformation of k-mers into canonical form
+ - `-b` - turn off transformation of k-mers into canonical form; applies both for input sequences and k-mers passed by `--flt`
  - `--ci UINT:POSITIVE [1]` - exclude k-mers occurring less than specified number of times (if k-mer occurs less than --ci times in a sample, it gets counter 0, but for this sample only)
  - `--cx UINT:POSITIVE [4000000000]` - exclude counting k-mers occurring more than specified number of times (if k-mer occurs more than --cx times in a sample, it gets counter 0, but for this sample only)
  - `--cs UINT:UINT in [2 - 4294967295] [65535]` - maximal value of a counter

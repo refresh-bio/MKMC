@@ -89,7 +89,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 		filterParams.inputKmersSequencesToFilterOut = fileName;
 		filterParams.filterKmersSequences = true;
 	};
-	filteringGroup->add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only")->check(CLI::ExistingFile);
+	filteringGroup->add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only; if -b is not set, the k-mers are converted to canonical form")->check(CLI::ExistingFile);
 
 	CLI::Option_group* correlationGroup = app.add_option_group("correlation and normalization");
 
@@ -180,7 +180,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	{
 		stage1Params.SetCanonicalKmers(false);
 	};
-	optionalGroup->add_flag_callback("-b", bCallback, "turn off transformation of k-mers into canonical form");
+	optionalGroup->add_flag_callback("-b", bCallback, "turn off transformation of k-mers into canonical form; applies both for input sequences and k-mers passed by --flt");
 
 	std::function<void(const uint32_t&)> ciCallback = [&](const uint32_t& ci) // currently 32 bits
 	{
