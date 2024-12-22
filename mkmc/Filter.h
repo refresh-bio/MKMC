@@ -25,12 +25,12 @@ template <typename KmersSamplesData_T>
 class FilterSequences
 {
 	const Params& params;
-	KMCFileWrapper<KmersSamplesData_T::SIZE> kmcFile;
+	KMCFileWrapper<KmersSamplesData_T::SIZE> filterKMCFile;
 
 public:
 	FilterSequences(const Params& params, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin) :
 		params(params),
-		kmcFile(bin)
+		filterKMCFile(bin)
 	{}
 
 	bool keepKMer(const KmersSamplesData_T& kmersData);
@@ -99,19 +99,19 @@ bool FilterCountThreshold<KmersSamplesData_T>::keepKMer(const KmersSamplesData_T
 template<typename KmersSamplesData_T>
 bool FilterSequences<KmersSamplesData_T>::keepKMer(const KmersSamplesData_T& kmersData)
 {
-	if (kmcFile.Finished())
-	{
+	if (filterKMCFile.Finished())
 		return false;
-	}
 
 	//assert(!(kmcFile.First() < kmersData.minKmer));
-	if (kmersData.kmer < kmcFile.First())
-	{
+	if (kmersData.kmer < filterKMCFile.First())
 		return false;
-	}
 
-	const bool kmersEqual = !(kmcFile.First() < kmersData.kmer);
-	kmcFile.Next();
+	while (!filterKMCFile.Finished() && filterKMCFile.First() < kmersData.kmer)
+		filterKMCFile.Next();
+
+	const bool kmersEqual = !filterKMCFile.Finished() && !(kmersData.kmer < filterKMCFile.First());
+	if (kmersEqual)
+		filterKMCFile.Next();
 
 	return kmersEqual;
 }
