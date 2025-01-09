@@ -8,7 +8,14 @@ Then it combines multiple KMC databases into one single text file (currently, bu
 This file is a matrix with k-mers as rows and samples as columns. Values are counts of k-mers in samples.
 FASTA output files, containg k-mers sequences only, are also supported.
 
+#### Building:
 The easiest way to get the program is to download the most recent version from the [**release page**](https://github.com/refresh-bio/MKMC/releases).
+
+To build own binary clone the repository with the command:
+```
+git clone --recurse-submodules https://github.com/refresh-bio/MKMC-dev.git
+```
+To build on Linux type `make -j` (make and G++ 11 or newer is required). To build on Windows use Visual Studio 2022 or newer.
 
 #### General usage:
 ```
