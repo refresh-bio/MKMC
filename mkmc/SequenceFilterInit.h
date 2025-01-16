@@ -16,7 +16,7 @@ class SequenceFilterInit
 
 	bool getNotEmptyLine(std::istream& stream, std::string& outLine);
 
-	bool isFasta();
+	bool isFastaOrMultiFasta();
 	void convertTxtToFasta();
 
 public:

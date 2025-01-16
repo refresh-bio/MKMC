@@ -19,7 +19,7 @@ bool SequenceFilterInit::getNotEmptyLine(std::istream& stream, std::string& outL
 
 
 
-bool SequenceFilterInit::isFasta()
+bool SequenceFilterInit::isFastaOrMultiFasta()
 {
 	std::ifstream stream(params.filterParams.inputKmersSequencesToFilterOut);
 	if (!stream.is_open())
@@ -28,7 +28,6 @@ bool SequenceFilterInit::isFasta()
 		exit(1);
 	}
 	std::string line;
-	std::string kmer;
 
 	if (!getNotEmptyLine(stream, line))
 	{
@@ -36,18 +35,20 @@ bool SequenceFilterInit::isFasta()
 		exit(1);
 	}
 
-	if (line.front() == '>')
+	if (line.front() == '>') // FASTA or multi-FASTA
 	{
-		if (!getNotEmptyLine(stream, kmer))
+		std::string firstKmerSeq;
+		if (!getNotEmptyLine(stream, firstKmerSeq))
 		{
 			std::cerr << "Error: format of a file " << params.filterParams.inputKmersSequencesToFilterOut << "is not proper; it must be one of: FASTA or a sequence of k-mers." << std::endl;
 			exit(1);
 		}
 		return true;
 	}
-	else
+	else // raw k-mers file
 	{
 		std::istringstream sstream(line);
+		std::string kmer;
 		sstream >> kmer;
 		if (kmer.length() != params.stage1Params.GetKmerLen())
 		{
@@ -98,9 +99,9 @@ void SequenceFilterInit::convertTxtToFasta()
 
 void SequenceFilterInit::prepareKmersSequencesToFilter()
 {
-	if (!isFasta())
+	if (!isFastaOrMultiFasta())
 	{
-		std::cerr << "Starting preparing k-mers to filter out..." << std::endl;
+		std::cerr << "Starting preparing k-mers for filtering..." << std::endl;
 
 		sequence_filter_init.startTimer();
 		convertTxtToFasta();

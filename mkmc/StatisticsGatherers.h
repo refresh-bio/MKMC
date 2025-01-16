@@ -420,7 +420,7 @@ WritingGathererBin<Statistics_T>::WritingGathererBin(
 	numSamples(numSamples),
 	maxCorrectedPval(maxCorrectedPval)
 {
-	assert(gatherCorrected && gatherNotCorrected || mainWritingGatherer.params.statisticsParams.correctPvalues); // safe separately only if correction is performed
+	assert((gatherCorrected && gatherNotCorrected) || mainWritingGatherer.params.statisticsParams.correctPvalues); // safe separately only if correction is performed
 	assert(gatherCorrected || gatherNotCorrected);
 
 	if (gatherNotCorrected && mainWritingGatherer.writers.pearson)
