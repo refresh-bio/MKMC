@@ -4,20 +4,20 @@
 
 
 MKMC is a software utilizing KMC to count k-mers in each of the predefined input samples.
-Then it combines multiple KMC databases into one single text file (currently, but probably will change in the future, i.e., more files, binary format).
-This file is a matrix with k-mers as rows and samples as columns. Values are counts of k-mers in samples.
+Then it combines multiple KMC databases into one single file binary .kmcdb file and, optionally, a text matrix.
+The latter file is a matrix with k-mers as rows and samples as columns. The values are counts of k-mers in samples.
 FASTA output files, containg k-mers sequences only, are also supported.
 
-#### Building:
+### Building
 The easiest way to get the program is to download the most recent version from the [**release page**](https://github.com/refresh-bio/MKMC/releases).
 
 To build own binary clone the repository with the command:
 ```
 git clone --recurse-submodules https://github.com/refresh-bio/MKMC-dev.git
 ```
-To build on Linux type `make -j` (make and G++ 11 or newer is required). To build on Windows use Visual Studio 2022 or newer.
+To build on Linux type `make -j` (make and G++ 11 or newer are required). To build on Windows use Visual Studio 2022 or newer.
 
-#### General usage:
+### General usage
 ```
 ./mkmc [OPTIONS] -- input_samples_file output_files_template temp_dir
 ```
@@ -42,14 +42,14 @@ Options:
   Options:
  - `-n ENUM:value in {deseq,freq,q}` - generate normalized counts (DESeq2/frequency count/quantile normalization)
  - `--cor ENUM:value in {kendall,pearson,spearman}` ... Needs: `-n` `-p` - compute correlation cofficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
- - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a set of integers, one in each line)
+ - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a sequence of integers, one in each line)
  
 [Option Group: differential k-mers analysis]
   Options:
  - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` ... Needs: `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need `-n`; counts for T-Test are increased by 1 and logarithmized
  - `--pval_corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files
  - `--max_corrected_pval FLOAT:FLOAT in [0 - 1] [0.05]` Needs: `--pval_corr` - statistical significance for --pval_corr parameter
- - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)
+ - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a sequence of natural numbers or text labels, one in each line)
  
 [Option Group: other statistical parameters]
   Options:
@@ -93,14 +93,23 @@ Options:
   Options:
  - `--keep` - keep temporary files
  - `--on UINT:POSITIVE [512]` - number of internal bins, modify carefully
+K-mers order in output files is not specified and may vary between runnings.
+> [!warning]  
+**K-mers order in output files is not specified and may vary between runnings.**
 
-Warning: k-mers order in output files is not specified and may vary between runnings
-
-Example: to run MKMC, type:
+### Example
+To run MKMC, type:
 ```
 ./mkmc -k 20 --thr_rat 0.5 -- input_files_list.txt output tmp
 ```
-It will generate a matrix of 20-mers occurring in at least a half of the input files.
+It will generate a binary matrix file `output.kmcdb` of 20-mers occurring in at least a half of the input files.
+
+To obtain also a text matrix dump, type:
+```
+./mkmc -k 20 --thr_rat 0.5 -o matrix -- input_files_list.txt output tmp
+```
+It will generate also a file `output_matrix`.
+
 ```
 ./mkmc -k 20 --thr 2 --thr_rat 0.5 -- input_files_list.txt output tmp
 ```
@@ -112,8 +121,8 @@ killifishretina1 kfA_1.fastq.gz kfA_2.fastq.gz
 killifishretina2 kfB.fastq.gz`
 ```
 
-#### Results example
-Lets assume following FASTQ files:
+### Results example
+Let's assume following FASTQ files:
  - `1_1.fq`:
 ```
 @Common k-mers
@@ -157,18 +166,17 @@ ACGTACGTGGGTTAAAACCCAGGGGT
 IIIIIIIIIIIIIIIIIIIIIIIIII
 ```
 
-And file `files.txt` containng:
+And file `files.txt` containing:
 ```
 sample1 1_1.fq 1_2.fq
 sample2 2_1.fq 2_2.fq
 sample3 3_1.fq 3_2.fq
 ```
-All the samples are stored in single, unpaired files. To have k-mers that were present in each input sample one may use:
+To have k-mers that were present in each input sample one may use:
 ```
-mkdir -p tmp
-./mkmc -k25 -f fq --thr_rat 1 -- files.txt present-in-all.txt tmp
+./mkmc -k25 -f fq --thr_rat 1 -- files.txt present-in-all tmp
 ```
-The output (`present-in-all.txt`) is then:
+The output (binary `present-in-all.kmcdb`; see `Example` section to see, how to obtain also a text matrix dump) is then:
 ```
 k-mer	sample1	sample2	sample3	
 ACCCCTGGGTTTTAACCCACGTACG	1	1	1
@@ -176,10 +184,9 @@ ACGTACGTGGGTTAAAACCCAGGGG	1	1	1
 ```
 To have k-mers that were present in at least half of the samples one may use the following:
 ```
-mkdir -p tmp
-./mkmc -k 25 -f fq --thr_rat 0.5 -- files.txt present-in-at-least-half-files.txt tmp
+./mkmc -k 25 -f fq --thr_rat 0.5 -- files.txt present-in-at-least-half-files tmp
 ```
-The output (`present-in-at-least-half-files.txt`) is then:
+The output (`present-in-at-least-half-files.kmcdb`) is then:
 ```
 k-mer	sample1	sample2	sample3	
 AAAACACACAAACAGATAAACAGAT	1	1	0
@@ -190,10 +197,9 @@ TAAAACACACAAACAGATAAACAGA	1	1	0
 
 To have k-mers that were present in any of the samples one may use the following:
 ```
-mkdir -p tmp
-./mkmc -k 25 -f fq --thr_rat 0 -- files.txt present-in-any.txt tmp
+./mkmc -k 25 -f fq --thr_rat 0 -- files.txt present-in-any tmp
 ```
-The output (`present-in-any.txt`) is then:
+The output (`present-in-any.kmcdb`) is then:
 ```
 k-mer	sample1	sample2	sample3	
 AAAACACACAAACAGATAAACAGAT	1	1	0
@@ -204,8 +210,7 @@ ACGTAGGTGGGTTAATTCCCAGGGG	0	0	1
 TAAAACACACAAACAGATAAACAGA	1	1	0
 ```
 
-**Important remark:** in fact there is, currently, not just a single file but instead the result is distributed to many bins, so the files are `present-in-any.txt_matrix_<bin_id>`.
-#### Current performance
+### Current performance
 This is an initial version of code with limited optimizations and parallelism.
 
 We have obtained the following benchmarks (on a computer equipped with AMD Ryzen Threadripper 3990X 64-Core processor) for 0.0.1 version:

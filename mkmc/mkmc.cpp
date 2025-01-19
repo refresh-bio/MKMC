@@ -108,7 +108,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	{
 		phenotypes.correlationPhenotype.setFileName(fileName);
 	};
-	p = correlationGroup->add_option_function("-p", pCallback, "set a phenotype file (a set of integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
+	p = correlationGroup->add_option_function("-p", pCallback, "set a phenotype file (a sequence of integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
 
 	CLI::Option_group* diffGroup = app.add_option_group("differential k-mers analysis");
 	typedef StatisticsParams::DifferentialAnalysisMethod DAMethod;
@@ -130,7 +130,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	{
 		phenotypes.differentialAnalysisPhenotype.setFileName(fileName);
 	};
-	c = diffGroup->add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a set of natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
+	c = diffGroup->add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a sequence of natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
 
 	CLI::Option_group* otherStatsGroup = app.add_option_group("other statistical parameters");
 
