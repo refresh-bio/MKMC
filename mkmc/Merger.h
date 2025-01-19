@@ -109,12 +109,12 @@ void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_
 	for (size_t sample_id = 0; sample_id < params.mkmcParams.kmcOutputFiles.size(); ++sample_id)
 		samples.emplace_back(samplesReaders[sample_id]->GetBin(binId));
 
-	size_t tot_all_kmers{};
+	size_t totAllBinKmers{};
 	for (const auto& db : samples) {
-		tot_all_kmers += db.GetTotKmers();
+		totAllBinKmers += db.GetTotKmers();
 	}
 
-	ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, tot_all_kmers / 100ull));
+	ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, totAllBinKmers / 100ull));
 
 	std::vector<uint64_t> kMersCounts(samples.size());
 
@@ -240,16 +240,12 @@ inline void Merger<SIZE>::fillTaskData()
 
 	std::vector<uint64_t> samplesBeginSize;
 
-	//mkokot_TODO: Macku ten reserve to chyba na l. sampli powiniene byc a nie na liczbe binow, prawda?
-	//Generalnie na GetNBins nie mozna polegac bo kmc moglo sobie wybrac inna liczbe binow (tzn. 1 jak wlacza small k opt)
-	//samplesMetadata.reserve(params.stage1Params.GetNBins());
-	//samplesReaders.reserve(params.stage1Params.GetNBins());
 	samplesMetadata.reserve(params.mkmcParams.kmcOutputFiles.size());
 	samplesReaders.reserve(params.mkmcParams.kmcOutputFiles.size());
 
 	uint64_t totKmersAllSamples = 0;
 
-	for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i)
+	for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i) // iterate on samples
 	{
 		try
 		{
