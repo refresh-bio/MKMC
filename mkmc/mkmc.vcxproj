@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\kmc\kmc_dump\nc_utils.cpp" />
+    <ClCompile Include="DimensionalityReduction.cpp" />
     <ClCompile Include="DumpWriter.cpp" />
     <ClCompile Include="FileGenerators.cpp" />
     <ClCompile Include="Finish.cpp" />
@@ -175,6 +176,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DimensionalityReduction.h" />
     <ClInclude Include="Merger.h" />
     <ClInclude Include="DumpWriter.h" />
     <ClInclude Include="FileGenerators.h" />

@@ -236,41 +236,6 @@ public:
 	}
 };
 
-template<typename VALUE_T>
-void RunUmap(refresh::umap_direct<VALUE_T>* umap,
-	const std::vector<std::string>& sample_names,
-	const Params& params)
-{
-	assert(umap);
-
-	umap->run(params.statisticsParams.umap_dimensions);
-
-	const auto& umap_res = umap->result();
-
-	auto num_dimenstions = umap_res.front().size();
-
-	DumpWriter writer(params.mkmcParams.outputFileUMAP, false);
-	writer.StoreHeader(sample_names, "Dimension");
-
-	auto num_samples = params.mkmcParams.samples.size();
-
-	std::string first_col_prefix = "UMAP";
-	auto first_col_len = first_col_prefix.length() + 10; // I assume 10 is more then enough to store component/dimension number
-
-	auto max_line_len = first_col_len + 1 + params.mkmcParams.samples.size() * (refresh::numeric_conversion_max_length<double>() + 1);
-
-	OutputBuffer out(writer, max_line_len);
-
-	std::vector<double> values(num_samples);
-	for (size_t row = 0; row < num_dimenstions ; ++row)
-	{
-		std::string first_col = first_col_prefix + std::to_string(row + 1);
-		for (size_t sample_id = 0; sample_id < num_samples; ++sample_id)
-			values[sample_id] = umap_res[sample_id][row];
-		out.StoreKmer(first_col, values, StoreMethods::AsMatrixRow);
-	}
-}
-
 
 template<typename Statistics_T>
 class WritingGathererBin

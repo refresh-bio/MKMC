@@ -1,6 +1,7 @@
 #include "StatisticsGenerator.h"
 #include "MatrixStats.h"
 #include "DumpWriter.h"
+#include "DimensionalityReduction.h"
 #include <algorithm>
 
 
@@ -201,37 +202,24 @@ void StatisticsGenerator::generateStatisticsParallel()
 		std::vector<std::thread> threads(params.mkmcParams.nThreads);
 
 		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
-			std::unique_ptr<refresh::umap_direct<double>> umap;
-			if (params.statisticsParams.runUMAP)
-			{
-				umap = std::make_unique<refresh::umap_direct<double>>(
-					cnt_matrix_output_header.size(), //number of samples
-					binsOffsets.back() //number of k-mers
-					);
-				umap->set_params(params.statisticsParams.umap_params);
-			}
+			DimensionalityReduction dimensionalityReduction(params,
+				cnt_matrix_output_header, //names of samples
+				binsOffsets.back() //number of k-mers
+			);
 			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
 
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
-				threads[i_thred] = std::thread([this, &keepNLargestCollectionGlobal, &umap] { this->processEntriesWhenCorrection<decltype(SIZE)::value>(keepNLargestCollectionGlobal, umap.get()); });
+				threads[i_thred] = std::thread([this, &keepNLargestCollectionGlobal, &dimensionalityReduction]
+					{ this->processEntriesWhenCorrection<decltype(SIZE)::value>(keepNLargestCollectionGlobal, dimensionalityReduction); });
 			}
 			for (std::thread& thread : threads)
 			{
 				thread.join();
 			}
 
+			dimensionalityReduction.runAndStore();
 			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
-
-			if (umap)
-				try
-				{
-					RunUmap(umap.get(), cnt_matrix_output_header, params);
-				}
-				catch (const std::length_error&)
-				{
-					std::cerr << "Error: Cannot run UMAP. Try to tight filtering criteria" << std::endl;
-				}
 		});
 
 		pValuesCorrectedData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
@@ -261,41 +249,25 @@ void StatisticsGenerator::generateStatisticsParallel()
 	else
 	{
 		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
-
-			std::unique_ptr<refresh::umap_direct<double>> umap;
-			if (params.statisticsParams.runUMAP)
-			{
-				umap = std::make_unique<refresh::umap_direct<double>>(
-					cnt_matrix_output_header.size(), //number of samples
-					binsOffsets.back() //number of k-mers
+			DimensionalityReduction dimensionalityReduction(params,
+				cnt_matrix_output_header, //names of samples
+				binsOffsets.back() //number of k-mers
 				);
-				umap->set_params(params.statisticsParams.umap_params);
-			}
-
 			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
 
 			std::vector<std::thread> threads(params.mkmcParams.nThreads);
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
-				threads[i_thred] = std::thread([this, &keepNLargestCollectionGlobal,&umap]
-					{ this->processEntries<decltype(SIZE)::value>(keepNLargestCollectionGlobal, umap.get()); });
+				threads[i_thred] = std::thread([this, &keepNLargestCollectionGlobal,&dimensionalityReduction]
+					{ this->processEntries<decltype(SIZE)::value>(keepNLargestCollectionGlobal, dimensionalityReduction); });
 			}
 			for (std::thread& thread : threads)
 			{
 				thread.join();
 			}
 
+			dimensionalityReduction.runAndStore();
 			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
-
-			if (umap)
-				try
-				{
-					RunUmap(umap.get(), cnt_matrix_output_header, params);
-				}
-				catch (const std::length_error&)
-				{
-					std::cerr << "Error: Cannot run UMAP. Try to tight filtering criteria" << std::endl;
-				}
 		});
 	}
 }

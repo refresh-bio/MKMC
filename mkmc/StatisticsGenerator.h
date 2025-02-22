@@ -12,6 +12,7 @@
 #include "kmcdb/kmcdb.h"
 #include "DumpWriter.h"
 #include "StatisticsGatherers.h"
+#include "DimensionalityReduction.h"
 
 
 class StatisticsGenerator
@@ -85,10 +86,11 @@ class StatisticsGenerator
 
 	template<unsigned SIZE>
 	void processEntries(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
-		refresh::umap_direct<double>* umap);
+		DimensionalityReduction& dimensionalityReduction);
 
 	template<unsigned SIZE>
-	void processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal, refresh::umap_direct<double>* umap);
+	void processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
+		DimensionalityReduction& dimensionalityReduction);
 
 	void correctPValuesEntries();
 
@@ -133,7 +135,7 @@ void StatisticsGenerator::initKeepNLargest(KeepNLargestCollection<SIZE>& keepNLa
 
 template<unsigned SIZE>
 void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
-	refresh::umap_direct<double>* umap)
+	DimensionalityReduction& dimensionalityReduction)
 {
 	KeepNLargestCollection<SIZE> keepNLargestCollection;
 
@@ -189,12 +191,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 			{
 				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormEntry);
 
-				if (umap)
-				{
-					for (size_t sample_id = 0; sample_id < outNormEntry.size(); ++sample_id)
-						umap->add(sample_id, kmer_idx, outNormEntry[sample_id]);
-				}
-
+				dimensionalityReduction.add(kmer_idx, outNormEntry);
 				normOutputBuffer->StoreKmer(kmerSequence, outNormEntry, StoreMethods::AsMatrixRow);
 			}
 
@@ -307,7 +304,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 
 template<unsigned SIZE>
 void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
-	refresh::umap_direct<double>* umap)
+	DimensionalityReduction& dimensionalityReduction)
 {
 	assert(statisticsToGeneration.differentialAnalysis);
 	assert(params.statisticsParams.generateNormalization);
@@ -362,12 +359,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 
 			normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormEntry);
 
-			if (umap)
-			{
-				for (size_t sample_id = 0; sample_id < outNormEntry.size(); ++sample_id)
-					umap->add(sample_id, outPValuesToCorrectIdx, outNormEntry[sample_id]);
-			}
-
+			dimensionalityReduction.add(outPValuesToCorrectIdx, outNormEntry);
 			normOutputBuffer->StoreKmer(kmerSequence, outNormEntry, StoreMethods::AsMatrixRow);
 
 			size_t outStatsIdx = 0;
