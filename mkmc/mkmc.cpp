@@ -234,7 +234,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	optionalGroup->add_flag_callback("-v", vCallback, "verbose mode, shows progress");
 
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
-	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files");
+	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
 
 	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 

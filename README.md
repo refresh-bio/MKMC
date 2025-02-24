@@ -92,7 +92,7 @@ Options:
 
 [Option Group: debug parameters]
   Options:
- - `--keep` - keep temporary files
+ - `--keep` - keep temporary files and binary results file
  - `--on UINT:POSITIVE [512]` - number of internal bins, modify carefully
 K-mers order in output files is not specified and may vary between runnings.
 > [!warning]  
