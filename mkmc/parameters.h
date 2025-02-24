@@ -90,6 +90,7 @@ struct MKMCParams
 	std::string outputFileANOVACorSignificantFasta;
 
 	std::string outputFileUMAP;
+	std::string outputFilePCA;
 
 	bool totCntGeneration = false;
 	std::string outputFileTotCnt;
@@ -127,7 +128,11 @@ struct StatisticsParams
 	NormalizationMethod normalizationMethod;
 
 	bool runUMAP = false;
-	uint32_t umap_dimensions = 2;
+	bool runPCA = false;
+
+	bool nDimensionReductionUserDefined = false;
+	uint32_t nDimensionReduction = 2;
+
 	refresh::umap<double>::params_t umap_params{};
 
 

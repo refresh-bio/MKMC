@@ -2,6 +2,7 @@
 
 #include "parameters.h"
 #include "lib/refresh/statistics/lib/statistics_umap.h"
+#include "lib/refresh/statistics/lib/statistics_pca.h"
 
 #include <vector>
 #include <memory>
@@ -15,19 +16,34 @@ class DimensionalityReduction {
 	using out_kmcdb_value_type = double;
 
 	bool runUMAP;
+	bool runPCA;
 
 	std::unique_ptr<refresh::umap_direct<out_kmcdb_value_type>> umap;
+
+	std::unique_ptr<refresh::pca<out_kmcdb_value_type>> pca;
+
+	std::mutex PCAAddMutex; // temporarily, until refresh::PCA is parallel ready
+
+	void store(const std::string& fileName, const std::string& firstColPrefix, const std::vector<std::vector< out_kmcdb_value_type>>& results);
+
+	void runAndStoreUMAP();
+	void runAndStorePCA();
 
 public:
 	DimensionalityReduction(Params& params, const std::vector<std::string>& samplesNames, uint64_t nKmers) :
 		params(params),
 		samplesNames(samplesNames),
-		runUMAP(params.statisticsParams.runUMAP)
+		runUMAP(params.statisticsParams.runUMAP),
+		runPCA(params.statisticsParams.runPCA)
 	{
 		if (runUMAP)
 		{
 			umap = std::make_unique<refresh::umap_direct<out_kmcdb_value_type>>(samplesNames.size(), nKmers);
 			umap->set_params(params.statisticsParams.umap_params);
+		}
+		if (runPCA)
+		{
+			pca = std::make_unique<refresh::pca<out_kmcdb_value_type>>();
 		}
 	}
 

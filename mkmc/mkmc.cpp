@@ -138,35 +138,41 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	otherStatsGroup->add_option("--n_top", statisticsParams.nTop, "select a number of top k-mers (for correlations using an absolute value)")->default_val(statisticsParams.nTop); // needs --corr or --diff
 	
-	CLI::Option_group* umapGroup = app.add_option_group("dimentionality reduction with UMAP algorithm");
+	CLI::Option_group* dimReductionGroup = app.add_option_group("dimentionality reduction");
 
-	auto umap = umapGroup->add_flag("--umap", statisticsParams.runUMAP, "run dimentionality reduction on normalized matrix with UMAP")->needs(n);
+	auto umap = dimReductionGroup->add_flag("--umap", statisticsParams.runUMAP, "run dimentionality reduction on normalized matrix with UMAP")->needs(n);
+	dimReductionGroup->add_flag("--pca", statisticsParams.runPCA, "run dimentionality reduction on normalized matrix with PCA")->needs(n);
 
-	umapGroup->add_option("--umap-dimensions", statisticsParams.umap_dimensions, "number of output dimensions")->needs(umap)->default_val(statisticsParams.umap_dimensions);
+	std::function<void(const decltype(statisticsParams.nDimensionReduction)&)> dimensionsCallback = [&](const decltype(statisticsParams.nDimensionReduction)& dimensions)
+	{
+		statisticsParams.nDimensionReduction = dimensions;
+		statisticsParams.nDimensionReductionUserDefined = true;
+	};
+	dimReductionGroup->add_option_function("--dimensions", dimensionsCallback, "number of output dimensions; needs --umap or --pca")->default_val(statisticsParams.nDimensionReduction);
 
-	umapGroup->add_option("--umap-local_connectivity", statisticsParams.umap_params.local_connectivity, "local_connectivity parameter")->needs(umap)->default_val(statisticsParams.umap_params.local_connectivity);
-	umapGroup->add_option("--umap-bandwidth", statisticsParams.umap_params.bandwidth, "bandwidth parameter")->needs(umap)->default_val(statisticsParams.umap_params.bandwidth);
+	dimReductionGroup->add_option("--umap-local_connectivity", statisticsParams.umap_params.local_connectivity, "local_connectivity parameter")->needs(umap)->default_val(statisticsParams.umap_params.local_connectivity);
+	dimReductionGroup->add_option("--umap-bandwidth", statisticsParams.umap_params.bandwidth, "bandwidth parameter")->needs(umap)->default_val(statisticsParams.umap_params.bandwidth);
 
-	umapGroup->add_option("--umap-mix_ratio", statisticsParams.umap_params.mix_ratio, "mix_ratio parameter")->needs(umap)->default_val(statisticsParams.umap_params.mix_ratio);
-	umapGroup->add_option("--umap-spread", statisticsParams.umap_params.spread, "spread parameter")->needs(umap)->default_val(statisticsParams.umap_params.spread);
-	umapGroup->add_option("--umap-min_dist", statisticsParams.umap_params.min_dist, "min_dist parameter")->needs(umap)->default_val(statisticsParams.umap_params.min_dist);
-	umapGroup->add_option("--umap-a", statisticsParams.umap_params.a, "a parameter")->needs(umap)->default_val(statisticsParams.umap_params.a);
-	umapGroup->add_option("--umap-b", statisticsParams.umap_params.b, "b parameter")->needs(umap)->default_val(statisticsParams.umap_params.b);
-	umapGroup->add_option("--umap-repulsion_strength", statisticsParams.umap_params.repulsion_strength, "repulsion_strength parameter")->needs(umap)->default_val(statisticsParams.umap_params.repulsion_strength);
+	dimReductionGroup->add_option("--umap-mix_ratio", statisticsParams.umap_params.mix_ratio, "mix_ratio parameter")->needs(umap)->default_val(statisticsParams.umap_params.mix_ratio);
+	dimReductionGroup->add_option("--umap-spread", statisticsParams.umap_params.spread, "spread parameter")->needs(umap)->default_val(statisticsParams.umap_params.spread);
+	dimReductionGroup->add_option("--umap-min_dist", statisticsParams.umap_params.min_dist, "min_dist parameter")->needs(umap)->default_val(statisticsParams.umap_params.min_dist);
+	dimReductionGroup->add_option("--umap-a", statisticsParams.umap_params.a, "a parameter")->needs(umap)->default_val(statisticsParams.umap_params.a);
+	dimReductionGroup->add_option("--umap-b", statisticsParams.umap_params.b, "b parameter")->needs(umap)->default_val(statisticsParams.umap_params.b);
+	dimReductionGroup->add_option("--umap-repulsion_strength", statisticsParams.umap_params.repulsion_strength, "repulsion_strength parameter")->needs(umap)->default_val(statisticsParams.umap_params.repulsion_strength);
 
 	std::map<std::string, umappp::InitMethod> umapInitMethodValuesMap{ { "spectral", umappp::InitMethod::SPECTRAL }, { "spectral_only", umappp::InitMethod::SPECTRAL_ONLY }, { "random", umappp::InitMethod::RANDOM }, { "none", umappp::InitMethod::NONE } };
 
-	umapGroup->add_option("--umap-initialize", statisticsParams.classificationMethods, "initialize parameter")->transform(CLI::CheckedTransformer(umapInitMethodValuesMap))->needs(umap);
-	umapGroup->add_option("--umap-num_epochs", statisticsParams.umap_params.num_epochs, "num_epochs parameter")->needs(umap)->default_val(statisticsParams.umap_params.num_epochs); // default -1
-	umapGroup->add_option("--umap-learning_rate", statisticsParams.umap_params.learning_rate, "learning_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.learning_rate);
+	dimReductionGroup->add_option("--umap-initialize", statisticsParams.classificationMethods, "initialize parameter")->transform(CLI::CheckedTransformer(umapInitMethodValuesMap))->needs(umap);
+	dimReductionGroup->add_option("--umap-num_epochs", statisticsParams.umap_params.num_epochs, "num_epochs parameter")->needs(umap)->default_val(statisticsParams.umap_params.num_epochs); // default -1
+	dimReductionGroup->add_option("--umap-learning_rate", statisticsParams.umap_params.learning_rate, "learning_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.learning_rate);
 
-	umapGroup->add_option("--umap-negative_sample_rate", statisticsParams.umap_params.negative_sample_rate, "negative_sample_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.negative_sample_rate);
-	umapGroup->add_option("--umap-seed", statisticsParams.umap_params.seed, "seed parameter")->needs(umap)->default_val(statisticsParams.umap_params.seed);
+	dimReductionGroup->add_option("--umap-negative_sample_rate", statisticsParams.umap_params.negative_sample_rate, "negative_sample_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.negative_sample_rate);
+	dimReductionGroup->add_option("--umap-seed", statisticsParams.umap_params.seed, "seed parameter")->needs(umap)->default_val(statisticsParams.umap_params.seed);
 
 	//this will be set with the "main" or "global" number of threads
 	//umapGroup->add_option("--umap-num_threads", statisticsParams.umap_params.num_threads, "num_threads parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.num_threads);
 
-	umapGroup->add_option("--umap-parallel_optimization", statisticsParams.umap_params.parallel_optimization, "parallel_optimization parameter")->needs(umap)->default_val(statisticsParams.umap_params.parallel_optimization);
+	dimReductionGroup->add_option("--umap-parallel_optimization", statisticsParams.umap_params.parallel_optimization, "parallel_optimization parameter")->needs(umap)->default_val(statisticsParams.umap_params.parallel_optimization);
 
 	CLI::Option_group* optionalGroup = app.add_option_group("additional parameters");
 
@@ -294,6 +300,12 @@ int main(int argc, char** argv)
 		if (!params.statisticsParams.generateNormalization && (params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
 		{
 			std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
+			std::exit(1);
+		}
+
+		if (params.statisticsParams.nDimensionReductionUserDefined && !(params.statisticsParams.runPCA || params.statisticsParams.runUMAP))
+		{
+			std::cerr << "Error: Number of dimensions requires dimensionality reduction algorithm (--umap or --pca)\n";
 			std::exit(1);
 		}
 	}
