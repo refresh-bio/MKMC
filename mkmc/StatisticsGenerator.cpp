@@ -106,6 +106,8 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 
 	statisticsToGeneration.tTest = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::TTest);
 	statisticsToGeneration.snr = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::SNR);
+	if (params.mkmcParams.generateForNonNormalized) // as is_differential_analysis_method has side effects, it should be called conditionally here
+		statisticsToGeneration.unnormalizedSnr = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::SNR);
 	statisticsToGeneration.wilcoxonRankSum = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum);
 
 	statisticsToGeneration.dids = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::DIDS);

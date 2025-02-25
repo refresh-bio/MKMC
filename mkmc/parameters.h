@@ -72,6 +72,11 @@ struct MKMCParams
 	std::string outputFileSNRTopCntMatrix;
 	std::string outputFileSNRTopFasta;
 
+	std::string outputFileUnnormalizedSNR;
+	std::string outputFileUnnormalizedSNRTop;
+	std::string outputFileUnnormalizedSNRTopCntMatrix;
+	std::string outputFileUnnormalizedSNRTopFasta;
+
 	std::string outputFileWilcoxonRankSum;
 	std::string outputFileWilcoxonRankSumCor;
 	std::string outputFileWilcoxonRankSumCorSignificant;
@@ -105,6 +110,8 @@ struct MKMCParams
 	bool nKMCWorkersUserSet = false;
 
 	bool keepTmpFiles = false;
+
+	bool generateForNonNormalized = false;
 
 	int verbosity_level = 0;
 };

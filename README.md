@@ -94,6 +94,7 @@ Options:
   Options:
  - `--keep` - keep temporary files and binary results file
  - `--on UINT:POSITIVE [512]` - number of internal bins, modify carefully
+ - `--generate_snr_for_unnormalized_data` - generate Signal to Noise ratio also for unnormalized counts
 K-mers order in output files is not specified and may vary between runnings.
 > [!warning]  
 **K-mers order in output files is not specified and may vary between runnings.**

@@ -94,6 +94,11 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputFileSNRTopCntMatrix = mkmcParams.outputFilesTemplate + "_snr_top_matrix";
 	mkmcParams.outputFileSNRTopFasta = mkmcParams.outputFilesTemplate + "_snr_top.fa";
 
+	mkmcParams.outputFileUnnormalizedSNR = mkmcParams.outputFilesTemplate + "_snr_for_unnornalized";
+	mkmcParams.outputFileUnnormalizedSNRTop = mkmcParams.outputFilesTemplate + "_snr_top_for_unnornalized";
+	mkmcParams.outputFileUnnormalizedSNRTopCntMatrix = mkmcParams.outputFilesTemplate + "_snr_top_matrix_for_unnornalized";
+	mkmcParams.outputFileUnnormalizedSNRTopFasta = mkmcParams.outputFilesTemplate + "_snr_top_for_unnornalized.fa";
+
 	mkmcParams.outputFileWilcoxonRankSum = mkmcParams.outputFilesTemplate + "_wrs";
 	mkmcParams.outputFileWilcoxonRankSumCor = mkmcParams.outputFilesTemplate + "_wrs_cor_all";
 	mkmcParams.outputFileWilcoxonRankSumCorSignificant = mkmcParams.outputFilesTemplate + "_wrs_cor_significant";

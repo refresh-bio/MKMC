@@ -26,6 +26,7 @@ struct StatisticsToGeneration
 
 	bool tTest = false;
 	bool snr = false;
+	bool unnormalizedSnr = false;
 	bool wilcoxonRankSum = false;
 
 	bool dids = false;
@@ -106,6 +107,7 @@ struct KeepNLargestCollection
 	std::unique_ptr<KeepTopNLargestPlain_T> entropy;
 
 	std::unique_ptr<KeepTopNLargestABS_T> snr;
+	std::unique_ptr<KeepTopNLargestABS_T> unnormalizedSnr;
 	std::unique_ptr<KeepTopNLargestPlain_T> dids;
 };
 
@@ -177,6 +179,7 @@ public:
 		add_for(collection.entropy, global.entropy);
 
 		add_for(collection.snr, global.snr);
+		add_for(collection.unnormalizedSnr, global.unnormalizedSnr);
 		add_for(collection.dids, global.dids);
 	}
 
@@ -229,6 +232,11 @@ public:
 			params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
 			params.mkmcParams.outputFileSNRTopFasta, max_line_len_top_fasta);
 
+		flush_for(global.unnormalizedSnr,
+			params.mkmcParams.outputFileUnnormalizedSNRTop, { "snr_analysis_for_unnormalized" }, max_line_len_top,
+			params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
+			params.mkmcParams.outputFileUnnormalizedSNRTopFasta, max_line_len_top_fasta);
+
 		flush_for(global.dids,
 			params.mkmcParams.outputFileDIDSTop, { "dids_analysis" }, max_line_len_top,
 			params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
@@ -256,6 +264,7 @@ class WritingGathererBin
 	std::unique_ptr<OutputBuffer> tTestSignificantFastaOutputBuffer;
 
 	std::unique_ptr<OutputBuffer> snrOutputBuffer;
+	std::unique_ptr<OutputBuffer> unnormalizedSnrOutputBuffer;
 
 	std::unique_ptr<OutputBuffer> wilcoxonRankSumOutputBuffer;
 	std::unique_ptr<OutputBuffer> wilcoxonRankSumSignificantOutputBuffer;
@@ -327,6 +336,7 @@ class WritingGatherer
 		std::unique_ptr<DumpWriter> tTestSignificantFasta;
 
 		std::unique_ptr<DumpWriter> snr;
+		std::unique_ptr<DumpWriter> unnormalizedSnr;
 		std::unique_ptr<DumpWriter> wilcoxonRankSum;
 		std::unique_ptr<DumpWriter> wilcoxonRankSumSignificant;
 		std::unique_ptr<DumpWriter> wilcoxonRankSumSignificantCntMatrix;
@@ -413,6 +423,8 @@ WritingGathererBin<Statistics_T>::WritingGathererBin(
 	}
 	if (gatherNotCorrected && mainWritingGatherer.writers.snr)
 		snrOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.snr, getMaxLineLength());
+	if (gatherNotCorrected && mainWritingGatherer.writers.unnormalizedSnr)
+		unnormalizedSnrOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.unnormalizedSnr, getMaxLineLength());
 	if (gatherCorrected && mainWritingGatherer.writers.wilcoxonRankSum)
 	{
 		wilcoxonRankSumOutputBuffer = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.wilcoxonRankSum, getMaxLineLength());
@@ -515,6 +527,14 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 			if (safeNTop)
 				keepNLargestCollection->snr->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
 		}
+		if (unnormalizedSnrOutputBuffer)
+		{
+			auto value = outEntry[valuesIdx++];
+			unnormalizedSnrOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+
+			if (safeNTop)
+				keepNLargestCollection->unnormalizedSnr->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+		}
 		if (wilcoxonRankSumOutputBuffer)
 		{
 			auto value = outEntry[valuesIdx++];
@@ -609,6 +629,11 @@ void WritingGatherer<Statistics_T>::initWriting(
 	{
 		writers.snr = std::make_unique<DumpWriter>(params.mkmcParams.outputFileSNR, multiThreadedGeneration);
 		writers.snr->StoreHeader({ "snr_analysis" });
+	}
+	if (statisticsToGeneration.unnormalizedSnr)
+	{
+		writers.unnormalizedSnr = std::make_unique<DumpWriter>(params.mkmcParams.outputFileUnnormalizedSNR, multiThreadedGeneration);
+		writers.unnormalizedSnr->StoreHeader({ "snr_analysis_for_unnormalized" });
 	}
 	if (statisticsToGeneration.wilcoxonRankSum)
 	{

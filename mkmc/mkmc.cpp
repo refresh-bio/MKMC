@@ -238,6 +238,8 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 
+	debugGroup->add_flag("--generate_snr_for_unnormalized_data", mkmcParams.generateForNonNormalized, "generate Signal to Noise ratio also for unnormalized counts");
+
 	cor->needs(n)->needs(p);
 	differentialAnalysis->needs(c);
 

@@ -128,6 +128,9 @@ void StatisticsGenerator::initKeepNLargest(KeepNLargestCollection<SIZE>& keepNLa
 	if (statisticsToGeneration.snr)
 		keepNLargestCollection.snr = std::make_unique<KeepTopNLargestABS_T>(params.statisticsParams.nTop);
 
+	if (statisticsToGeneration.unnormalizedSnr)
+		keepNLargestCollection.unnormalizedSnr = std::make_unique<KeepTopNLargestABS_T>(params.statisticsParams.nTop);
+
 	if (statisticsToGeneration.dids)
 		keepNLargestCollection.dids = std::make_unique<KeepTopNLargestPlain_T>(params.statisticsParams.nTop);
 
@@ -255,6 +258,15 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 				{
 					const double snr = statistics.SNR_test_n(
 						outNormEntry.begin(),
+						differentialAnalysisPhenotype.begin(),
+						num_samples);
+
+					outStatsEntry[outStatsEntryIdx++] = snr;
+				}
+				if (statisticsToGeneration.unnormalizedSnr)
+				{
+					const double snr = statistics.SNR_test_n(
+						inMatrixEntry.begin(),
 						differentialAnalysisPhenotype.begin(),
 						num_samples);
 
@@ -422,6 +434,15 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			{
 				const double snr = statistics.SNR_test_n(
 					outNormEntry.begin(),
+					differentialAnalysisPhenotype.begin(),
+					num_samples);
+
+				outStatsEntry[outStatsIdx++] = snr;
+			}
+			if (statisticsToGeneration.unnormalizedSnr)
+			{
+				const double snr = statistics.SNR_test_n(
+					inMatrixEntry.begin(),
 					differentialAnalysisPhenotype.begin(),
 					num_samples);
 
