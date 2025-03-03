@@ -50,9 +50,13 @@ void DimensionalityReduction::runAndStorePCA()
 	{
 		pca->run(params.statisticsParams.nDimensionReduction);
 	}
-	catch (...)
+	catch (const std::length_error&)
 	{
 		std::cerr << "Error: Cannot run PCA. Try to tight filtering criteria" << std::endl;
+	}
+	catch (...)
+	{
+		std::cerr << "Error: Unexpected error with PCA running" << std::endl;
 	}
 
 	const auto& pca_res = pca->result();
