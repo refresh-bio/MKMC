@@ -16,7 +16,7 @@ namespace refresh
 	public:
 		enum class computation_mode_t { covariance, svd };
 
-	private:
+	protected:
 		enum class input_mode_t {unknown, feature_oriented, object_oriented};
 
 		using entry_t = std::vector<VALUE_T>;
@@ -229,6 +229,34 @@ namespace refresh
 		std::vector<std::vector<VALUE_T>>& result()
 		{
 			return ret_data;
+		}
+	};
+
+
+	template<typename VALUE_T>
+	class pca_parallel_add : public pca<VALUE_T>
+	{
+		size_t no_features;
+
+	public:
+		pca_parallel_add(size_t no_objects, size_t no_features) :
+			no_features(no_features)
+		{
+			pca<VALUE_T>::input_vector_size = no_objects;
+			pca<VALUE_T>::input_mode = pca<VALUE_T>::input_mode_t::feature_oriented;
+			pca<VALUE_T>::input_data.resize(no_features, pca<VALUE_T>::entry_t(no_objects));
+		}
+
+		template<typename Iter>
+		bool add_object(Iter first, Iter last) = delete;
+
+		template<typename Iter>
+		bool add_feature(Iter first, Iter last) = delete;
+
+		bool add(size_t object_idx, size_t feature_idx, const VALUE_T value)
+		{
+			pca<VALUE_T>::input_data[feature_idx][object_idx] = value;
+			return true;
 		}
 	};
 }

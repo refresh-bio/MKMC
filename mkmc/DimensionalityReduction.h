@@ -20,9 +20,7 @@ class DimensionalityReduction {
 
 	std::unique_ptr<refresh::umap_direct<out_kmcdb_value_type>> umap;
 
-	std::unique_ptr<refresh::pca<out_kmcdb_value_type>> pca;
-
-	std::mutex PCAAddMutex; // temporarily, until refresh::PCA is parallel ready
+	std::unique_ptr<refresh::pca_parallel_add<out_kmcdb_value_type>> pca;
 
 	void store(const std::string& fileName, const std::string& firstColPrefix, const std::vector<std::vector< out_kmcdb_value_type>>& results);
 
@@ -43,7 +41,7 @@ public:
 		}
 		if (runPCA)
 		{
-			pca = std::make_unique<refresh::pca<out_kmcdb_value_type>>();
+			pca = std::make_unique<refresh::pca_parallel_add<out_kmcdb_value_type>>(samplesNames.size(), nKmers);
 		}
 	}
 

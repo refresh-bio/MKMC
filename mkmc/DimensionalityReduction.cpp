@@ -76,9 +76,8 @@ void DimensionalityReduction::add(const uint64_t feature_idx, const std::vector<
 	}
 	if (runPCA)
 	{
-		PCAAddMutex.lock();
-		pca->add_feature(featureEntry.begin(), featureEntry.end());
-		PCAAddMutex.unlock();
+		for (size_t sample_id = 0; sample_id < featureEntry.size(); ++sample_id)
+			pca->add(sample_id, feature_idx, featureEntry[sample_id]);
 	}
 }
 
