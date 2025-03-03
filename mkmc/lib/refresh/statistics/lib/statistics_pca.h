@@ -244,7 +244,7 @@ namespace refresh
 		{
 			pca<VALUE_T>::input_vector_size = no_objects;
 			pca<VALUE_T>::input_mode = pca<VALUE_T>::input_mode_t::feature_oriented;
-			pca<VALUE_T>::input_data.resize(no_features, pca<VALUE_T>::entry_t(no_objects));
+			pca<VALUE_T>::input_data.resize(no_features, typename pca<VALUE_T>::entry_t(no_objects));
 		}
 
 		template<typename Iter>
