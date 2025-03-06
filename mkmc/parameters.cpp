@@ -124,8 +124,9 @@ void Params::generateTempAndOutputFilesNames()
 
 
 
-void Params::adjustKMCPerformanceParams()
+bool Params::adjustKMCPerformanceParams()
 {
+	bool warningPrinted = false;
 	bool mKMCWorkersReduced = false;
 	if (mkmcParams.nThreads == 1)
 	{
@@ -150,21 +151,26 @@ void Params::adjustKMCPerformanceParams()
 	if (mkmcParams.nKMCWorkersUserSet && mKMCWorkersReduced && mkmcParams.verbosity_level > 0)
 	{
 		std::cerr << "Warning: number of workers is too huge, reduced to " << mkmcParams.nKMCWorkers << "." << std::endl;
+		warningPrinted = true;
 	}
 
 	stage1Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 	stage2Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 
 	stage1Params.SetNBins(mkmcParams.nKMCBins);
+
+	return warningPrinted;
 }
 
 
 
-void Params::adjustAnotherParams()
+bool Params::adjustAnotherParams()
 {
+	bool warningPrinted = false;
 	if (mkmcParams.maxRamGBUserDefined && stage1Params.GetRamOnlyMode() && mkmcParams.verbosity_level > 0)
 	{
 		std::cerr << "Warning: when -r parameter is given, the limit specified with -m may be exceeded." << std::endl;
+		warningPrinted = true;
 	}
 
 	size_t nCorrelationMethods = statisticsParams.correlationMethods.size();
@@ -173,6 +179,7 @@ void Params::adjustAnotherParams()
 	if (nCorrelationMethods != statisticsParams.correlationMethods.size())
 	{
 		std::cerr << "Warning: some correlation methods were given multiple times." << std::endl;
+		warningPrinted = true;
 	}
 
 	size_t nOutputFileTypes = mkmcParams.outputFileTypes.size();
@@ -182,9 +189,12 @@ void Params::adjustAnotherParams()
 	if (nOutputFileTypes != mkmcParams.outputFileTypes.size())
 	{
 		std::cerr << "Warning: some output files types were given multiple times." << std::endl;
+		warningPrinted = true;
 	}
 
 	statisticsParams.umap_params.num_threads = mkmcParams.nThreads;
+
+	return warningPrinted;
 }
 
 

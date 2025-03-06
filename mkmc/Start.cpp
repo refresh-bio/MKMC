@@ -23,7 +23,7 @@ bool Start::canCreateFileInPath(const std::string& path)
 		return canCreateFile(path + static_cast<char>(std::filesystem::path::preferred_separator) + name);
 }
 
-bool Start::verifyFiles()
+bool Start::verifyFiles(bool& warningPrinted)
 {
 	if (!canCreateFile(params.mkmcParams.outputFilesTemplate))
 	{
@@ -40,12 +40,13 @@ bool Start::verifyFiles()
 		}
 		else
 		{
-			if (params.mkmcParams.verbosity_level > 0)
-			{
-				std::cerr << "Warning: the specified directory " << params.mkmcParams.tmpPath << " does not exist. It will be temporary created." << std::endl;
+			//if (params.mkmcParams.verbosity_level > 0) // disabled to proper warningPrinted handling
+			//{
+				std::cerr << "Warning: the specified directory " << params.mkmcParams.tmpPath << " does not exist. It will be temporarily created." << std::endl;
 				if (params.mkmcParams.keepTmpFiles)
-					std::cerr << "Warning: the temporary files will not be kept (--keep parameter will be ignored)." << std::endl;
-			}
+					std::cerr << "Warning: as " << params.mkmcParams.tmpPath << "directory was created by MKC, the temporary files will not be kept (--keep parameter will be ignored)." << std::endl;
+				warningPrinted = true;
+			//}
 			params.mutableParams.tmpDirCreated = true;
 		}
 	}

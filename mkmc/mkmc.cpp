@@ -40,7 +40,7 @@ public:
 		if (std::find(outputFileTypes.begin(), outputFileTypes.end(), OutputFileType::FASTA) != outputFileTypes.end())
 			tasks.push_back(params.mkmcParams.outputFASTAFile);
 
-		std::cerr << "\nStarting merging samples and dumping to " << (tasks.size() > 1 ? "files " : "file ") << MessagesUtilities::generateStartingSentence(tasks) << '\n';
+		std::cerr << "Starting merging samples and dumping to " << (tasks.size() > 1 ? "files " : "file ") << MessagesUtilities::generateStartingSentence(tasks) << "..." << std::endl << std::endl;
 
 		Merger<SIZE> merger(params);
 		merger_timer.startTimer();
@@ -256,12 +256,14 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 
 
-void checkArguments(const Params& params)
+bool checkArguments(const Params& params)
 {
 	if (params.mkmcParams.samples.size() <= 8 && std::find(params.statisticsParams.classificationMethods.begin(), params.statisticsParams.classificationMethods.end(), StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum) != params.statisticsParams.classificationMethods.end())
 	{
 		std::cerr << "Warning: Wilcoxon-rank sum (Mann-Whitney U test) uses approximate algorithm, thus for less than 9 samples its results may be slightly different than in e.g. SciPy.\n";
+		return true;
 	}
+	return false;
 }
 
 
@@ -299,15 +301,17 @@ int main(int argc, char** argv)
 			return e.get_exit_code();
 		}
 
-		if (!params.statisticsParams.generateNormalization && (params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
+		if (!params.statisticsParams.generateNormalization &&
+			(params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
 		{
 			std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
 			std::exit(1);
 		}
 
-		if (params.statisticsParams.nDimensionReductionUserDefined && !(params.statisticsParams.runPCA || params.statisticsParams.runUMAP))
+		if (params.statisticsParams.nDimensionReductionUserDefined &&
+			!(params.statisticsParams.runPCA || params.statisticsParams.runUMAP))
 		{
-			std::cerr << "Error: Number of dimensions requires dimensionality reduction algorithm (--umap or --pca)\n";
+			std::cerr << "Error: Number of dimensions (--dimensions) requires dimensionality reduction algorithm (--umap or --pca)\n";
 			std::exit(1);
 		}
 	}
@@ -320,11 +324,18 @@ int main(int argc, char** argv)
 		std::exit(1);
 	}
 
-	checkArguments(params);
+	if ((params.statisticsParams.runPCA || params.statisticsParams.runUMAP) &&
+		(params.statisticsParams.nDimensionReduction < 1 || params.statisticsParams.nDimensionReduction >= params.mkmcParams.samples.size()))
+	{
+		std::cerr << "Error: Number of dimensions (--dimensions) must be at least 1 and lower than number of samples\n";
+		std::exit(1);
+	}
+
+	bool warningPrinted = checkArguments(params);
 
 	params.generateTempAndOutputFilesNames();
-	params.adjustKMCPerformanceParams();
-	params.adjustAnotherParams();
+	warningPrinted |= params.adjustKMCPerformanceParams();
+	warningPrinted |= params.adjustAnotherParams();
 	params.readPhenotypes();
 
 	Start start(params);
@@ -334,11 +345,16 @@ int main(int argc, char** argv)
 	{
 		Timer sequence_filter_init, kmc_timer, merger_timer, statistics_timer;
 
-		if (!start.verifyFiles())
+		bool wp = false;
+		if (!start.verifyFiles(wp))
 		{
 			finish.finishProcessing();
 			std::exit(1);
 		}
+		warningPrinted |= wp;
+
+		if (warningPrinted) // any warning printed; insert distance before start stages
+			std::cerr << std::endl;
 
 		if (params.filterParams.filterKmersSequences)
 		{
@@ -346,9 +362,7 @@ int main(int argc, char** argv)
 			kmersFilter.prepareKmersSequencesToFilter();
 		}
 
-		if (params.mutableParams.createdFastaFile)
-			std::cerr << '\n';
-		std::cerr << "Starting k-mer counting..." << std::endl;
+		std::cerr << "Starting k-mer counting..." << std::endl << std::endl;
 		KMCRunner kmcRunner(params);
 		kmc_timer.startTimer();
 		kmcRunner.runKMCParallel();
@@ -368,8 +382,10 @@ int main(int argc, char** argv)
 				tasks.push_back("generating entropy");
 			if (!params.statisticsParams.classificationMethods.empty())
 				tasks.push_back("performing differential k-mers analysis");
+			if (params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
+				tasks.push_back("reducting number of dimensions");
 
-			std::cerr << "\nStarting " << MessagesUtilities::generateStartingSentence(tasks) << '\n';
+			std::cerr << "Starting " << MessagesUtilities::generateStartingSentence(tasks) << "..." << std::endl << std::endl;
 
 			StatisticsGenerator statisticsGenerator(params);
 			statistics_timer.startTimer();

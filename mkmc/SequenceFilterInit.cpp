@@ -101,7 +101,7 @@ void SequenceFilterInit::prepareKmersSequencesToFilter()
 {
 	if (!isFastaOrMultiFasta())
 	{
-		std::cerr << "Starting preparing k-mers for filtering..." << std::endl;
+		std::cerr << "Starting preparing k-mers for filtering..." << std::endl << std::endl;
 
 		sequence_filter_init.startTimer();
 		convertTxtToFasta();
