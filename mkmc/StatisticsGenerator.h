@@ -347,6 +347,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 
 		std::unique_ptr<OutputBuffer> normOutputBuffer = std::make_unique<OutputBuffer>(*normWriter, getMaxNormLineLength());
 
+		assert(params.statisticsParams.generateNormalization);
 		refresh::normalization_work<uint64_t, double> normalization;
 		normalization.register_method(params.statisticsParams.normalizationMethod);
 		normalization.set_no_series(params.mkmcParams.samples.size());

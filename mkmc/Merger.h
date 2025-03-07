@@ -309,7 +309,7 @@ void Merger<SIZE>::serializeNormalizationAndSave()
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::frequency_count, frequencyNormalizationData);
 	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::quantile, quantileNormalizationData);
 
-	MatrixStatsWriter stats_writer(params.mkmcParams.normStatsBinFile);
+	MatrixStatsWriter stats_writer(params.mkmcParams.normLearningBinFile);
 	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
 		stats_writer.Add(params.statisticsParams.normDeseq2StreamName, deseq2NormalizationData);
 	stats_writer.Add(params.statisticsParams.normFrequencyStreamName, frequencyNormalizationData);
@@ -433,13 +433,13 @@ void Merger<SIZE>::operator()(std::vector<uint64_t>& tot_cnts)
 
 	while (tasksPool.getTask(taskData))
 	{
-		StatisticsParams::NormalizationLearning currentBinNormalizationLearnings;
+		StatisticsParams::NormalizationLearning currentBinNormalizationLearning;
 		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
-			currentBinNormalizationLearnings.register_method(StatisticsParams::NormalizationMethod::deseq2);
-		currentBinNormalizationLearnings.register_method(StatisticsParams::NormalizationMethod::frequency_count);
-		currentBinNormalizationLearnings.register_method(StatisticsParams::NormalizationMethod::quantile);
-		currentBinNormalizationLearnings.set_no_series(params.mkmcParams.samples.size());
-		currentBinNormalizationLearnings.initialize();
+			currentBinNormalizationLearning.register_method(StatisticsParams::NormalizationMethod::deseq2);
+		currentBinNormalizationLearning.register_method(StatisticsParams::NormalizationMethod::frequency_count);
+		currentBinNormalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
+		currentBinNormalizationLearning.set_no_series(params.mkmcParams.samples.size());
+		currentBinNormalizationLearning.initialize();
 
 		fileGenerators.setBinId(taskData.binId);
 
@@ -447,15 +447,15 @@ void Merger<SIZE>::operator()(std::vector<uint64_t>& tot_cnts)
 		{
 			assert(sequencesToFilterReader);
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
-			mergeToGenerators<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearnings, fileGenerators, sequencesToFilterReader->GetBin(taskData.binId));
+			mergeToGenerators<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearning, fileGenerators, sequencesToFilterReader->GetBin(taskData.binId));
 		}
 		else
 		{
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
-			mergeToGenerators<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearnings, fileGenerators, nullptr);
+			mergeToGenerators<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearning, fileGenerators, nullptr);
 		}
 		normalizationLearningMutex.lock();
-		normalizationLearning.merge_with(&currentBinNormalizationLearnings, &currentBinNormalizationLearnings + 1);
+		normalizationLearning.merge_with(&currentBinNormalizationLearning, &currentBinNormalizationLearning + 1);
 		normalizationLearningMutex.unlock();
 	}
 }

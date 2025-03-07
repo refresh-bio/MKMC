@@ -164,24 +164,20 @@ void StatisticsGenerator::generateStatisticsParallel()
 	openReaders();
 	fillTaskData();
 
-	std::vector<std::string> sample_names;
-
-	std::vector<std::string> cnt_matrix_output_header;
-	matrixReader->GetSampleNames(cnt_matrix_output_header);
-	assert(!cnt_matrix_output_header.empty());
+	std::vector<std::string> samples_names;
+	matrixReader->GetSampleNames(samples_names);
+	assert(!samples_names.empty());
 	if (statisticsToGeneration.normalize)
 	{
-		sample_names = cnt_matrix_output_header;
-
 		normWriter = std::make_unique<DumpWriter>(params.mkmcParams.outputFileNorm, params.mkmcParams.nThreads > 1);
-		normWriter->StoreHeader(sample_names);
+		normWriter->StoreHeader(samples_names);
 	} // otherwise: no normalization in output
 
-	gatherer.initWriting(matrixMetadataReader, cnt_matrix_output_header);
+	gatherer.initWriting(matrixMetadataReader, samples_names);
 
 	if (params.statisticsParams.generateNormalization)
 	{
-		MatrixStatsReader stats_reader(params.mkmcParams.normStatsBinFile);
+		MatrixStatsReader stats_reader(params.mkmcParams.normLearningBinFile);
 		bool success = false;
 		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
 			success = stats_reader.Get(params.statisticsParams.normDeseq2StreamName, normalizationData);
@@ -205,7 +201,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 
 		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
 			DimensionalityReduction dimensionalityReduction(params,
-				cnt_matrix_output_header, //names of samples
+				samples_names,
 				binsOffsets.back() //number of k-mers
 			);
 			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
@@ -221,7 +217,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 			}
 
 			dimensionalityReduction.runAndStore();
-			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
+			keepNLargestCollectionGlobal.Flush(params, samples_names); // samples names as matrix header
 		});
 
 		pValuesCorrectedData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
@@ -252,7 +248,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 	{
 		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
 			DimensionalityReduction dimensionalityReduction(params,
-				cnt_matrix_output_header, //names of samples
+				samples_names,
 				binsOffsets.back() //number of k-mers
 				);
 			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
@@ -269,7 +265,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 			}
 
 			dimensionalityReduction.runAndStore();
-			keepNLargestCollectionGlobal.Flush(params, cnt_matrix_output_header);
+			keepNLargestCollectionGlobal.Flush(params, samples_names); // samples names as matrix header
 		});
 	}
 }

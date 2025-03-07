@@ -37,7 +37,7 @@ struct MKMCParams
 	std::string outputMatrixFile;
 	std::vector<OutputFileType> outputFileTypes;
 
-	std::string normStatsBinFile;
+	std::string normLearningBinFile;
 
 	std::string outputFileNorm;
 
