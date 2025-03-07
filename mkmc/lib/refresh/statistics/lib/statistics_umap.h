@@ -279,7 +279,7 @@ namespace refresh
 			return params;
 		}
 
-		void set_params(params_t& new_params)
+		void set_params(const params_t& new_params)
 		{
 			params = new_params;
 		}

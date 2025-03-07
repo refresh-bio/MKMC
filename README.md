@@ -56,10 +56,11 @@ Options:
  - `--entropy` - generate k-mers counts entropy; counts are increased by 1
  - `--n_top UINT [10000]` - select a number of top k-mers (for correlations using an absolute value)
 
-[Option Group: dimentionality reduction with UMAP algorithm]
+[Option Group: dimentionality reduction]
   Options:
  - `--umap` Needs: `-n` - run dimentionality reduction on normalized matrix with UMAP
- - `--umap-dimensions UINT [2]` Needs: `--umap` - number of output dimensions
+ - `--pca` Needs: `-n` - run dimentionality reduction on normalized matrix with PCA
+ - `--dimensions UINT [2]` Needs: `--umap` or `--pca` - number of output dimensions
  - `--umap-local_connectivity FLOAT [1]` Needs: `--umap` - local_connectivity parameter
  - `--umap-bandwidth FLOAT [1]` Needs: `--umap` - `bandwidth` parameter
  - `--umap-mix_ratio FLOAT [1]` Needs: `--umap` - `mix_ratio` parameter
@@ -91,8 +92,9 @@ Options:
 
 [Option Group: debug parameters]
   Options:
- - `--keep` - keep temporary files
+ - `--keep` - keep temporary files and binary results file
  - `--on UINT:POSITIVE [512]` - number of internal bins, modify carefully
+ - `--generate_snr_for_unnormalized_data` - generate Signal to Noise ratio also for unnormalized counts
 K-mers order in output files is not specified and may vary between runnings.
 > [!warning]  
 **K-mers order in output files is not specified and may vary between runnings.**

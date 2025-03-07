@@ -58,7 +58,7 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputMatrixFile = mkmcParams.outputFilesTemplate + "_matrix";
 	mkmcParams.outputFASTAFile = mkmcParams.outputFilesTemplate + ".fa";
 
-	mkmcParams.normStatsBinFile = mkmcParams.outputFilesTemplate + ".stats";
+	mkmcParams.normLearningBinFile = mkmcParams.outputFilesTemplate + ".stats";
 
 	mkmcParams.outputFileNorm = mkmcParams.outputFilesTemplate + "_norm";
 
@@ -94,6 +94,11 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputFileSNRTopCntMatrix = mkmcParams.outputFilesTemplate + "_snr_top_matrix";
 	mkmcParams.outputFileSNRTopFasta = mkmcParams.outputFilesTemplate + "_snr_top.fa";
 
+	mkmcParams.outputFileUnnormalizedSNR = mkmcParams.outputFilesTemplate + "_snr_for_unnornalized";
+	mkmcParams.outputFileUnnormalizedSNRTop = mkmcParams.outputFilesTemplate + "_snr_top_for_unnornalized";
+	mkmcParams.outputFileUnnormalizedSNRTopCntMatrix = mkmcParams.outputFilesTemplate + "_snr_top_matrix_for_unnornalized";
+	mkmcParams.outputFileUnnormalizedSNRTopFasta = mkmcParams.outputFilesTemplate + "_snr_top_for_unnornalized.fa";
+
 	mkmcParams.outputFileWilcoxonRankSum = mkmcParams.outputFilesTemplate + "_wrs";
 	mkmcParams.outputFileWilcoxonRankSumCor = mkmcParams.outputFilesTemplate + "_wrs_cor_all";
 	mkmcParams.outputFileWilcoxonRankSumCorSignificant = mkmcParams.outputFilesTemplate + "_wrs_cor_significant";
@@ -112,14 +117,16 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputFileANOVACorSignificantFasta = mkmcParams.outputFilesTemplate + "_anova_cor_significant.fa";
 
 	mkmcParams.outputFileUMAP = mkmcParams.outputFilesTemplate + "_umap";
+	mkmcParams.outputFilePCA = mkmcParams.outputFilesTemplate + "_pca";
 
 	mkmcParams.outputFileTotCnt = mkmcParams.outputFilesTemplate + "_tot_cnt";
 }
 
 
 
-void Params::adjustKMCPerformanceParams()
+bool Params::adjustKMCPerformanceParams()
 {
+	bool warningPrinted = false;
 	bool mKMCWorkersReduced = false;
 	if (mkmcParams.nThreads == 1)
 	{
@@ -144,21 +151,26 @@ void Params::adjustKMCPerformanceParams()
 	if (mkmcParams.nKMCWorkersUserSet && mKMCWorkersReduced && mkmcParams.verbosity_level > 0)
 	{
 		std::cerr << "Warning: number of workers is too huge, reduced to " << mkmcParams.nKMCWorkers << "." << std::endl;
+		warningPrinted = true;
 	}
 
 	stage1Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 	stage2Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 
 	stage1Params.SetNBins(mkmcParams.nKMCBins);
+
+	return warningPrinted;
 }
 
 
 
-void Params::adjustAnotherParams()
+bool Params::adjustAnotherParams()
 {
+	bool warningPrinted = false;
 	if (mkmcParams.maxRamGBUserDefined && stage1Params.GetRamOnlyMode() && mkmcParams.verbosity_level > 0)
 	{
 		std::cerr << "Warning: when -r parameter is given, the limit specified with -m may be exceeded." << std::endl;
+		warningPrinted = true;
 	}
 
 	size_t nCorrelationMethods = statisticsParams.correlationMethods.size();
@@ -167,6 +179,7 @@ void Params::adjustAnotherParams()
 	if (nCorrelationMethods != statisticsParams.correlationMethods.size())
 	{
 		std::cerr << "Warning: some correlation methods were given multiple times." << std::endl;
+		warningPrinted = true;
 	}
 
 	size_t nOutputFileTypes = mkmcParams.outputFileTypes.size();
@@ -176,9 +189,12 @@ void Params::adjustAnotherParams()
 	if (nOutputFileTypes != mkmcParams.outputFileTypes.size())
 	{
 		std::cerr << "Warning: some output files types were given multiple times." << std::endl;
+		warningPrinted = true;
 	}
 
 	statisticsParams.umap_params.num_threads = mkmcParams.nThreads;
+
+	return warningPrinted;
 }
 
 

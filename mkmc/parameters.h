@@ -37,7 +37,7 @@ struct MKMCParams
 	std::string outputMatrixFile;
 	std::vector<OutputFileType> outputFileTypes;
 
-	std::string normStatsBinFile;
+	std::string normLearningBinFile;
 
 	std::string outputFileNorm;
 
@@ -72,6 +72,11 @@ struct MKMCParams
 	std::string outputFileSNRTopCntMatrix;
 	std::string outputFileSNRTopFasta;
 
+	std::string outputFileUnnormalizedSNR;
+	std::string outputFileUnnormalizedSNRTop;
+	std::string outputFileUnnormalizedSNRTopCntMatrix;
+	std::string outputFileUnnormalizedSNRTopFasta;
+
 	std::string outputFileWilcoxonRankSum;
 	std::string outputFileWilcoxonRankSumCor;
 	std::string outputFileWilcoxonRankSumCorSignificant;
@@ -90,6 +95,7 @@ struct MKMCParams
 	std::string outputFileANOVACorSignificantFasta;
 
 	std::string outputFileUMAP;
+	std::string outputFilePCA;
 
 	bool totCntGeneration = false;
 	std::string outputFileTotCnt;
@@ -104,6 +110,8 @@ struct MKMCParams
 	bool nKMCWorkersUserSet = false;
 
 	bool keepTmpFiles = false;
+
+	bool generateForNonNormalized = false;
 
 	int verbosity_level = 0;
 };
@@ -127,7 +135,11 @@ struct StatisticsParams
 	NormalizationMethod normalizationMethod;
 
 	bool runUMAP = false;
-	uint32_t umap_dimensions = 2;
+	bool runPCA = false;
+
+	bool nDimensionReductionUserDefined = false;
+	uint32_t nDimensionReduction = 2;
+
 	refresh::umap<double>::params_t umap_params{};
 
 
@@ -190,8 +202,8 @@ struct Params
 	Params();
 	void generateTempAndOutputFilesNames();
 	bool readAdditionalParamsFromFiles();
-	void adjustKMCPerformanceParams();
-	void adjustAnotherParams();
+	bool adjustKMCPerformanceParams();
+	bool adjustAnotherParams();
 	void readPhenotypes();
 };
 

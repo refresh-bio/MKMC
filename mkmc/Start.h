@@ -15,5 +15,5 @@ public:
 		params(params)
 	{}
 
-	bool verifyFiles();
+	bool verifyFiles(bool& warningPrinted);
 };

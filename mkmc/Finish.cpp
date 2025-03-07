@@ -19,6 +19,11 @@ void Finish::finishProcessing()
 			}
 			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB);
 		}
+
+		// currently MKMC runs in bulk mode, thus user rather won't need binary files
+		std::filesystem::remove(params.mkmcParams.outputMatrixBinFile);
+		if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
+			std::filesystem::remove(params.mkmcParams.normLearningBinFile);
 	}
 	if (params.mutableParams.tmpDirCreated)
 	{

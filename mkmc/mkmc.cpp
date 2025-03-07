@@ -40,7 +40,7 @@ public:
 		if (std::find(outputFileTypes.begin(), outputFileTypes.end(), OutputFileType::FASTA) != outputFileTypes.end())
 			tasks.push_back(params.mkmcParams.outputFASTAFile);
 
-		std::cerr << "\nStarting merging samples and dumping to " << (tasks.size() > 1 ? "files " : "file ") << MessagesUtilities::generateStartingSentence(tasks) << '\n';
+		std::cerr << "Starting merging samples and dumping to " << (tasks.size() > 1 ? "files " : "file ") << MessagesUtilities::generateStartingSentence(tasks) << "..." << std::endl << std::endl;
 
 		Merger<SIZE> merger(params);
 		merger_timer.startTimer();
@@ -138,35 +138,41 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	otherStatsGroup->add_option("--n_top", statisticsParams.nTop, "select a number of top k-mers (for correlations using an absolute value)")->default_val(statisticsParams.nTop); // needs --corr or --diff
 	
-	CLI::Option_group* umapGroup = app.add_option_group("dimentionality reduction with UMAP algorithm");
+	CLI::Option_group* dimReductionGroup = app.add_option_group("dimentionality reduction");
 
-	auto umap = umapGroup->add_flag("--umap", statisticsParams.runUMAP, "run dimentionality reduction on normalized matrix with UMAP")->needs(n);
+	auto umap = dimReductionGroup->add_flag("--umap", statisticsParams.runUMAP, "run dimentionality reduction on normalized matrix with UMAP")->needs(n);
+	dimReductionGroup->add_flag("--pca", statisticsParams.runPCA, "run dimentionality reduction on normalized matrix with PCA")->needs(n);
 
-	umapGroup->add_option("--umap-dimensions", statisticsParams.umap_dimensions, "number of output dimensions")->needs(umap)->default_val(statisticsParams.umap_dimensions);
+	std::function<void(const decltype(statisticsParams.nDimensionReduction)&)> dimensionsCallback = [&](const decltype(statisticsParams.nDimensionReduction)& dimensions)
+	{
+		statisticsParams.nDimensionReduction = dimensions;
+		statisticsParams.nDimensionReductionUserDefined = true;
+	};
+	dimReductionGroup->add_option_function("--dimensions", dimensionsCallback, "number of output dimensions; needs --umap or --pca")->default_val(statisticsParams.nDimensionReduction);
 
-	umapGroup->add_option("--umap-local_connectivity", statisticsParams.umap_params.local_connectivity, "local_connectivity parameter")->needs(umap)->default_val(statisticsParams.umap_params.local_connectivity);
-	umapGroup->add_option("--umap-bandwidth", statisticsParams.umap_params.bandwidth, "bandwidth parameter")->needs(umap)->default_val(statisticsParams.umap_params.bandwidth);
+	dimReductionGroup->add_option("--umap-local_connectivity", statisticsParams.umap_params.local_connectivity, "local_connectivity parameter")->needs(umap)->default_val(statisticsParams.umap_params.local_connectivity);
+	dimReductionGroup->add_option("--umap-bandwidth", statisticsParams.umap_params.bandwidth, "bandwidth parameter")->needs(umap)->default_val(statisticsParams.umap_params.bandwidth);
 
-	umapGroup->add_option("--umap-mix_ratio", statisticsParams.umap_params.mix_ratio, "mix_ratio parameter")->needs(umap)->default_val(statisticsParams.umap_params.mix_ratio);
-	umapGroup->add_option("--umap-spread", statisticsParams.umap_params.spread, "spread parameter")->needs(umap)->default_val(statisticsParams.umap_params.spread);
-	umapGroup->add_option("--umap-min_dist", statisticsParams.umap_params.min_dist, "min_dist parameter")->needs(umap)->default_val(statisticsParams.umap_params.min_dist);
-	umapGroup->add_option("--umap-a", statisticsParams.umap_params.a, "a parameter")->needs(umap)->default_val(statisticsParams.umap_params.a);
-	umapGroup->add_option("--umap-b", statisticsParams.umap_params.b, "b parameter")->needs(umap)->default_val(statisticsParams.umap_params.b);
-	umapGroup->add_option("--umap-repulsion_strength", statisticsParams.umap_params.repulsion_strength, "repulsion_strength parameter")->needs(umap)->default_val(statisticsParams.umap_params.repulsion_strength);
+	dimReductionGroup->add_option("--umap-mix_ratio", statisticsParams.umap_params.mix_ratio, "mix_ratio parameter")->needs(umap)->default_val(statisticsParams.umap_params.mix_ratio);
+	dimReductionGroup->add_option("--umap-spread", statisticsParams.umap_params.spread, "spread parameter")->needs(umap)->default_val(statisticsParams.umap_params.spread);
+	dimReductionGroup->add_option("--umap-min_dist", statisticsParams.umap_params.min_dist, "min_dist parameter")->needs(umap)->default_val(statisticsParams.umap_params.min_dist);
+	dimReductionGroup->add_option("--umap-a", statisticsParams.umap_params.a, "a parameter")->needs(umap)->default_val(statisticsParams.umap_params.a);
+	dimReductionGroup->add_option("--umap-b", statisticsParams.umap_params.b, "b parameter")->needs(umap)->default_val(statisticsParams.umap_params.b);
+	dimReductionGroup->add_option("--umap-repulsion_strength", statisticsParams.umap_params.repulsion_strength, "repulsion_strength parameter")->needs(umap)->default_val(statisticsParams.umap_params.repulsion_strength);
 
 	std::map<std::string, umappp::InitMethod> umapInitMethodValuesMap{ { "spectral", umappp::InitMethod::SPECTRAL }, { "spectral_only", umappp::InitMethod::SPECTRAL_ONLY }, { "random", umappp::InitMethod::RANDOM }, { "none", umappp::InitMethod::NONE } };
 
-	umapGroup->add_option("--umap-initialize", statisticsParams.classificationMethods, "initialize parameter")->transform(CLI::CheckedTransformer(umapInitMethodValuesMap))->needs(umap);
-	umapGroup->add_option("--umap-num_epochs", statisticsParams.umap_params.num_epochs, "num_epochs parameter")->needs(umap)->default_val(statisticsParams.umap_params.num_epochs); // default -1
-	umapGroup->add_option("--umap-learning_rate", statisticsParams.umap_params.learning_rate, "learning_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.learning_rate);
+	dimReductionGroup->add_option("--umap-initialize", statisticsParams.classificationMethods, "initialize parameter")->transform(CLI::CheckedTransformer(umapInitMethodValuesMap))->needs(umap);
+	dimReductionGroup->add_option("--umap-num_epochs", statisticsParams.umap_params.num_epochs, "num_epochs parameter")->needs(umap)->default_val(statisticsParams.umap_params.num_epochs); // default -1
+	dimReductionGroup->add_option("--umap-learning_rate", statisticsParams.umap_params.learning_rate, "learning_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.learning_rate);
 
-	umapGroup->add_option("--umap-negative_sample_rate", statisticsParams.umap_params.negative_sample_rate, "negative_sample_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.negative_sample_rate);
-	umapGroup->add_option("--umap-seed", statisticsParams.umap_params.seed, "seed parameter")->needs(umap)->default_val(statisticsParams.umap_params.seed);
+	dimReductionGroup->add_option("--umap-negative_sample_rate", statisticsParams.umap_params.negative_sample_rate, "negative_sample_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.negative_sample_rate);
+	dimReductionGroup->add_option("--umap-seed", statisticsParams.umap_params.seed, "seed parameter")->needs(umap)->default_val(statisticsParams.umap_params.seed);
 
 	//this will be set with the "main" or "global" number of threads
 	//umapGroup->add_option("--umap-num_threads", statisticsParams.umap_params.num_threads, "num_threads parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.num_threads);
 
-	umapGroup->add_option("--umap-parallel_optimization", statisticsParams.umap_params.parallel_optimization, "parallel_optimization parameter")->needs(umap)->default_val(statisticsParams.umap_params.parallel_optimization);
+	dimReductionGroup->add_option("--umap-parallel_optimization", statisticsParams.umap_params.parallel_optimization, "parallel_optimization parameter")->needs(umap)->default_val(statisticsParams.umap_params.parallel_optimization);
 
 	CLI::Option_group* optionalGroup = app.add_option_group("additional parameters");
 
@@ -228,9 +234,11 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	optionalGroup->add_flag_callback("-v", vCallback, "verbose mode, shows progress");
 
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
-	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files");
+	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
 
 	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
+
+	debugGroup->add_flag("--generate_snr_for_unnormalized_data", mkmcParams.generateForNonNormalized, "generate Signal to Noise ratio also for unnormalized counts");
 
 	cor->needs(n)->needs(p);
 	differentialAnalysis->needs(c);
@@ -248,12 +256,14 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 
 
-void checkArguments(const Params& params)
+bool checkArguments(const Params& params)
 {
 	if (params.mkmcParams.samples.size() <= 8 && std::find(params.statisticsParams.classificationMethods.begin(), params.statisticsParams.classificationMethods.end(), StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum) != params.statisticsParams.classificationMethods.end())
 	{
 		std::cerr << "Warning: Wilcoxon-rank sum (Mann-Whitney U test) uses approximate algorithm, thus for less than 9 samples its results may be slightly different than in e.g. SciPy.\n";
+		return true;
 	}
+	return false;
 }
 
 
@@ -291,9 +301,17 @@ int main(int argc, char** argv)
 			return e.get_exit_code();
 		}
 
-		if (!params.statisticsParams.generateNormalization && (params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
+		if (!params.statisticsParams.generateNormalization &&
+			(params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
 		{
 			std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
+			std::exit(1);
+		}
+
+		if (params.statisticsParams.nDimensionReductionUserDefined &&
+			!(params.statisticsParams.runPCA || params.statisticsParams.runUMAP))
+		{
+			std::cerr << "Error: Number of dimensions (--dimensions) requires dimensionality reduction algorithm (--umap or --pca)\n";
 			std::exit(1);
 		}
 	}
@@ -306,11 +324,18 @@ int main(int argc, char** argv)
 		std::exit(1);
 	}
 
-	checkArguments(params);
+	if ((params.statisticsParams.runPCA || params.statisticsParams.runUMAP) &&
+		(params.statisticsParams.nDimensionReduction < 1 || params.statisticsParams.nDimensionReduction >= params.mkmcParams.samples.size()))
+	{
+		std::cerr << "Error: Number of dimensions (--dimensions) must be at least 1 and lower than number of samples\n";
+		std::exit(1);
+	}
+
+	bool warningPrinted = checkArguments(params);
 
 	params.generateTempAndOutputFilesNames();
-	params.adjustKMCPerformanceParams();
-	params.adjustAnotherParams();
+	warningPrinted |= params.adjustKMCPerformanceParams();
+	warningPrinted |= params.adjustAnotherParams();
 	params.readPhenotypes();
 
 	Start start(params);
@@ -320,11 +345,16 @@ int main(int argc, char** argv)
 	{
 		Timer sequence_filter_init, kmc_timer, merger_timer, statistics_timer;
 
-		if (!start.verifyFiles())
+		bool wp = false;
+		if (!start.verifyFiles(wp))
 		{
 			finish.finishProcessing();
 			std::exit(1);
 		}
+		warningPrinted |= wp;
+
+		if (warningPrinted) // any warning printed; insert distance before start stages
+			std::cerr << std::endl;
 
 		if (params.filterParams.filterKmersSequences)
 		{
@@ -332,9 +362,7 @@ int main(int argc, char** argv)
 			kmersFilter.prepareKmersSequencesToFilter();
 		}
 
-		if (params.mutableParams.createdFastaFile)
-			std::cerr << '\n';
-		std::cerr << "Starting k-mer counting..." << std::endl;
+		std::cerr << "Starting k-mer counting..." << std::endl << std::endl;
 		KMCRunner kmcRunner(params);
 		kmc_timer.startTimer();
 		kmcRunner.runKMCParallel();
@@ -354,8 +382,10 @@ int main(int argc, char** argv)
 				tasks.push_back("generating entropy");
 			if (!params.statisticsParams.classificationMethods.empty())
 				tasks.push_back("performing differential k-mers analysis");
+			if (params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
+				tasks.push_back("reducting number of dimensions");
 
-			std::cerr << "\nStarting " << MessagesUtilities::generateStartingSentence(tasks) << '\n';
+			std::cerr << "Starting " << MessagesUtilities::generateStartingSentence(tasks) << "..." << std::endl << std::endl;
 
 			StatisticsGenerator statisticsGenerator(params);
 			statistics_timer.startTimer();
