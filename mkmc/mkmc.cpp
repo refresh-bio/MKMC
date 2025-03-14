@@ -410,7 +410,10 @@ int main(int argc, char** argv)
 
 		if (params.statisticsParams.generateNormalization)
 		{
-			std::cerr << "Normalizing and computing correlation:\n";
+			if (params.statisticsParams.normalizationLearningWasSupplemented) // true in a case StatisticsGenerator detected, than DESeq2 learning data is missing
+				std::cerr << "DESeq2 learning, normalizing and computing correlation:\n";
+			else
+				std::cerr << "Normalizing and computing correlation:\n";
 			std::cerr << "\tStart: " << statistics_timer.getStartTime() << "\n";
 			std::cerr << "\tEnd:   " << statistics_timer.getStopTime() << "\n";
 		}

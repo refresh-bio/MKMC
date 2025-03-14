@@ -24,6 +24,8 @@ void Finish::finishProcessing()
 		std::filesystem::remove(params.mkmcParams.outputMatrixBinFile);
 		if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
 			std::filesystem::remove(params.mkmcParams.normLearningBinFile);
+		if (params.statisticsParams.normalizationLearningWasSupplemented)
+			std::filesystem::remove(params.mkmcParams.normLearningBinFileSupplemented); // will be useful after modularization
 	}
 	if (params.mutableParams.tmpDirCreated)
 	{

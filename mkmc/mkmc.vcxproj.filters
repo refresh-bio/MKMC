@@ -129,5 +129,8 @@
     <ClInclude Include="DimensionalityReduction.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Deseq2Learner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

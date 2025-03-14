@@ -2,6 +2,7 @@
 #include "MatrixStats.h"
 #include "DumpWriter.h"
 #include "DimensionalityReduction.h"
+#include "Deseq2Learner.h"
 #include <algorithm>
 
 
@@ -58,6 +59,52 @@ void StatisticsGenerator::fillTaskData()
 
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return nOutputKmersPerBin[a.binId] > nOutputKmersPerBin[b.binId]; });
 	// correctTasksData does not need to be sorted
+}
+
+
+
+bool StatisticsGenerator::readNormalizationData()
+{
+	MatrixStatsReader stats_reader(params.mkmcParams.normLearningBinFile);
+	bool success = false;
+	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2) {
+		success = stats_reader.Get(params.statisticsParams.normDeseq2StreamName, normalizationData);
+		if (!success) {
+			// try to open file supplemented with DESeq2
+			try { // will be useful after modularization
+				MatrixStatsReader stats_reader_supplemented(params.mkmcParams.normLearningBinFileSupplemented);
+				success = stats_reader_supplemented.Get(params.statisticsParams.normDeseq2StreamName, normalizationData);
+			}
+			catch (...) {
+				// do nothing, because missing file is not a problem symptom
+			}
+			if (success) {
+				std::cerr << "Info: previously supplemented learning data for DESeq2 properly opened\n";
+			}
+			else { // learn also for DESeq2, if not learned eariler; will be useful after modularization
+				std::cerr << "Info: DESeq2 learning data is missing; it will be supplemented\n";
+				params.statisticsParams.normalizationLearningWasSupplemented = true;
+
+				Deseq2LearnerRunner deseq2LearnerRunner(params);
+				DispatchKmerSize(params.stage1Params.GetKmerLen(), deseq2LearnerRunner);
+
+				// try to open file lately supplemented with DESeq2
+				try {
+					MatrixStatsReader stats_reader_currently_supplemented(params.mkmcParams.normLearningBinFileSupplemented);
+					success = stats_reader_currently_supplemented.Get(params.statisticsParams.normDeseq2StreamName, normalizationData);
+				}
+				catch (...) {
+					// do nothing, because success == false cause following error message
+				}
+			}
+		}
+	}
+	else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::frequency_count)
+		success = stats_reader.Get(params.statisticsParams.normFrequencyStreamName, normalizationData);
+	else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile)
+		success = stats_reader.Get(params.statisticsParams.normQuantileStreamName, normalizationData);
+
+	return success;
 }
 
 
@@ -177,16 +224,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 
 	if (params.statisticsParams.generateNormalization)
 	{
-		MatrixStatsReader stats_reader(params.mkmcParams.normLearningBinFile);
-		bool success = false;
-		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
-			success = stats_reader.Get(params.statisticsParams.normDeseq2StreamName, normalizationData);
-		else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::frequency_count)
-			success = stats_reader.Get(params.statisticsParams.normFrequencyStreamName, normalizationData);
-		else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile)
-			success = stats_reader.Get(params.statisticsParams.normQuantileStreamName, normalizationData);
-
-		if (!success)
+		if (!readNormalizationData())
 		{
 			std::cerr << "Error: cannot read normalization data\n";
 			exit(1);
