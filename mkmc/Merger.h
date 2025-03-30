@@ -78,8 +78,39 @@ class Merger
 	void fillTaskData();
 	void serializeNormalizationAndSave();
 
-	template<typename Generators_T, typename Filters_T>
-	void mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
+	template<typename PerformGenerate_T>
+	void callThreads(const kmcdb::Config& config, std::vector<std::vector<uint64_t>>& tot_cnts);
+
+	template<unsigned I = static_cast<unsigned>(OutputFileType::_N), typename... Generators_T>
+	class GeneratorVecToTemplate {
+	public:
+		template<typename Callback_T>
+		static void callTemplateFunction(const std::vector<OutputFileType>& generators, const Callback_T& callback) {
+			if (I > generators.size()) {
+				GeneratorVecToTemplate<I - 1, Generators_T...>::callTemplateFunction(generators, callback);
+				return;
+			}
+
+			switch (generators[generators.size() - I]) {
+			case OutputFileType::FASTA:
+				GeneratorVecToTemplate<I - 1, Generators_T..., FASTAFileGenerator>::callTemplateFunction(generators, callback); break;
+			case OutputFileType::Matrix:
+				GeneratorVecToTemplate<I - 1, Generators_T..., MatrixFileGenerator>::callTemplateFunction(generators, callback); break;
+			}
+		}
+	};
+
+	template<typename... Generators_T>
+	class GeneratorVecToTemplate<0, Generators_T...> {
+	public:
+		template<typename Callback_T>
+		static void callTemplateFunction(const std::vector<OutputFileType>& generators, const Callback_T& callback) {
+			callback.template operator() < Generators_T... > ();
+		}
+	};
+
+	template<typename PerformGenerate_T, typename Filters_T>
+	void mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& currentBinNormalizationLearning, PerformGenerate_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
 
 public:
 	Merger(const Params& params) :
@@ -95,15 +126,15 @@ public:
 
 	void mergeParallel();
 
-	template<typename Generators_T>
+	template<typename PerformGenerate_T>
 	void operator()(std::vector<uint64_t>& tot_cnts);
 };
 
 
 
 template<unsigned SIZE>
-template<typename Generators_T, typename Filters_T>
-void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& normalizationLearning, Generators_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
+template<typename PerformGenerate_T, typename Filters_T>
+void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& normalizationLearning, PerformGenerate_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
 {
 	std::vector<KMCFileWrapper<SIZE>> samples;
 	for (size_t sample_id = 0; sample_id < params.mkmcParams.kmcOutputFiles.size(); ++sample_id)
@@ -317,6 +348,23 @@ void Merger<SIZE>::serializeNormalizationAndSave()
 }
 
 template<unsigned SIZE>
+template<typename PerformGenerate_T>
+void Merger<SIZE>::callThreads(const kmcdb::Config& config, std::vector<std::vector<uint64_t>>& tot_cnts)
+{
+	std::vector<std::thread> threads(params.mkmcParams.nThreads);
+
+	PerformGenerate_T::initWriters(params, config);
+	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
+		threads[i_thred] = std::thread([this, &tot_cnts_thread = tot_cnts[i_thred]]
+			{ this->operator() < PerformGenerate_T > (tot_cnts_thread); });
+
+	for (std::thread& thread : threads)
+		thread.join();
+
+	PerformGenerate_T::closeWriters();
+}
+
+template<unsigned SIZE>
 void Merger<SIZE>::mergeParallel()
 {
 	fillTaskData();
@@ -351,70 +399,14 @@ void Merger<SIZE>::mergeParallel()
 	std::vector<std::vector<uint64_t>> tot_cnts(params.mkmcParams.nThreads,
 		std::vector<uint64_t>(sampleNames.size()));
 
-	if (params.mkmcParams.outputFileTypes.empty())
+	auto doCallThreads = [&]<typename... Generators_T>() -> void
 	{
-		using Generators_T = PerformGenerate<BinFileGenerator>;
-		Generators_T::initWriters(params, config);
-		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
-		{
-			threads[i_thred] = std::thread([this, &tot_cnts_thread = tot_cnts[i_thred]]
-				{ this->operator() < Generators_T > (tot_cnts_thread); });
-		}
+		using PerformGenerate_T = PerformGenerate<BinFileGenerator, Generators_T...>;
+		callThreads<PerformGenerate_T>(config, tot_cnts);
+	};
 
-		for (std::thread& thread : threads)
-		{
-			thread.join();
-		}
-		Generators_T::closeWriters();
-	}
-	else if (params.mkmcParams.outputFileTypes.size() == 2)
-	{
-		using Generators_T = PerformGenerate<BinFileGenerator, MatrixFileGenerator, FASTAFileGenerator>;
-		Generators_T::initWriters(params, config);
-		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
-		{
-			threads[i_thred] = std::thread([this, &tot_cnts_thread = tot_cnts[i_thred]]
-				{ this->operator() < Generators_T > (tot_cnts_thread); });
-		}
+	GeneratorVecToTemplate<>::callTemplateFunction(params.mkmcParams.outputFileTypes, doCallThreads);
 
-		for (std::thread& thread : threads)
-		{
-			thread.join();
-		}
-		Generators_T::closeWriters();
-	}
-	else if (params.mkmcParams.outputFileTypes.front() == OutputFileType::Matrix)
-	{
-		using Generators_T = PerformGenerate<BinFileGenerator, MatrixFileGenerator>;
-		Generators_T::initWriters(params, config);
-		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
-		{
-			threads[i_thred] = std::thread([this, &tot_cnts_thread = tot_cnts[i_thred]]
-				{ this->operator() < Generators_T > (tot_cnts_thread); });
-		}
-
-		for (std::thread& thread : threads)
-		{
-			thread.join();
-		}
-		Generators_T::closeWriters();
-	}
-	else
-	{
-		using Generators_T = PerformGenerate<BinFileGenerator, FASTAFileGenerator>;
-		Generators_T::initWriters(params, config);
-		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
-		{
-			threads[i_thred] = std::thread([this, &tot_cnts_thread = tot_cnts[i_thred]]
-				{ this->operator() < Generators_T > (tot_cnts_thread); });
-		}
-		
-		for (std::thread& thread : threads)
-		{
-			thread.join();
-		}
-		Generators_T::closeWriters();
-	}
 	if (params.mkmcParams.totCntGeneration)
 		StoreTotCnt(tot_cnts, sampleNames, params);
 
@@ -424,10 +416,10 @@ void Merger<SIZE>::mergeParallel()
 
 
 template<unsigned SIZE>
-template<typename Generators_T>
+template<typename PerformGenerate_T>
 void Merger<SIZE>::operator()(std::vector<uint64_t>& tot_cnts)
 {
-	Generators_T fileGenerators(params);
+	PerformGenerate_T performGenerate(params);
 	TaskData taskData;
 	using ParameterizedKmersSamplesStruct = KmersSamplesStruct<SIZE>;
 
@@ -441,18 +433,18 @@ void Merger<SIZE>::operator()(std::vector<uint64_t>& tot_cnts)
 		currentBinNormalizationLearning.set_no_series(params.mkmcParams.samples.size());
 		currentBinNormalizationLearning.initialize();
 
-		fileGenerators.setBinId(taskData.binId);
+		performGenerate.setBinId(taskData.binId);
 
 		if (params.filterParams.filterKmersSequences)
 		{
 			assert(sequencesToFilterReader);
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
-			mergeToGenerators<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearning, fileGenerators, sequencesToFilterReader->GetBin(taskData.binId));
+			mergeToGenerators<PerformGenerate_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearning, performGenerate, sequencesToFilterReader->GetBin(taskData.binId));
 		}
 		else
 		{
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
-			mergeToGenerators<Generators_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearning, fileGenerators, nullptr);
+			mergeToGenerators<PerformGenerate_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearning, performGenerate, nullptr);
 		}
 		normalizationLearningMutex.lock();
 		normalizationLearning.merge_with(&currentBinNormalizationLearning, &currentBinNormalizationLearning + 1);

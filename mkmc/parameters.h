@@ -12,7 +12,7 @@
 #include "refresh/statistics/lib/statistics_umap.h"
 
 
-enum class OutputFileType {FASTA, Matrix};
+enum class OutputFileType { FASTA, Matrix, _N }; // _N - number of possibilities
 
 struct Sample
 {
