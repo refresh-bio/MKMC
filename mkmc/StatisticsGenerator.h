@@ -97,6 +97,8 @@ class StatisticsGenerator
 	template<unsigned SIZE>
 	void safeCorrectedPValuesEntries();
 
+	bool readNormalizationData();
+
 public:
 	StatisticsGenerator(Params& params);
 

@@ -38,6 +38,7 @@ struct MKMCParams
 	std::vector<OutputFileType> outputFileTypes;
 
 	std::string normLearningBinFile;
+	std::string normLearningBinFileSupplemented;
 
 	std::string outputFileNorm;
 
@@ -133,6 +134,7 @@ struct StatisticsParams
 
 	bool generateNormalization = false;
 	NormalizationMethod normalizationMethod;
+	bool normalizationLearningWasSupplemented = false;
 
 	bool runUMAP = false;
 	bool runPCA = false;
