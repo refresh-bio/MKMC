@@ -34,6 +34,7 @@ struct StatisticsToGeneration
 
 	uint32_t nStatistics = 0;
 	uint32_t nStatisticsWithPValues = 0;
+	uint32_t nAdditionalValuesOfCorrectedStats = 0; // T-Test = 2, WRS = 2, ANOVA = 1
 };
 
 
@@ -506,14 +507,19 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 	{
 		if (tTestOutputBuffer)
 		{
-			auto value = outEntry[valuesIdx++];
-			tTestOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+			auto pValue = outEntry[valuesIdx++];
+			auto df = outEntry[valuesIdx++];
+			auto statistic = outEntry[valuesIdx++];
+
+			std::vector<double> valuesToSave{ pValue, df, statistic };
+
+			tTestOutputBuffer->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
 
 			if (tTestSignificantOutputBuffer)
 			{
-				if (value <= maxCorrectedPval)
+				if (pValue <= maxCorrectedPval)
 				{
-					tTestSignificantOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+					tTestSignificantOutputBuffer->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
 					tTestSignificantCntMatrixOutputBuffer->StoreKmer(kmerSeq, original_counts, StoreMethods::AsMatrixRow);
 					tTestSignificantFastaOutputBuffer->StoreKmer(kmerSeq, original_counts, StoreMethods::AsFastaRecord);
 				}
@@ -537,14 +543,19 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 		}
 		if (wilcoxonRankSumOutputBuffer)
 		{
-			auto value = outEntry[valuesIdx++];
-			wilcoxonRankSumOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+			auto pValue = outEntry[valuesIdx++];
+			auto statisticU1 = outEntry[valuesIdx++];
+			auto statisticU2 = outEntry[valuesIdx++];
+
+			std::vector<double> valuesToSave{ pValue, statisticU1, statisticU2 };
+
+			wilcoxonRankSumOutputBuffer->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
 
 			if (wilcoxonRankSumSignificantOutputBuffer)
 			{
-				if (value <= maxCorrectedPval)
+				if (pValue <= maxCorrectedPval)
 				{
-					wilcoxonRankSumSignificantOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+					wilcoxonRankSumSignificantOutputBuffer->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
 					wilcoxonRankSumSignificantCntMatrixOutputBuffer->StoreKmer(kmerSeq, original_counts, StoreMethods::AsMatrixRow);
 					wilcoxonRankSumSignificantFastaOutputBuffer->StoreKmer(kmerSeq, original_counts, StoreMethods::AsFastaRecord);
 				}
@@ -560,14 +571,18 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 		}
 		if (anovaOutputBuffer)
 		{
-			auto value = outEntry[valuesIdx++];
-			anovaOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+			auto pValue = outEntry[valuesIdx++];
+			auto statistic = outEntry[valuesIdx++];
+
+			std::vector<double> valuesToSave{ pValue, statistic };
+
+			anovaOutputBuffer->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
 
 			if (anovaSignificantOutputBuffer)
 			{
-				if (value <= maxCorrectedPval)
+				if (pValue <= maxCorrectedPval)
 				{
-					anovaSignificantOutputBuffer->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+					anovaSignificantOutputBuffer->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
 					anovaSignificantCntMatrixOutputBuffer->StoreKmer(kmerSeq, original_counts, StoreMethods::AsMatrixRow);
 					anovaSignificantFastaOutputBuffer->StoreKmer(kmerSeq, original_counts, StoreMethods::AsFastaRecord);
 				}
@@ -609,10 +624,10 @@ void WritingGatherer<Statistics_T>::initWriting(
 		if (params.statisticsParams.correctPvalues)
 		{
 			writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCor, multiThreadedGeneration);
-			writers.tTest->StoreHeader({ "ttest_analysis_p_val_cor" });
+			writers.tTest->StoreHeader({ "ttest_analysis_p_val_cor", "ttest_analysis_df", "ttest_analysis_statistic" });
 
 			writers.tTestSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCorSignificant, multiThreadedGeneration);
-			writers.tTestSignificant->StoreHeader({ "ttest_analysis_p_val_cor" });
+			writers.tTestSignificant->StoreHeader({ "ttest_analysis_p_val_cor", "ttest_analysis_df", "ttest_analysis_statistic" });
 
 			writers.tTestSignificantCntMatrix = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCorSignificantCntMatrix, multiThreadedGeneration);
 			writers.tTestSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
@@ -622,7 +637,7 @@ void WritingGatherer<Statistics_T>::initWriting(
 		else
 		{
 			writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTest, multiThreadedGeneration);
-			writers.tTest->StoreHeader({ "ttest_analysis_p_val" });
+			writers.tTest->StoreHeader({ "ttest_analysis_p_val", "ttest_analysis_df", "ttest_analysis_statistic" });
 		}
 	}
 	if (statisticsToGeneration.snr)
@@ -640,10 +655,10 @@ void WritingGatherer<Statistics_T>::initWriting(
 		if (params.statisticsParams.correctPvalues)
 		{
 			writers.wilcoxonRankSum = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCor, multiThreadedGeneration);
-			writers.wilcoxonRankSum->StoreHeader({ "wrs_analysis_p_val_cor" });
+			writers.wilcoxonRankSum->StoreHeader({ "wrs_analysis_p_val_cor", "wrs_analysis_U1_statistic", "wrs_analysis_U2_statistic" });
 
 			writers.wilcoxonRankSumSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificant, multiThreadedGeneration);
-			writers.wilcoxonRankSumSignificant->StoreHeader({ "wrs_analysis_p_val_cor" });
+			writers.wilcoxonRankSumSignificant->StoreHeader({ "wrs_analysis_p_val_cor", "wrs_analysis_U1_statistic", "wrs_analysis_U2_statistic" });
 
 			writers.wilcoxonRankSumSignificantCntMatrix = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificantCntMatrix, multiThreadedGeneration);
 			writers.wilcoxonRankSumSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
@@ -653,7 +668,7 @@ void WritingGatherer<Statistics_T>::initWriting(
 		else
 		{
 			writers.wilcoxonRankSum = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSum, multiThreadedGeneration);
-			writers.wilcoxonRankSum->StoreHeader({ "wrs_analysis_p_val" });
+			writers.wilcoxonRankSum->StoreHeader({ "wrs_analysis_p_val", "wrs_analysis_U1_statistic", "wrs_analysis_U2_statistic" });
 		}
 	}
 	if (statisticsToGeneration.dids)
@@ -666,10 +681,10 @@ void WritingGatherer<Statistics_T>::initWriting(
 		if (params.statisticsParams.correctPvalues)
 		{
 			writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACor, multiThreadedGeneration);
-			writers.anova->StoreHeader({ "anova_analysis_p_val_cor" });
+			writers.anova->StoreHeader({ "anova_analysis_p_val_cor", "anova_statistic" });
 
 			writers.anovaSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACorSignificant, multiThreadedGeneration);
-			writers.anovaSignificant->StoreHeader({ "anova_analysis_p_val_cor" });
+			writers.anovaSignificant->StoreHeader({ "anova_analysis_p_val_cor", "anova_statistic" });
 
 			writers.anovaSignificantCntMatrix = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACorSignificantCntMatrix, multiThreadedGeneration);
 			writers.anovaSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
@@ -679,7 +694,7 @@ void WritingGatherer<Statistics_T>::initWriting(
 		else
 		{
 			writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVA, multiThreadedGeneration);
-			writers.anova->StoreHeader({ "anova_analysis_p_val" });
+			writers.anova->StoreHeader({ "anova_analysis_p_val", "anova_statistic" });
 		}
 	}
 

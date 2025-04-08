@@ -163,11 +163,20 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 	statisticsToGeneration.differentialAnalysis = statisticsToGeneration.tTest || statisticsToGeneration.snr || statisticsToGeneration.wilcoxonRankSum || statisticsToGeneration.dids || statisticsToGeneration.anova;
 
 	if (statisticsToGeneration.tTest)
+	{
 		++statisticsToGeneration.nStatisticsWithPValues;
+		statisticsToGeneration.nAdditionalValuesOfCorrectedStats += 2;
+	}
 	if (statisticsToGeneration.wilcoxonRankSum)
+	{
 		++statisticsToGeneration.nStatisticsWithPValues;
+		statisticsToGeneration.nAdditionalValuesOfCorrectedStats += 2;
+	}
 	if (statisticsToGeneration.anova)
+	{
 		++statisticsToGeneration.nStatisticsWithPValues;
+		++statisticsToGeneration.nAdditionalValuesOfCorrectedStats;
+	}
 }
 
 
@@ -183,19 +192,19 @@ void StatisticsGenerator::correctPValuesEntries()
 
 		if (params.statisticsParams.classificationPValueCorrection == CorrectionMethod::Bonferroni)
 		{
-			correction.bonferroni_n(pValuesData[correctTaskData.algIdx].begin(), pValuesCorrectedData[correctTaskData.algIdx].begin(), pValuesData[correctTaskData.algIdx].size());
+			correction.bonferroni_n(pValuesToCorrect[correctTaskData.algIdx].begin(), pValuesCorrected[correctTaskData.algIdx].begin(), pValuesToCorrect[correctTaskData.algIdx].size());
 		}
 		else if (params.statisticsParams.classificationPValueCorrection == CorrectionMethod::HolmBonferroni)
 		{
-			correction.holm_bonferroni_n(pValuesData[correctTaskData.algIdx].begin(), pValuesCorrectedData[correctTaskData.algIdx].begin(), pValuesData[correctTaskData.algIdx].size());
+			correction.holm_bonferroni_n(pValuesToCorrect[correctTaskData.algIdx].begin(), pValuesCorrected[correctTaskData.algIdx].begin(), pValuesToCorrect[correctTaskData.algIdx].size());
 		}
 		else if (params.statisticsParams.classificationPValueCorrection == CorrectionMethod::BenjaminiHochberg)
 		{
-			correction.benjamini_hochberg_n(pValuesData[correctTaskData.algIdx].begin(), pValuesCorrectedData[correctTaskData.algIdx].begin(), pValuesData[correctTaskData.algIdx].size());
+			correction.benjamini_hochberg_n(pValuesToCorrect[correctTaskData.algIdx].begin(), pValuesCorrected[correctTaskData.algIdx].begin(), pValuesToCorrect[correctTaskData.algIdx].size());
 		}
 		else if (params.statisticsParams.classificationPValueCorrection == CorrectionMethod::BenjaminiYekutieli)
 		{
-			correction.benjamini_yekutieli_n(pValuesData[correctTaskData.algIdx].begin(), pValuesCorrectedData[correctTaskData.algIdx].begin(), pValuesData[correctTaskData.algIdx].size());
+			correction.benjamini_yekutieli_n(pValuesToCorrect[correctTaskData.algIdx].begin(), pValuesCorrected[correctTaskData.algIdx].begin(), pValuesToCorrect[correctTaskData.algIdx].size());
 		}
 		else
 			assert(false);
@@ -233,7 +242,8 @@ void StatisticsGenerator::generateStatisticsParallel()
 
 	if (params.statisticsParams.correctPvalues)
 	{
-		pValuesData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
+		pValuesToCorrect.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
+		additionalValuesOfCorrectedStats.resize(statisticsToGeneration.nAdditionalValuesOfCorrectedStats, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
 
 		std::vector<std::thread> threads(params.mkmcParams.nThreads);
 
@@ -258,7 +268,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 			keepNLargestCollectionGlobal.Flush(params, samples_names); // samples names as matrix header
 		});
 
-		pValuesCorrectedData.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
+		pValuesCorrected.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
 		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred) // probably some threads will be idle
 		{
 			threads[i_thred] = std::thread([this] { this->correctPValuesEntries(); });

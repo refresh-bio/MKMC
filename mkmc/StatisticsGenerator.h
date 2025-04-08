@@ -69,8 +69,9 @@ class StatisticsGenerator
 	const std::vector<uint32_t>& differentialAnalysisPhenotype;
 	size_t differentialAnalysisNClasses;
 
-	std::vector<std::vector<out_kmcdb_value_type>> pValuesData; // first index: algorithm, second: entries
-	std::vector<std::vector<out_kmcdb_value_type>> pValuesCorrectedData; // first index: algorithm, second: entries
+	std::vector<std::vector<out_kmcdb_value_type>> pValuesToCorrect; // first index: algorithm, second: entries
+	std::vector<std::vector<out_kmcdb_value_type>> pValuesCorrected; // first index: algorithm, second: entries
+	std::vector<std::vector<out_kmcdb_value_type>> additionalValuesOfCorrectedStats; // first index: algorithm, second: entries
 
 	std::vector<uint64_t> binsOffsets; // (of size no. of bins + 1) contains indices of first entries for every bin; the last element contains number of all the entries
 
@@ -153,7 +154,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 	std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
 	inMatrixEntry.resize(num_samples);
 	outNormEntry.resize(num_samples);
-	outStatsEntry.resize(statisticsToGeneration.nStatistics);
+	outStatsEntry.resize(statisticsToGeneration.nStatistics + statisticsToGeneration.nAdditionalValuesOfCorrectedStats);
 
 	const auto kmer_len = params.stage1Params.GetKmerLen();
 	std::string kmerSequence(kmer_len, ' ');
@@ -248,13 +249,15 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 					for (size_t it = 0; it < num_samples; ++it)
 						inMatrixEntryScaled[it] = std::log2(inMatrixEntry[it] + 1);
 
-					const double tTestPValue = statistics.t_test_n(
+					const auto tTest = statistics.t_test_n(
 						inMatrixEntryScaled.begin(),
 						differentialAnalysisPhenotype.begin(),
 						num_samples,
-						false).p_value;
+						false);
 
-					outStatsEntry[outStatsEntryIdx++] = tTestPValue;
+					outStatsEntry[outStatsEntryIdx++] = tTest.p_value;
+					outStatsEntry[outStatsEntryIdx++] = tTest.df;
+					outStatsEntry[outStatsEntryIdx++] = tTest.statistic;
 				}
 				if (statisticsToGeneration.snr)
 				{
@@ -276,12 +279,14 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 				}
 				if (statisticsToGeneration.wilcoxonRankSum)
 				{
-					const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test_n(
+					const auto wilcoxonRankSum = statistics.mann_whitney_U_test_n(
 						outNormEntry.begin(),
 						differentialAnalysisPhenotype.begin(),
-						num_samples).p_value;
+						num_samples);
 
-					outStatsEntry[outStatsEntryIdx++] = wilcoxonRankSumPValue;
+					outStatsEntry[outStatsEntryIdx++] = wilcoxonRankSum.p_value;
+					outStatsEntry[outStatsEntryIdx++] = wilcoxonRankSum.statistic_U1;
+					outStatsEntry[outStatsEntryIdx++] = wilcoxonRankSum.statistic_U2;
 				}
 				if (statisticsToGeneration.dids)
 				{
@@ -295,16 +300,17 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 				}
 				if (statisticsToGeneration.anova)
 				{
-					const double anovaPValue = scorer.anova_n(
+					const auto anova = scorer.anova_n(
 						outNormEntry.begin(),
 						differentialAnalysisPhenotype.begin(),
 						differentialAnalysisNClasses,
-						num_samples).p_value;
+						num_samples);
 
-					outStatsEntry[outStatsEntryIdx++] = anovaPValue;
+					outStatsEntry[outStatsEntryIdx++] = anova.p_value;
+					outStatsEntry[outStatsEntryIdx++] = anova.statistic;
 				}
 			}
-			assert(outStatsEntryIdx == statisticsToGeneration.nStatistics);
+			assert(outStatsEntryIdx == statisticsToGeneration.nStatistics + statisticsToGeneration.nAdditionalValuesOfCorrectedStats);
 
 			++progress_bar_updater;
 
@@ -379,6 +385,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 
 			size_t outStatsIdx = 0;
 			size_t outPValuesToCorrectAlg = 0;
+			size_t outAdditionalValuesIdx = 0;
 
 			if (statisticsToGeneration.pearson)
 			{
@@ -425,13 +432,15 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 				for (size_t it = 0; it < num_samples; ++it)
 					inMatrixEntryScaled[it] = std::log2(inMatrixEntry[it] + 1);
 
-				const double tTestPValue = statistics.t_test_n(
+				const auto tTest = statistics.t_test_n(
 					inMatrixEntryScaled.begin(),
 					differentialAnalysisPhenotype.begin(),
 					num_samples,
-					false).p_value;
+					false);
 
-				pValuesData[outPValuesToCorrectAlg++][outPValuesToCorrectIdx] = tTestPValue;
+				pValuesToCorrect[outPValuesToCorrectAlg++][outPValuesToCorrectIdx] = tTest.p_value;
+				additionalValuesOfCorrectedStats[outAdditionalValuesIdx++][outPValuesToCorrectIdx] = tTest.df;
+				additionalValuesOfCorrectedStats[outAdditionalValuesIdx++][outPValuesToCorrectIdx] = tTest.statistic;
 			}
 			if (statisticsToGeneration.snr)
 			{
@@ -453,12 +462,14 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			}
 			if (statisticsToGeneration.wilcoxonRankSum)
 			{
-				const double wilcoxonRankSumPValue = statistics.mann_whitney_U_test_n(
+				const auto wilcoxonRankSum = statistics.mann_whitney_U_test_n(
 					outNormEntry.begin(),
 					differentialAnalysisPhenotype.begin(),
-					num_samples).p_value;
+					num_samples);
 
-				pValuesData[outPValuesToCorrectAlg++][outPValuesToCorrectIdx] = wilcoxonRankSumPValue;
+				pValuesToCorrect[outPValuesToCorrectAlg++][outPValuesToCorrectIdx] = wilcoxonRankSum.p_value;
+				additionalValuesOfCorrectedStats[outAdditionalValuesIdx++][outPValuesToCorrectIdx] = wilcoxonRankSum.statistic_U1;
+				additionalValuesOfCorrectedStats[outAdditionalValuesIdx++][outPValuesToCorrectIdx] = wilcoxonRankSum.statistic_U2;
 			}
 			if (statisticsToGeneration.dids)
 			{
@@ -472,13 +483,14 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			}
 			if (statisticsToGeneration.anova)
 			{
-				const double anovaPValue = scorer.anova_n(
+				const auto anova = scorer.anova_n(
 					outNormEntry.begin(),
 					differentialAnalysisPhenotype.begin(),
 					differentialAnalysisNClasses,
-					num_samples).p_value;
+					num_samples);
 
-				pValuesData[outPValuesToCorrectAlg++][outPValuesToCorrectIdx] = anovaPValue;
+				pValuesToCorrect[outPValuesToCorrectAlg++][outPValuesToCorrectIdx] = anova.p_value;
+				additionalValuesOfCorrectedStats[outAdditionalValuesIdx++][outPValuesToCorrectIdx] = anova.statistic;
 			}
 			assert(outPValuesToCorrectAlg == statisticsToGeneration.nStatisticsWithPValues);
 
@@ -503,7 +515,7 @@ void StatisticsGenerator::safeCorrectedPValuesEntries()
 	std::vector<uint64_t> inMatrixEntry;
 	std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
 	inMatrixEntry.resize(num_samples);
-	outStatsEntry.resize(statisticsToGeneration.nStatistics);
+	outStatsEntry.resize(statisticsToGeneration.nStatistics + statisticsToGeneration.nAdditionalValuesOfCorrectedStats);
 
 	const auto kmer_len = params.stage1Params.GetKmerLen();
 	std::string kmerSequence(kmer_len, ' ');
@@ -524,26 +536,43 @@ void StatisticsGenerator::safeCorrectedPValuesEntries()
 		{
 			kmer.to_string(kmer_len, kmerSequence.data());
 
-			size_t outStatsIdx = 0;
+			size_t outPvaluesIdx = 0;
+			size_t outAdditionalValuesIdx = 0;
 			if (statisticsToGeneration.differentialAnalysis)
 			{
 				if (statisticsToGeneration.tTest)
 				{
-					outStatsEntry[outStatsIdx] = pValuesCorrectedData[outStatsIdx][outPValuesToCorrectIdx];
-					++outStatsIdx;
+					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = pValuesCorrected[outPvaluesIdx][outPValuesToCorrectIdx];
+					++outPvaluesIdx;
+
+					// additional values
+					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
+					++outAdditionalValuesIdx;
+					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
+					++outAdditionalValuesIdx;
 				}
 				if (statisticsToGeneration.wilcoxonRankSum)
 				{
-					outStatsEntry[outStatsIdx] = pValuesCorrectedData[outStatsIdx][outPValuesToCorrectIdx];
-					++outStatsIdx;
+					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = pValuesCorrected[outPvaluesIdx][outPValuesToCorrectIdx];
+					++outPvaluesIdx;
+
+					// additional values
+					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
+					++outAdditionalValuesIdx;
+					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
+					++outAdditionalValuesIdx;
 				}
 				if (statisticsToGeneration.anova)
 				{
-					outStatsEntry[outStatsIdx] = pValuesCorrectedData[outStatsIdx][outPValuesToCorrectIdx];
-					++outStatsIdx;
+					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = pValuesCorrected[outPvaluesIdx][outPValuesToCorrectIdx];
+					++outPvaluesIdx;
+
+					// additional value
+					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
+					++outAdditionalValuesIdx;
 				}
 			}
-			assert(outStatsIdx == statisticsToGeneration.nStatisticsWithPValues);
+			assert(outPvaluesIdx + outAdditionalValuesIdx == statisticsToGeneration.nStatisticsWithPValues + statisticsToGeneration.nAdditionalValuesOfCorrectedStats);
 
 			++outPValuesToCorrectIdx;
 			++progress_bar_updater;
