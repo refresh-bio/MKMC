@@ -161,8 +161,9 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	dimReductionGroup->add_option("--umap-repulsion_strength", statisticsParams.umap_params.repulsion_strength, "repulsion_strength parameter")->needs(umap)->default_val(statisticsParams.umap_params.repulsion_strength);
 
 	std::map<std::string, umappp::InitMethod> umapInitMethodValuesMap{ { "spectral", umappp::InitMethod::SPECTRAL }, { "spectral_only", umappp::InitMethod::SPECTRAL_ONLY }, { "random", umappp::InitMethod::RANDOM }, { "none", umappp::InitMethod::NONE } };
+	dimReductionGroup->add_option("--umap-initialize", statisticsParams.umap_params.initialize, "initialize parameter")->transform(CLI::CheckedTransformer(umapInitMethodValuesMap))->needs(umap)->default_val(statisticsParams.umap_params.initialize)->default_str("spectral");
 
-	dimReductionGroup->add_option("--umap-initialize", statisticsParams.classificationMethods, "initialize parameter")->transform(CLI::CheckedTransformer(umapInitMethodValuesMap))->needs(umap);
+	dimReductionGroup->add_option("--umap-num_neighbors", statisticsParams.umap_params.num_neighbors, "num_neighbors parameter")->needs(umap)->default_val(statisticsParams.umap_params.num_neighbors);
 	dimReductionGroup->add_option("--umap-num_epochs", statisticsParams.umap_params.num_epochs, "num_epochs parameter")->needs(umap)->default_val(statisticsParams.umap_params.num_epochs); // default -1
 	dimReductionGroup->add_option("--umap-learning_rate", statisticsParams.umap_params.learning_rate, "learning_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.learning_rate);
 

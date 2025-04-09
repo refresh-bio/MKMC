@@ -69,7 +69,8 @@ Options:
  - `--umap-a FLOAT [0]` Needs: `--umap` - `a` parameter
  - `--umap-b FLOAT [0]` Needs: `--umap` - `b` parameter
  - `--umap-repulsion_strength FLOAT [1]` Needs: `--umap` - `repulsion_strength` parameter
- - `--umap-initialize ENUM:value in {none,random,spectral,spectral_only}` ... Needs: `--umap` - `initialize` parameter
+ - `--umap-initialize ENUM:value in {none,random,spectral,spectral_only} [spectral]` Needs: `--umap` - `initialize` parameter
+ - `--umap-num_neighbors INT [15]` Needs: `--umap` - `num_neighbors` parameter
  - `--umap-num_epochs INT [-1]` Needs: `--umap` - `num_epochs` parameter
  - `--umap-learning_rate FLOAT [1]` Needs: `--umap` - `learning_rate` parameter
  - `--umap-negative_sample_rate FLOAT [5]` Needs: `--umap` - `negative_sample_rate` parameter
