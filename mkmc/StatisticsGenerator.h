@@ -277,16 +277,16 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 
 					outStatsEntry[outStatsEntryIdx++] = snr;
 				}
-				if (statisticsToGeneration.wilcoxonRankSum)
+				if (statisticsToGeneration.wrs)
 				{
-					const auto wilcoxonRankSum = statistics.mann_whitney_U_test_n(
+					const auto wrs = statistics.mann_whitney_U_test_n(
 						outNormEntry.begin(),
 						differentialAnalysisPhenotype.begin(),
 						num_samples);
 
-					outStatsEntry[outStatsEntryIdx++] = wilcoxonRankSum.p_value;
-					outStatsEntry[outStatsEntryIdx++] = wilcoxonRankSum.statistic_U1;
-					outStatsEntry[outStatsEntryIdx++] = wilcoxonRankSum.statistic_U2;
+					outStatsEntry[outStatsEntryIdx++] = wrs.p_value;
+					outStatsEntry[outStatsEntryIdx++] = wrs.statistic_U1;
+					outStatsEntry[outStatsEntryIdx++] = wrs.statistic_U2;
 				}
 				if (statisticsToGeneration.dids)
 				{
@@ -460,16 +460,16 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 
 				outStatsEntry[outStatsIdx++] = snr;
 			}
-			if (statisticsToGeneration.wilcoxonRankSum)
+			if (statisticsToGeneration.wrs)
 			{
-				const auto wilcoxonRankSum = statistics.mann_whitney_U_test_n(
+				const auto wrs = statistics.mann_whitney_U_test_n(
 					outNormEntry.begin(),
 					differentialAnalysisPhenotype.begin(),
 					num_samples);
 
-				pValuesToCorrect[outPValuesToCorrectAlg++][outPValuesToCorrectIdx] = wilcoxonRankSum.p_value;
-				additionalValuesOfCorrectedStats[outAdditionalValuesIdx++][outPValuesToCorrectIdx] = wilcoxonRankSum.statistic_U1;
-				additionalValuesOfCorrectedStats[outAdditionalValuesIdx++][outPValuesToCorrectIdx] = wilcoxonRankSum.statistic_U2;
+				pValuesToCorrect[outPValuesToCorrectAlg++][outPValuesToCorrectIdx] = wrs.p_value;
+				additionalValuesOfCorrectedStats[outAdditionalValuesIdx++][outPValuesToCorrectIdx] = wrs.statistic_U1;
+				additionalValuesOfCorrectedStats[outAdditionalValuesIdx++][outPValuesToCorrectIdx] = wrs.statistic_U2;
 			}
 			if (statisticsToGeneration.dids)
 			{
@@ -551,7 +551,7 @@ void StatisticsGenerator::safeCorrectedPValuesEntries()
 					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
 					++outAdditionalValuesIdx;
 				}
-				if (statisticsToGeneration.wilcoxonRankSum)
+				if (statisticsToGeneration.wrs)
 				{
 					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = pValuesCorrected[outPvaluesIdx][outPValuesToCorrectIdx];
 					++outPvaluesIdx;

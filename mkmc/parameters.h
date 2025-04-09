@@ -142,7 +142,7 @@ struct StatisticsParams
 	bool nDimensionReductionUserDefined = false;
 	uint32_t nDimensionReduction = 2;
 
-	refresh::umap<double>::params_t umap_params{};
+	refresh::umap<double>::params_t umap_params{};  // default initialize="spectral" value in input parameters
 
 
 	enum class CorrelationMethod { Pearson, Spearman, Kendall };

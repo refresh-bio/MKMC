@@ -134,7 +134,7 @@ public:
 
 template<unsigned SIZE>
 template<typename PerformGenerate_T, typename Filters_T>
-void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& normalizationLearning, PerformGenerate_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
+void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& currentBinNormalizationLearning, PerformGenerate_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
 {
 	std::vector<KMCFileWrapper<SIZE>> samples;
 	for (size_t sample_id = 0; sample_id < params.mkmcParams.kmcOutputFiles.size(); ++sample_id)
@@ -215,7 +215,7 @@ void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_
 							tot_cnts[i] += kMersCounts[i];
 
 						fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
-						normalizationLearning.add_entry(kMersCounts);
+						currentBinNormalizationLearning.add_entry(kMersCounts);
 					}
 
 					minKmer = curKmer;
@@ -232,7 +232,7 @@ void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_
 			tot_cnts[i] += kMersCounts[i];
 
 		fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
-		normalizationLearning.add_entry(kMersCounts);
+		currentBinNormalizationLearning.add_entry(kMersCounts);
 	}
 }
 
@@ -384,8 +384,6 @@ void Merger<SIZE>::mergeParallel()
 			if (samplesMetadata[i]->GetConfig().num_bytes_single_value > config.num_bytes_single_value)
 				config.num_bytes_single_value = samplesMetadata[i]->GetConfig().num_bytes_single_value;
 	}
-
-	std::vector<std::thread> threads(params.mkmcParams.nThreads);
 
 	std::vector<std::string> sampleNames;
 	sampleNames.reserve(params.mkmcParams.samples.size());

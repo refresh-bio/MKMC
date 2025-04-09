@@ -16,7 +16,8 @@
 
 
 /* Generators are designed to be assigned to threads. Theoretically may be also assigned to single tasks (bins).
- *  closeWriter functions close writers manually to prevent waiting for closing to the end of the program.
+ * closeWriter functions close writers manually to prevent waiting for closing to the end of the program,
+ * as writers are static (and common for all threads).
  */
 class BinFileGenerator
 {
@@ -85,7 +86,7 @@ class MatrixFileGenerator
 	static bool writerWasOpened;
 
 	OutputBuffer outputBuffer;
-	uint32_t kmerLength;
+	const uint32_t kmerLength;
 	std::string kmerSeqBuf;
 
 	size_t getMaxLineLength(const Params& params) const

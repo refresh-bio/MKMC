@@ -155,19 +155,19 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 	statisticsToGeneration.snr = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::SNR);
 	if (params.mkmcParams.generateForNonNormalized) // as is_differential_analysis_method has side effects, it should be called conditionally here
 		statisticsToGeneration.unnormalizedSnr = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::SNR);
-	statisticsToGeneration.wilcoxonRankSum = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum);
+	statisticsToGeneration.wrs = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum);
 
 	statisticsToGeneration.dids = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::DIDS);
 	statisticsToGeneration.anova = is_differential_analysis_method(StatisticsParams::DifferentialAnalysisMethod::ANOVA);
 
-	statisticsToGeneration.differentialAnalysis = statisticsToGeneration.tTest || statisticsToGeneration.snr || statisticsToGeneration.wilcoxonRankSum || statisticsToGeneration.dids || statisticsToGeneration.anova;
+	statisticsToGeneration.differentialAnalysis = statisticsToGeneration.tTest || statisticsToGeneration.snr || statisticsToGeneration.wrs || statisticsToGeneration.dids || statisticsToGeneration.anova;
 
 	if (statisticsToGeneration.tTest)
 	{
 		++statisticsToGeneration.nStatisticsWithPValues;
 		statisticsToGeneration.nAdditionalValuesOfCorrectedStats += 2;
 	}
-	if (statisticsToGeneration.wilcoxonRankSum)
+	if (statisticsToGeneration.wrs)
 	{
 		++statisticsToGeneration.nStatisticsWithPValues;
 		statisticsToGeneration.nAdditionalValuesOfCorrectedStats += 2;
