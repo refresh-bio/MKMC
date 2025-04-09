@@ -398,11 +398,11 @@ int main(int argc, char** argv)
 
 		if (params.mutableParams.createdFastaFile)
 		{
-			std::cerr << "\nPreparing temporary FASTA file for sequences filtering out:\n";
+			std::cerr << "Preparing temporary FASTA file for sequences filtering out:\n";
 			std::cerr << "\tStart: " << sequence_filter_init.getStartTime() << "\n";
 			std::cerr << "\tEnd:   " << sequence_filter_init.getStopTime() << "\n";
 		}
-		std::cerr << "\nk-mer counting:\n";
+		std::cerr << "k-mer counting:\n";
 		std::cerr << "\tStart: " << kmc_timer.getStartTime() << "\n";
 		std::cerr << "\tEnd:   " << kmc_timer.getStopTime() << "\n";
 		std::cerr << "Merging and dumping:\n";
