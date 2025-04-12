@@ -209,17 +209,17 @@ public:
 		auto max_line_len_top_fasta = getMaxLineLengthForFasta(params.stage1Params.GetKmerLen());
 
 		flush_for(global.pearson,
-			params.mkmcParams.outputFilePearsonTop, { "pearson_cor" }, max_line_len_top,
+			params.mkmcParams.outputFilePearsonTop, { "pearson" }, max_line_len_top,
 			params.mkmcParams.outputFilePearsonTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
 			params.mkmcParams.outputFilePearsonTopFasta, max_line_len_top_fasta);
 
 		flush_for(global.spearman,
-			params.mkmcParams.outputFileSpearmanTop, { "spearman_cor" }, max_line_len_top,
+			params.mkmcParams.outputFileSpearmanTop, { "spearman" }, max_line_len_top,
 			params.mkmcParams.outputFileSpearmanTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
 			params.mkmcParams.outputFileSpearmanTopFasta, max_line_len_top_fasta);
 
 		flush_for(global.kendall,
-			params.mkmcParams.outputFileKendallTop, { "kendall_cor" }, max_line_len_top,
+			params.mkmcParams.outputFileKendallTop, { "kendall" }, max_line_len_top,
 			params.mkmcParams.outputFileKendallTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
 			params.mkmcParams.outputFileKendallTopFasta, max_line_len_top_fasta);
 
@@ -229,17 +229,17 @@ public:
 			params.mkmcParams.outputFileEntropyTopFasta, max_line_len_top_fasta);
 
 		flush_for(global.snr,
-			params.mkmcParams.outputFileSNRTop, { "snr_analysis" }, max_line_len_top,
+			params.mkmcParams.outputFileSNRTop, { "snr" }, max_line_len_top,
 			params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
 			params.mkmcParams.outputFileSNRTopFasta, max_line_len_top_fasta);
 
 		flush_for(global.unnormalizedSnr,
-			params.mkmcParams.outputFileUnnormalizedSNRTop, { "snr_analysis_for_unnormalized" }, max_line_len_top,
+			params.mkmcParams.outputFileUnnormalizedSNRTop, { "snr_for_unnormalized" }, max_line_len_top,
 			params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
 			params.mkmcParams.outputFileUnnormalizedSNRTopFasta, max_line_len_top_fasta);
 
 		flush_for(global.dids,
-			params.mkmcParams.outputFileDIDSTop, { "dids_analysis" }, max_line_len_top,
+			params.mkmcParams.outputFileDIDSTop, { "dids" }, max_line_len_top,
 			params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
 			params.mkmcParams.outputFileDIDSTopFasta, max_line_len_top_fasta);
 	}
@@ -609,17 +609,17 @@ void WritingGatherer<Statistics_T>::initWriting(
 	if (statisticsToGeneration.pearson)
 	{
 		writers.pearson = std::make_unique<DumpWriter>(params.mkmcParams.outputFilePearson, multiThreadedGeneration);
-		writers.pearson->StoreHeader({ "pearson_cor" });
+		writers.pearson->StoreHeader({ "pearson" });
 	}
 	if (statisticsToGeneration.spearman)
 	{
 		writers.spearman = std::make_unique<DumpWriter>(params.mkmcParams.outputFileSpearman, multiThreadedGeneration);
-		writers.spearman->StoreHeader({ "spearman_cor" });
+		writers.spearman->StoreHeader({ "spearman" });
 	}
 	if (statisticsToGeneration.kendall)
 	{
 		writers.kendall = std::make_unique<DumpWriter>(params.mkmcParams.outputFileKendall, multiThreadedGeneration);
-		writers.kendall->StoreHeader({ "kendall_cor" });
+		writers.kendall->StoreHeader({ "kendall" });
 	}
 	if (statisticsToGeneration.entropy)
 	{
@@ -631,10 +631,10 @@ void WritingGatherer<Statistics_T>::initWriting(
 		if (params.statisticsParams.correctPvalues)
 		{
 			writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCor, multiThreadedGeneration);
-			writers.tTest->StoreHeader({ "ttest_analysis_p_val_cor", "ttest_analysis_df", "ttest_analysis_statistic" });
+			writers.tTest->StoreHeader({ "ttest_p_val_corrected", "ttest_df", "ttest_statistic" });
 
 			writers.tTestSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCorSignificant, multiThreadedGeneration);
-			writers.tTestSignificant->StoreHeader({ "ttest_analysis_p_val_cor", "ttest_analysis_df", "ttest_analysis_statistic" });
+			writers.tTestSignificant->StoreHeader({ "ttest_p_val_corrected", "ttest_df", "ttest_statistic" });
 
 			writers.tTestSignificantCntMatrix = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCorSignificantCntMatrix, multiThreadedGeneration);
 			writers.tTestSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
@@ -644,28 +644,28 @@ void WritingGatherer<Statistics_T>::initWriting(
 		else
 		{
 			writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTest, multiThreadedGeneration);
-			writers.tTest->StoreHeader({ "ttest_analysis_p_val", "ttest_analysis_df", "ttest_analysis_statistic" });
+			writers.tTest->StoreHeader({ "ttest_p_val", "ttest_df", "ttest_statistic" });
 		}
 	}
 	if (statisticsToGeneration.snr)
 	{
 		writers.snr = std::make_unique<DumpWriter>(params.mkmcParams.outputFileSNR, multiThreadedGeneration);
-		writers.snr->StoreHeader({ "snr_analysis" });
+		writers.snr->StoreHeader({ "snr" });
 	}
 	if (statisticsToGeneration.unnormalizedSnr)
 	{
 		writers.unnormalizedSnr = std::make_unique<DumpWriter>(params.mkmcParams.outputFileUnnormalizedSNR, multiThreadedGeneration);
-		writers.unnormalizedSnr->StoreHeader({ "snr_analysis_for_unnormalized" });
+		writers.unnormalizedSnr->StoreHeader({ "snr_for_unnormalized" });
 	}
 	if (statisticsToGeneration.wrs)
 	{
 		if (params.statisticsParams.correctPvalues)
 		{
 			writers.wrs = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCor, multiThreadedGeneration);
-			writers.wrs->StoreHeader({ "wrs_analysis_p_val_cor", "wrs_analysis_U1_statistic", "wrs_analysis_U2_statistic" });
+			writers.wrs->StoreHeader({ "wrs_p_val_corrected", "wrs_U1_statistic", "wrs_U2_statistic" });
 
 			writers.wrsSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificant, multiThreadedGeneration);
-			writers.wrsSignificant->StoreHeader({ "wrs_analysis_p_val_cor", "wrs_analysis_U1_statistic", "wrs_analysis_U2_statistic" });
+			writers.wrsSignificant->StoreHeader({ "wrs_p_val_corrected", "wrs_U1_statistic", "wrs_U2_statistic" });
 
 			writers.wrsSignificantCntMatrix = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificantCntMatrix, multiThreadedGeneration);
 			writers.wrsSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
@@ -675,23 +675,23 @@ void WritingGatherer<Statistics_T>::initWriting(
 		else
 		{
 			writers.wrs = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSum, multiThreadedGeneration);
-			writers.wrs->StoreHeader({ "wrs_analysis_p_val", "wrs_analysis_U1_statistic", "wrs_analysis_U2_statistic" });
+			writers.wrs->StoreHeader({ "wrs_p_val", "wrs_U1_statistic", "wrs_U2_statistic" });
 		}
 	}
 	if (statisticsToGeneration.dids)
 	{
 		writers.dids = std::make_unique<DumpWriter>(params.mkmcParams.outputFileDIDS, multiThreadedGeneration);
-		writers.dids->StoreHeader({ "dids_analysis" });
+		writers.dids->StoreHeader({ "dids" });
 	}
 	if (statisticsToGeneration.anova)
 	{
 		if (params.statisticsParams.correctPvalues)
 		{
 			writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACor, multiThreadedGeneration);
-			writers.anova->StoreHeader({ "anova_analysis_p_val_cor", "anova_statistic" });
+			writers.anova->StoreHeader({ "anova_p_val_corrected", "anova_statistic" });
 
 			writers.anovaSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACorSignificant, multiThreadedGeneration);
-			writers.anovaSignificant->StoreHeader({ "anova_analysis_p_val_cor", "anova_statistic" });
+			writers.anovaSignificant->StoreHeader({ "anova_p_val_corrected", "anova_statistic" });
 
 			writers.anovaSignificantCntMatrix = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACorSignificantCntMatrix, multiThreadedGeneration);
 			writers.anovaSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
@@ -701,7 +701,7 @@ void WritingGatherer<Statistics_T>::initWriting(
 		else
 		{
 			writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVA, multiThreadedGeneration);
-			writers.anova->StoreHeader({ "anova_analysis_p_val", "anova_statistic" });
+			writers.anova->StoreHeader({ "anova_p_val", "anova_statistic" });
 		}
 	}
 
