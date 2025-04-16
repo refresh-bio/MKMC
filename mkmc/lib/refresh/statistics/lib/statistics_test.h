@@ -271,7 +271,7 @@ namespace refresh
 			if (mean_sd[0].sd == 0 || mean_sd[1].sd == 0)
 				return 0;
 
-			return (mean_sd[0].avg - mean_sd[1].avg) / (mean_sd[0].sd + mean_sd[1].sd);
+			return std::fabs(mean_sd[0].avg - mean_sd[1].avg) / (mean_sd[0].sd + mean_sd[1].sd);
 		}
 	};
 
