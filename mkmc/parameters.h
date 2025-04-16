@@ -149,6 +149,7 @@ struct StatisticsParams
 	std::vector<CorrelationMethod> correlationMethods;
 
 	size_t nTop = 10000;
+	bool nTopUserDefined = false;
 
 	enum class DifferentialAnalysisMethod { TTest, SNR, WilcoxonRankSum, DIDS, ANOVA };
 	std::vector<DifferentialAnalysisMethod> classificationMethods;

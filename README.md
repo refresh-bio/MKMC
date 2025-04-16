@@ -54,7 +54,7 @@ Options:
 [Option Group: other statistical parameters]
   Options:
  - `--entropy` - generate k-mers counts entropy; counts are increased by 1
- - `--n_top UINT [10000]` - select a number of top k-mers (for correlations using an absolute value)
+ - `--n_top UINT [10000]` - select a maximal number of top k-mers by statistics with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs --cor or --diff
 
 [Option Group: dimentionality reduction]
   Options:

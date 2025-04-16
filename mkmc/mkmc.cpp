@@ -136,7 +136,12 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	otherStatsGroup->add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy; counts are increased by 1");
 
-	otherStatsGroup->add_option("--n_top", statisticsParams.nTop, "select a number of top k-mers (for correlations using an absolute value)")->default_val(statisticsParams.nTop); // needs --corr or --diff
+	std::function<void(const decltype(statisticsParams.nTop)&)> nTopCallback = [&](const decltype(statisticsParams.nTop)& nTop)
+	{
+		statisticsParams.nTop = nTop;
+		statisticsParams.nTopUserDefined = true;
+	};
+	otherStatsGroup->add_option_function("--n_top", nTopCallback, "select a maximal number of top k-mers by statistics with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs --cor or --diff")->default_val(statisticsParams.nTop);
 	
 	CLI::Option_group* dimReductionGroup = app.add_option_group("dimentionality reduction");
 
@@ -257,7 +262,55 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 
 
-bool checkArguments(const Params& params)
+bool checkAndPrintArgumentsErrors(const Params& params)
+{
+	const StatisticsParams statisticsParams = params.statisticsParams;
+
+	auto isDAMethod = [&](StatisticsParams::DifferentialAnalysisMethod method)
+	{
+		return std::find(statisticsParams.classificationMethods.begin(), statisticsParams.classificationMethods.end(), method) != statisticsParams.classificationMethods.end();
+	};
+
+
+	if (!statisticsParams.generateNormalization &&
+		(statisticsParams.classificationMethods.size() > 1 || statisticsParams.classificationMethods.size() == 1 && statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
+	{
+		std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
+		return true;
+	}
+
+	if (statisticsParams.nDimensionReductionUserDefined &&
+		!(statisticsParams.runPCA || statisticsParams.runUMAP))
+	{
+		std::cerr << "Error: Number of dimensions (--dimensions) requires dimensionality reduction algorithm (--umap or --pca)\n";
+		return true;
+	}
+
+	if (statisticsParams.correctPvalues &&
+		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::ANOVA) &&
+		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::TTest) &&
+		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum))
+	{
+		std::cerr << "Error: --pval_corr requires differential k-mers analysis with ANOVA, T-Test, or Wilcoxon-rank sum (Mann-Whitney U test) (--diff)";
+		return true;
+
+	}
+
+	if (statisticsParams.nTopUserDefined &&
+		statisticsParams.correlationMethods.empty() &&
+		!statisticsParams.generateEntropy &&
+		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::SNR) &&
+		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::DIDS))
+	{
+		std::cerr << "Error: --n_top requires correlation (--cor) or entropy (--entropy) or differential k-mers analysis with SNR or DIDS (--diff)";
+		return true;
+	}
+	return false;
+}
+
+
+
+bool checkAndPrintArgumentsWarnings(const Params& params)
 {
 	if (params.mkmcParams.samples.size() <= 8 && std::find(params.statisticsParams.classificationMethods.begin(), params.statisticsParams.classificationMethods.end(), StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum) != params.statisticsParams.classificationMethods.end())
 	{
@@ -302,17 +355,9 @@ int main(int argc, char** argv)
 			return e.get_exit_code();
 		}
 
-		if (!params.statisticsParams.generateNormalization &&
-			(params.statisticsParams.classificationMethods.size() > 1 || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
+		const bool CLIErrors = checkAndPrintArgumentsErrors(params);
+		if (CLIErrors)
 		{
-			std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
-			std::exit(1);
-		}
-
-		if (params.statisticsParams.nDimensionReductionUserDefined &&
-			!(params.statisticsParams.runPCA || params.statisticsParams.runUMAP))
-		{
-			std::cerr << "Error: Number of dimensions (--dimensions) requires dimensionality reduction algorithm (--umap or --pca)\n";
 			std::exit(1);
 		}
 	}
@@ -332,7 +377,7 @@ int main(int argc, char** argv)
 		std::exit(1);
 	}
 
-	bool warningPrinted = checkArguments(params);
+	bool warningPrinted = checkAndPrintArgumentsWarnings(params);
 
 	params.generateTempAndOutputFilesNames();
 	warningPrinted |= params.adjustKMCPerformanceParams();
