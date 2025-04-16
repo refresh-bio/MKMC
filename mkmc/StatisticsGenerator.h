@@ -129,10 +129,10 @@ void StatisticsGenerator::initKeepNLargest(KeepNLargestCollection<SIZE>& keepNLa
 		keepNLargestCollection.entropy = std::make_unique<KeepTopNLargestPlain_T>(params.statisticsParams.nTop);
 
 	if (statisticsToGeneration.snr)
-		keepNLargestCollection.snr = std::make_unique<KeepTopNLargestABS_T>(params.statisticsParams.nTop);
+		keepNLargestCollection.snr = std::make_unique<KeepTopNLargestPlain_T>(params.statisticsParams.nTop);
 
 	if (statisticsToGeneration.unnormalizedSnr)
-		keepNLargestCollection.unnormalizedSnr = std::make_unique<KeepTopNLargestABS_T>(params.statisticsParams.nTop);
+		keepNLargestCollection.unnormalizedSnr = std::make_unique<KeepTopNLargestPlain_T>(params.statisticsParams.nTop);
 
 	if (statisticsToGeneration.dids)
 		keepNLargestCollection.dids = std::make_unique<KeepTopNLargestPlain_T>(params.statisticsParams.nTop);

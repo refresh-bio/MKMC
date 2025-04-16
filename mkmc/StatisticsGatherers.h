@@ -107,8 +107,8 @@ struct KeepNLargestCollection
 
 	std::unique_ptr<KeepTopNLargestPlain_T> entropy;
 
-	std::unique_ptr<KeepTopNLargestABS_T> snr;
-	std::unique_ptr<KeepTopNLargestABS_T> unnormalizedSnr;
+	std::unique_ptr<KeepTopNLargestPlain_T> snr;
+	std::unique_ptr<KeepTopNLargestPlain_T> unnormalizedSnr;
 	std::unique_ptr<KeepTopNLargestPlain_T> dids;
 };
 
