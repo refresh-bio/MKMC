@@ -240,7 +240,7 @@ bool Merger<SIZE>::inputIsConsistent()
 {
 	if (samplesMetadata.empty())
 		return true;
-	uint64_t k = samplesMetadata.front()->GetConfig().first_col_len;
+	uint64_t k = samplesMetadata.front()->GetConfig().kmer_len;
 	uint64_t signatureLen = samplesMetadata.front()->GetConfig().signature_len;
 	auto signatureSelectionScheme = samplesMetadata.front()->GetConfig().signature_selection_scheme;
 	auto signatureToBinMapping = samplesMetadata.front()->GetConfig().signature_to_bin_mapping;
@@ -248,7 +248,7 @@ bool Merger<SIZE>::inputIsConsistent()
 
 	for (const auto& sample : samplesMetadata)
 	{
-		if (k != sample->GetConfig().first_col_len)
+		if (k != sample->GetConfig().kmer_len)
 			return false;
 		if (signatureLen != sample->GetConfig().signature_len)
 			return false;
@@ -375,7 +375,7 @@ void Merger<SIZE>::mergeParallel()
 		config.signature_len = samplesMetadata.front()->GetConfig().signature_len;
 		config.signature_selection_scheme = samplesMetadata.front()->GetConfig().signature_selection_scheme;
 		config.signature_to_bin_mapping = samplesMetadata.front()->GetConfig().signature_to_bin_mapping;
-		config.first_col_len = samplesMetadata.front()->GetConfig().first_col_len;
+		config.kmer_len = samplesMetadata.front()->GetConfig().kmer_len;
 		config.num_samples = samplesMetadata.size();
 		config.num_bytes_single_value = samplesMetadata.front()->GetConfig().num_bytes_single_value;
 		for (size_t i = 1; i < samplesMetadata.size(); ++i)
