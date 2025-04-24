@@ -86,10 +86,7 @@ template <typename VALUE_T>
 class MatrixOutputBuffer : public OutputBuffer
 {
 private:
-	size_t first_col_len;
-	size_t num_columns;
-
-	size_t get_max_record_len() const
+	size_t get_max_record_len(size_t first_col_len, size_t num_columns) const
 	{
 		//     k-mer                          term(\t)  cnt                                                  term(\t or \n)
 		return first_col_len + num_columns * (1 +       refresh::numeric_conversion_max_length<VALUE_T>()) + 1;
@@ -97,14 +94,12 @@ private:
 
 public:
 	MatrixOutputBuffer(TextFileWriter& writer, uint32_t first_col_len, size_t num_columns, size_t buff_size = 1ull << 23) :
-		OutputBuffer(writer, get_max_record_len(), buff_size),
-		first_col_len(first_col_len),
-		num_columns(num_columns)
+		OutputBuffer(writer, get_max_record_len(first_col_len, num_columns), buff_size)
 	{}
 
 	void StoreKmer(const std::string& kmerSeq, const std::vector<VALUE_T>& values)
 	{
-		auto AsMatrixRow = [this]<typename VALUE_T>(const std::string & kmerSeq, const std::vector<VALUE_T>&values, char* out) -> size_t
+		auto AsMatrixRow = [this](const std::string & kmerSeq, const std::vector<VALUE_T>&values, char* out) -> size_t
 		{
 			size_t res = store_kmer(kmerSeq, out, '\t');
 
@@ -120,7 +115,7 @@ public:
 
 	void StoreKmer(const std::string& kmerSeq, const VALUE_T value)
 	{
-		auto AsMatrixRow_single_val = [this]<typename VALUE_T>(const std::string & kmerSeq, const VALUE_T value, char* out) -> size_t
+		auto AsMatrixRow_single_val = [this](const std::string & kmerSeq, const VALUE_T value, char* out) -> size_t
 		{
 			size_t res = store_kmer(kmerSeq, out, '\t');
 
@@ -136,9 +131,7 @@ public:
 class FastaOutputBuffer : public OutputBuffer
 {
 private:
-	uint32_t kmer_len;
-
-	size_t get_max_record_len() const
+	size_t get_max_record_len(uint32_t kmer_len) const
 	{
 		//     >\n k-mer                           \n
 		return 2 + static_cast<size_t>(kmer_len) + 1;
@@ -146,8 +139,7 @@ private:
 
 public:
 	FastaOutputBuffer(TextFileWriter& writer, uint32_t kmer_len, size_t buff_size = 1ull << 23) :
-		OutputBuffer(writer, get_max_record_len(), buff_size),
-		kmer_len(kmer_len)
+		OutputBuffer(writer, get_max_record_len(kmer_len), buff_size)
 	{}
 
 	void StoreKmer(const std::string& kmerSeq)
