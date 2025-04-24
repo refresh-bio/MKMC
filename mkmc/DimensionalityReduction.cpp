@@ -1,19 +1,15 @@
 #include "DimensionalityReduction.h"
-#include "DumpWriter.h"
+#include "TextFileWritingUtilities.h"
 
 #include <iostream>
 
 
 void DimensionalityReduction::store(const std::string& fileName, const std::string& firstColPrefix, const std::vector<std::vector<out_kmcdb_value_type>>& results)
 {
-	DumpWriter writer(fileName, false);
+	TextFileWriter writer(fileName, false);
 	writer.StoreHeader(samplesNames, "Dimension");
 
-	auto first_col_len = firstColPrefix.length() + 10; // I assume 10 is more then enough to store component/dimension number
-
-	auto max_line_len = first_col_len + 1 + params.mkmcParams.samples.size() * (refresh::numeric_conversion_max_length<out_kmcdb_value_type>() + 1);
-
-	OutputBuffer out(writer, max_line_len);
+	MatrixOutputBuffer<out_kmcdb_value_type> out(writer, firstColPrefix.length() + 10, params.mkmcParams.samples.size()); // I assume 10 is more then enough to store component/dimension number
 
 	std::vector<out_kmcdb_value_type> values(samplesNames.size());
 	for (size_t row = 0; row < params.statisticsParams.nDimensionReduction; ++row)
@@ -21,7 +17,7 @@ void DimensionalityReduction::store(const std::string& fileName, const std::stri
 		std::string first_col = firstColPrefix + std::to_string(row + 1);
 		for (size_t sample_id = 0; sample_id < samplesNames.size(); ++sample_id)
 			values[sample_id] = results[sample_id][row];
-		out.StoreKmer(first_col, values, StoreMethods::AsMatrixRow);
+		out.StoreKmer(first_col, values);
 	}
 }
 

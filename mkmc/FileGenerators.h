@@ -11,7 +11,7 @@
 #include "parameters.h"
 #include "kmcdb/kmcdb.h"
 #include "kmcdb/bin_writers.h"
-#include "DumpWriter.h"
+#include "TextFileWritingUtilities.h"
 
 
 
@@ -82,20 +82,16 @@ public:
 
 class MatrixFileGenerator
 {
-	static DumpWriter* dumpWriter;
+	static TextFileWriter* dumpWriter;
 	static bool writerWasOpened;
 
-	OutputBuffer outputBuffer;
+	MatrixOutputBuffer<uint64_t> outputBuffer;
 	const uint32_t kmerLength;
 	std::string kmerSeqBuf;
 
-	size_t getMaxLineLength(const Params& params) const
-	{
-		return params.stage1Params.GetKmerLen() + 1 + params.mkmcParams.samples.size() * (refresh::numeric_conversion_max_length<decltype(params.stage1Params.GetKmerLen())>() + 1);
-	}
 public:
 	MatrixFileGenerator(const Params& params) :
-		outputBuffer(*dumpWriter, getMaxLineLength(params)),
+		outputBuffer(*dumpWriter, kmerLength, params.mkmcParams.samples.size()),
 		kmerLength(params.stage1Params.GetKmerLen()),
 		kmerSeqBuf(params.stage1Params.GetKmerLen(), ' ')
 	{}
@@ -115,7 +111,7 @@ public:
 			for (const auto& sample : params.mkmcParams.samples)
 				sampleNames.push_back(sample.name);
 
-			dumpWriter = new DumpWriter(params.mkmcParams.outputMatrixFile, (params.mkmcParams.nThreads > 1));
+			dumpWriter = new TextFileWriter(params.mkmcParams.outputMatrixFile, (params.mkmcParams.nThreads > 1));
 			dumpWriter->StoreHeader(sampleNames);
 			writerWasOpened = true;
 		}
@@ -131,15 +127,15 @@ public:
 
 class FASTAFileGenerator
 {
-	static DumpWriter* dumpWriter;
+	static TextFileWriter* dumpWriter;
 	static bool writerWasOpened;
 
-	OutputBuffer outputBuffer;
+	FastaOutputBuffer outputBuffer;
 	uint64_t kmerLength;
 	std::string kmerSeqBuf;
 public:
 	FASTAFileGenerator(const Params& params) :
-		outputBuffer(*dumpWriter, params.stage1Params.GetKmerLen() + 3), // + 3 because there is >\n and \n after k-mer
+		outputBuffer(*dumpWriter, params.stage1Params.GetKmerLen()),
 		kmerLength(params.stage1Params.GetKmerLen()),
 		kmerSeqBuf(params.stage1Params.GetKmerLen(), ' ')
 	{}
@@ -154,7 +150,7 @@ public:
 		assert(!writerWasOpened);
 		if (dumpWriter == nullptr)
 		{
-			dumpWriter = new DumpWriter(params.mkmcParams.outputFASTAFile, (params.mkmcParams.nThreads > 1));
+			dumpWriter = new TextFileWriter(params.mkmcParams.outputFASTAFile, (params.mkmcParams.nThreads > 1));
 			writerWasOpened = true;
 		}
 	}
@@ -252,7 +248,7 @@ template<typename KmersSamplesData_T>
 void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
 	kmersData.kmer.to_string(kmerLength, kmerSeqBuf.data());
-	outputBuffer.StoreKmer(kmerSeqBuf, kmersData.kMersCounts, StoreMethods::AsMatrixRow);
+	outputBuffer.StoreKmer(kmerSeqBuf, kmersData.kMersCounts);
 }
 
 
@@ -261,5 +257,5 @@ template<typename KmersSamplesData_T>
 void FASTAFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 {
 	kmersData.kmer.to_string(kmerLength, kmerSeqBuf.data());
-	outputBuffer.StoreKmer(kmerSeqBuf, kmersData.kMersCounts, StoreMethods::AsFastaRecord);
+	outputBuffer.StoreKmer(kmerSeqBuf);
 }

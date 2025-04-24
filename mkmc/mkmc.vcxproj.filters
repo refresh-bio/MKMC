@@ -52,7 +52,7 @@
     <ClCompile Include="PhenotypeReaders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DumpWriter.cpp">
+    <ClCompile Include="TextFileWritingUtilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DimensionalityReduction.cpp">
@@ -111,7 +111,7 @@
     <ClInclude Include="MatrixStats.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DumpWriter.h">
+    <ClInclude Include="TextFileWritingUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StatisticsGatherers.h">

@@ -1,6 +1,6 @@
 #include "StatisticsGenerator.h"
 #include "MatrixStats.h"
-#include "DumpWriter.h"
+#include "TextFileWritingUtilities.h"
 #include "DimensionalityReduction.h"
 #include "Deseq2Learner.h"
 #include <algorithm>
@@ -12,7 +12,7 @@ void StatisticsGenerator::openReaders()
 	try
 	{
 		matrixMetadataReader = std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.outputMatrixBinFile, false);
-		matrixReader = std::make_unique<kmcdb::ReaderSortedPlainForListing<uint64_t>>(*matrixMetadataReader);
+		matrixReader = std::make_unique<kmcdb::ReaderSortedPlainForListing<cnt_value_type>>(*matrixMetadataReader);
 	}
 	catch (const std::runtime_error& ex)
 	{
@@ -225,7 +225,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 	assert(!samples_names.empty());
 	if (statisticsToGeneration.normalize)
 	{
-		normWriter = std::make_unique<DumpWriter>(params.mkmcParams.outputFileNorm, params.mkmcParams.nThreads > 1);
+		normWriter = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileNorm, params.mkmcParams.nThreads > 1);
 		normWriter->StoreHeader(samples_names);
 	} // otherwise: no normalization in output
 
@@ -252,7 +252,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 				samples_names,
 				binsOffsets.back() //number of k-mers
 			);
-			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
+			KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type> keepNLargestCollectionGlobal;
 
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
@@ -299,7 +299,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 				samples_names,
 				binsOffsets.back() //number of k-mers
 				);
-			KeepNLargestCollectionGlobal<SIZE> keepNLargestCollectionGlobal;
+			KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type> keepNLargestCollectionGlobal;
 
 			std::vector<std::thread> threads(params.mkmcParams.nThreads);
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)

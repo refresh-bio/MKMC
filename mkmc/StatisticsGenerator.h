@@ -10,7 +10,7 @@
 #define NOMINMAX
 #include "progress_bar.hpp"
 #include "kmcdb/kmcdb.h"
-#include "DumpWriter.h"
+#include "TextFileWritingUtilities.h"
 #include "StatisticsGatherers.h"
 #include "DimensionalityReduction.h"
 
@@ -49,13 +49,14 @@ class StatisticsGenerator
 
 	std::vector<uint64_t> nOutputKmersPerBin;
 
-	std::unique_ptr<kmcdb::MetadataReader> matrixMetadataReader;
-	std::unique_ptr<kmcdb::ReaderSortedPlainForListing<uint64_t>> matrixReader;
-
 	using out_kmcdb_value_type = double;
+	using cnt_value_type = uint64_t;
 
-	WritingGatherer<out_kmcdb_value_type> gatherer;
-	std::unique_ptr<DumpWriter> normWriter;
+	std::unique_ptr<kmcdb::MetadataReader> matrixMetadataReader;
+	std::unique_ptr<kmcdb::ReaderSortedPlainForListing<cnt_value_type>> matrixReader;
+
+	WritingGatherer<out_kmcdb_value_type, cnt_value_type> gatherer;
+	std::unique_ptr<TextFileWriter> normWriter;
 
 	std::unique_ptr<ProgressBar> progress_bar;
 
@@ -65,7 +66,7 @@ class StatisticsGenerator
 
 	std::vector<uint8_t> normalizationData;
 
-	const std::vector<double>& correlationPhenotype;
+	const std::vector<out_kmcdb_value_type>& correlationPhenotype;
 	const std::vector<uint32_t>& differentialAnalysisPhenotype;
 	size_t differentialAnalysisNClasses;
 
@@ -77,20 +78,15 @@ class StatisticsGenerator
 
 	StatisticsToGeneration statisticsToGeneration;
 
-	size_t getMaxNormLineLength() const
-	{
-		return params.stage1Params.GetKmerLen() + 1 + params.mkmcParams.samples.size() * (refresh::numeric_conversion_max_length<out_kmcdb_value_type>() + 1);
-	}
-
 	template<unsigned SIZE>
 	void initKeepNLargest(KeepNLargestCollection<SIZE>& keepNLargestCollection);
 
 	template<unsigned SIZE>
-	void processEntries(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
+	void processEntries(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type>& keepNLargestCollectionGlobal,
 		DimensionalityReduction& dimensionalityReduction);
 
 	template<unsigned SIZE>
-	void processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
+	void processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type>& keepNLargestCollectionGlobal,
 		DimensionalityReduction& dimensionalityReduction);
 
 	void correctPValuesEntries();
@@ -140,7 +136,7 @@ void StatisticsGenerator::initKeepNLargest(KeepNLargestCollection<SIZE>& keepNLa
 }
 
 template<unsigned SIZE>
-void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
+void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type>& keepNLargestCollectionGlobal,
 	DimensionalityReduction& dimensionalityReduction)
 {
 	KeepNLargestCollection<SIZE> keepNLargestCollection;
@@ -149,24 +145,24 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 
 	const std::size_t num_samples = params.mkmcParams.samples.size();
 
-	std::vector<uint64_t> inMatrixEntry;
+	std::vector<cnt_value_type> inMatrixEntry;
 	std::vector<out_kmcdb_value_type> outNormEntry; // normalized stats
 	std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
 	inMatrixEntry.resize(num_samples);
 	outNormEntry.resize(num_samples);
 	outStatsEntry.resize(statisticsToGeneration.nStatistics + statisticsToGeneration.nAdditionalValuesOfCorrectedStats);
 
-	const auto kmer_len = params.stage1Params.GetKmerLen();
-	std::string kmerSequence(kmer_len, ' ');
+	const auto first_col_len = params.stage1Params.GetKmerLen();
+	std::string kmerSequence(first_col_len, ' ');
 
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
 	{
 		auto bin = matrixReader->GetBin(taskData.binId);
 
-		std::unique_ptr<OutputBuffer> normOutputBuffer;
+		std::unique_ptr<MatrixOutputBuffer<out_kmcdb_value_type>> normOutputBuffer;
 
-		refresh::normalization_work<uint64_t, double> normalization;
+		refresh::normalization_work<cnt_value_type, out_kmcdb_value_type> normalization;
 		if (params.statisticsParams.generateNormalization)
 		{
 			normalization.register_method(params.statisticsParams.normalizationMethod);
@@ -175,7 +171,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 
 			normalization.initialize();
 
-			normOutputBuffer = std::make_unique<OutputBuffer>(*normWriter, getMaxNormLineLength());
+			normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, params.stage1Params.GetKmerLen(), num_samples);
 		}
 
 		refresh::correlation correlation;
@@ -186,19 +182,19 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
 		kmcdb::CKmer<SIZE> kmer;
-		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outGahtererBin = gatherer.getBin(taskData.binId);
+		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type, cnt_value_type>> outGahtererBin = gatherer.getBin(taskData.binId);
 
 		std::vector<double> inMatrixEntryScaled(num_samples); // for t-test
 		for (auto kmer_idx = binsOffsets[taskData.binId]; bin->NextKmer(kmer, inMatrixEntry.data()); ++kmer_idx)
 		{
-			kmer.to_string(kmer_len, kmerSequence.data());
+			kmer.to_string(first_col_len, kmerSequence.data());
 
 			if (statisticsToGeneration.normalize)
 			{
 				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormEntry);
 
 				dimensionalityReduction.add(kmer_idx, outNormEntry);
-				normOutputBuffer->StoreKmer(kmerSequence, outNormEntry, StoreMethods::AsMatrixRow);
+				normOutputBuffer->StoreKmer(kmerSequence, outNormEntry);
 			}
 
 			size_t outStatsEntryIdx = 0;
@@ -323,7 +319,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE>& kee
 
 
 template<unsigned SIZE>
-void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE>& keepNLargestCollectionGlobal,
+void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type>& keepNLargestCollectionGlobal,
 	DimensionalityReduction& dimensionalityReduction)
 {
 	assert(statisticsToGeneration.differentialAnalysis);
@@ -335,15 +331,15 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 
 	const std::size_t num_samples = params.mkmcParams.samples.size();
 
-	std::vector<uint64_t> inMatrixEntry;
+	std::vector<cnt_value_type> inMatrixEntry;
 	std::vector<out_kmcdb_value_type> outNormEntry; // normalized counts
 	std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
 	inMatrixEntry.resize(num_samples);
 	outNormEntry.resize(num_samples);
 	outStatsEntry.resize(statisticsToGeneration.nStatistics - statisticsToGeneration.nStatisticsWithPValues);
 
-	const auto kmer_len = params.stage1Params.GetKmerLen();
-	std::string kmerSequence(kmer_len, ' ');
+	const auto first_col_len = params.stage1Params.GetKmerLen();
+	std::string kmerSequence(first_col_len, ' ');
 
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
@@ -353,10 +349,10 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 		uint64_t outPValuesToCorrectIdx = binsOffsets[taskData.binId];
 		const uint64_t outPValuesToCorrectIdxEnd = binsOffsets[taskData.binId + 1];
 
-		std::unique_ptr<OutputBuffer> normOutputBuffer = std::make_unique<OutputBuffer>(*normWriter, getMaxNormLineLength());
+		std::unique_ptr<MatrixOutputBuffer<out_kmcdb_value_type>> normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, params.stage1Params.GetKmerLen(), num_samples);
 
 		assert(params.statisticsParams.generateNormalization);
-		refresh::normalization_work<uint64_t, double> normalization;
+		refresh::normalization_work<cnt_value_type, out_kmcdb_value_type> normalization;
 		normalization.register_method(params.statisticsParams.normalizationMethod);
 		normalization.set_no_series(params.mkmcParams.samples.size());
 		normalization.deserialize(params.statisticsParams.normalizationMethod, normalizationData);
@@ -371,17 +367,17 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
 		kmcdb::CKmer<SIZE> kmer;
-		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outGathererBin = gatherer.getBin(taskData.binId, false, true);
+		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type, cnt_value_type>> outGathererBin = gatherer.getBin(taskData.binId, false, true);
 
 		std::vector<double> inMatrixEntryScaled(num_samples); // for t-test
 		while (bin->NextKmer(kmer, inMatrixEntry.data()))
 		{
-			kmer.to_string(kmer_len, kmerSequence.data());
+			kmer.to_string(first_col_len, kmerSequence.data());
 
 			normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormEntry);
 
 			dimensionalityReduction.add(outPValuesToCorrectIdx, outNormEntry);
-			normOutputBuffer->StoreKmer(kmerSequence, outNormEntry, StoreMethods::AsMatrixRow);
+			normOutputBuffer->StoreKmer(kmerSequence, outNormEntry);
 
 			size_t outStatsIdx = 0;
 			size_t outPValuesToCorrectAlg = 0;
@@ -512,13 +508,13 @@ void StatisticsGenerator::safeCorrectedPValuesEntries()
 {
 	const std::size_t num_samples = params.mkmcParams.samples.size();
 
-	std::vector<uint64_t> inMatrixEntry;
+	std::vector<cnt_value_type> inMatrixEntry;
 	std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
 	inMatrixEntry.resize(num_samples);
 	outStatsEntry.resize(statisticsToGeneration.nStatistics + statisticsToGeneration.nAdditionalValuesOfCorrectedStats);
 
-	const auto kmer_len = params.stage1Params.GetKmerLen();
-	std::string kmerSequence(kmer_len, ' ');
+	const auto first_col_len = params.stage1Params.GetKmerLen();
+	std::string kmerSequence(first_col_len, ' ');
 
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
@@ -531,10 +527,10 @@ void StatisticsGenerator::safeCorrectedPValuesEntries()
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
 		kmcdb::CKmer<SIZE> kmer;
-		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type>> outGathererBin = gatherer.getBin(taskData.binId, true, false);
+		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type, cnt_value_type>> outGathererBin = gatherer.getBin(taskData.binId, true, false);
 		while (bin->NextKmer(kmer, inMatrixEntry.data()))
 		{
-			kmer.to_string(kmer_len, kmerSequence.data());
+			kmer.to_string(first_col_len, kmerSequence.data());
 
 			size_t outPvaluesIdx = 0;
 			size_t outAdditionalValuesIdx = 0;

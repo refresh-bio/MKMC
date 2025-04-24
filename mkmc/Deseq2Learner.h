@@ -1,7 +1,7 @@
 #pragma once
 
 #include "parameters.h"
-#include "DumpWriter.h"
+#include "TextFileWritingUtilities.h"
 #include <thread>
 
 

@@ -34,15 +34,13 @@ inline void StoreTotCnt(std::vector<std::vector<uint64>>& tot_cnts,
 		for (size_t sample_id = 0; sample_id < tot_cnts.front().size(); ++sample_id)
 			tot_cnts[0][sample_id] += tot_cnts[i][sample_id];
 
-	DumpWriter writer(params.mkmcParams.outputFileTotCnt, false);
+	TextFileWriter writer(params.mkmcParams.outputFileTotCnt, false);
 	writer.StoreHeader(sample_names, "measure");
 
 	std::string first_col = "tot_cnt";
-	auto first_col_len = first_col.length();
 
-	auto max_line_len = first_col_len + 1 + params.mkmcParams.samples.size() * (refresh::numeric_conversion_max_length<uint64_t>() + 1);
-	OutputBuffer out(writer, max_line_len);
-	out.StoreKmer(first_col, tot_cnts[0], StoreMethods::AsMatrixRow);
+	MatrixOutputBuffer<uint64_t> out(writer, first_col.length(), tot_cnts.front().size());
+	out.StoreKmer(first_col, tot_cnts[0]);
 }
 
 template<unsigned SIZE>
@@ -242,7 +240,7 @@ bool Merger<SIZE>::inputIsConsistent()
 {
 	if (samplesMetadata.empty())
 		return true;
-	uint64_t k = samplesMetadata.front()->GetConfig().kmer_len;
+	uint64_t k = samplesMetadata.front()->GetConfig().first_col_len;
 	uint64_t signatureLen = samplesMetadata.front()->GetConfig().signature_len;
 	auto signatureSelectionScheme = samplesMetadata.front()->GetConfig().signature_selection_scheme;
 	auto signatureToBinMapping = samplesMetadata.front()->GetConfig().signature_to_bin_mapping;
@@ -250,7 +248,7 @@ bool Merger<SIZE>::inputIsConsistent()
 
 	for (const auto& sample : samplesMetadata)
 	{
-		if (k != sample->GetConfig().kmer_len)
+		if (k != sample->GetConfig().first_col_len)
 			return false;
 		if (signatureLen != sample->GetConfig().signature_len)
 			return false;
@@ -377,7 +375,7 @@ void Merger<SIZE>::mergeParallel()
 		config.signature_len = samplesMetadata.front()->GetConfig().signature_len;
 		config.signature_selection_scheme = samplesMetadata.front()->GetConfig().signature_selection_scheme;
 		config.signature_to_bin_mapping = samplesMetadata.front()->GetConfig().signature_to_bin_mapping;
-		config.kmer_len = samplesMetadata.front()->GetConfig().kmer_len;
+		config.first_col_len = samplesMetadata.front()->GetConfig().first_col_len;
 		config.num_samples = samplesMetadata.size();
 		config.num_bytes_single_value = samplesMetadata.front()->GetConfig().num_bytes_single_value;
 		for (size_t i = 1; i < samplesMetadata.size(); ++i)

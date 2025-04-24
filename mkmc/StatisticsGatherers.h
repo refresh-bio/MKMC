@@ -6,7 +6,7 @@
 
 #include "Merger.h"
 #include "parameters.h"
-#include "DumpWriter.h"
+#include "TextFileWritingUtilities.h"
 #include "kmcdb/kmcdb.h"
 #include "KeepNLargests.h"
 #include "lib/refresh/statistics/lib/statistics_umap.h"
@@ -39,7 +39,7 @@ struct StatisticsToGeneration
 
 
 
-template<typename Statistics_T>
+template<typename Statistics_T, typename VALUE_T>
 class WritingGatherer;
 
 
@@ -112,7 +112,7 @@ struct KeepNLargestCollection
 	std::unique_ptr<KeepTopNLargestPlain_T> dids;
 };
 
-template<unsigned SIZE>
+template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
 struct KeepNLargestCollectionGlobal
 {
 private:
@@ -142,31 +142,32 @@ private:
 	template<typename PRED>
 	static void flush_for(
 		std::unique_ptr<KeepNLargests<KeepTopElem<SIZE>, PRED>>& to_flush,
-		const std::string& fname_top, const std::vector<std::string>& header_top, size_t max_line_len_top,
-		const std::string& fname_top_matrix, const std::vector<std::string>& header_top_matrix, size_t max_line_len_top_matrix,
-		const std::string& fname_top_fasta, size_t max_line_len_top_fasta)
+		uint32_t first_col_len, size_t num_columns,
+		const std::string& fname_top, const std::vector<std::string>& header_top,
+		const std::string& fname_top_matrix, const std::vector<std::string>& header_top_matrix,
+		const std::string& fname_top_fasta)
 	{
 		if (!to_flush)
 			return;
 
-		DumpWriter writer_top(fname_top, false);
+		TextFileWriter writer_top(fname_top, false);
 		writer_top.StoreHeader(header_top);
-		OutputBuffer buff_top(writer_top, max_line_len_top);
+		MatrixOutputBuffer<Statistics_T> buff_top(writer_top, first_col_len, 1);
 
-		DumpWriter writer_top_matrix(fname_top_matrix, false);
+		TextFileWriter writer_top_matrix(fname_top_matrix, false);
 		writer_top_matrix.StoreHeader(header_top_matrix);
-		OutputBuffer buff_top_matrix(writer_top_matrix, max_line_len_top_matrix);
+		MatrixOutputBuffer<VALUE_T> buff_top_matrix(writer_top_matrix, first_col_len, num_columns);
 
-		DumpWriter writer_fasta(fname_top_fasta, false);
-		OutputBuffer buff_top_fasta(writer_fasta, max_line_len_top_fasta);
+		TextFileWriter writer_fasta(fname_top_fasta, false);
+		FastaOutputBuffer buff_top_fasta(writer_fasta, first_col_len);
 
 		std::vector<KeepTopElem<SIZE>> data;
 		to_flush->StealSorted(data, PRED{}); //could actually be Steal (no sorted), but lets keep it deterministic
 		for (auto& elem : data)
 		{
-			buff_top.StoreKmer(elem.kmerSeq, elem.key, StoreMethods::AsMatrixRow_single_val);
-			buff_top_matrix.StoreKmer(elem.kmerSeq, elem.counts, StoreMethods::AsMatrixRow);
-			buff_top_fasta.StoreKmer(elem.kmerSeq, elem.counts, StoreMethods::AsFastaRecord);
+			buff_top.StoreKmer(elem.kmerSeq, elem.key);
+			buff_top_matrix.StoreKmer(elem.kmerSeq, elem.counts);
+			buff_top_fasta.StoreKmer(elem.kmerSeq);
 		}
 	}
 public:
@@ -186,122 +187,90 @@ public:
 
 	void Flush(const Params& params, const std::vector<std::string>& cnt_matrix_output_header)
 	{
-		//mkokot_TODO: ugly code repetition, we have the same (almost) in other class as private methods, to be refactored...
-		auto getMaxLineLength = [](uint32_t kmerLength) -> size_t
-		{
-			return kmerLength + 1 + refresh::numeric_conversion_max_length<double>() + 1;
-		};
-
-		auto getMaxLineLengthForFasta = [](uint32_t kmerLength) -> size_t
-		{
-			//     >\n   k-mer       \n
-			return 2 + kmerLength + 1;
-		};
-		auto getMaxLineLengthForCntMatrix = [](uint32_t kmerLength, uint32_t numSamples) -> size_t
-		{
-			constexpr uint32_t assumed_max_len_for_cnt = 20;
-			//     k-mer      term(\t)            cnt                       term(\t or \n)
-			return kmerLength + 1 + numSamples * (assumed_max_len_for_cnt + 1);
-		};
-
-		auto max_line_len_top = getMaxLineLength(params.stage1Params.GetKmerLen());
-		auto max_line_len_top_matrix = getMaxLineLengthForCntMatrix(params.stage1Params.GetKmerLen(), static_cast<uint32_t>(params.mkmcParams.samples.size()));
-		auto max_line_len_top_fasta = getMaxLineLengthForFasta(params.stage1Params.GetKmerLen());
-
 		flush_for(global.pearson,
-			params.mkmcParams.outputFilePearsonTop, { "pearson" }, max_line_len_top,
-			params.mkmcParams.outputFilePearsonTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
-			params.mkmcParams.outputFilePearsonTopFasta, max_line_len_top_fasta);
+			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+			params.mkmcParams.outputFilePearsonTop, { "pearson" },
+			params.mkmcParams.outputFilePearsonTopCntMatrix, cnt_matrix_output_header,
+			params.mkmcParams.outputFilePearsonTopFasta);
 
 		flush_for(global.spearman,
-			params.mkmcParams.outputFileSpearmanTop, { "spearman" }, max_line_len_top,
-			params.mkmcParams.outputFileSpearmanTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
-			params.mkmcParams.outputFileSpearmanTopFasta, max_line_len_top_fasta);
+			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+			params.mkmcParams.outputFileSpearmanTop, { "spearman" },
+			params.mkmcParams.outputFileSpearmanTopCntMatrix, cnt_matrix_output_header,
+			params.mkmcParams.outputFileSpearmanTopFasta);
 
 		flush_for(global.kendall,
-			params.mkmcParams.outputFileKendallTop, { "kendall" }, max_line_len_top,
-			params.mkmcParams.outputFileKendallTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
-			params.mkmcParams.outputFileKendallTopFasta, max_line_len_top_fasta);
+			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+			params.mkmcParams.outputFileKendallTop, { "kendall" },
+			params.mkmcParams.outputFileKendallTopCntMatrix, cnt_matrix_output_header,
+			params.mkmcParams.outputFileKendallTopFasta);
 
 		flush_for(global.entropy,
-			params.mkmcParams.outputFileEntropyTop, { "entropy" }, max_line_len_top,
-			params.mkmcParams.outputFileEntropyTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
-			params.mkmcParams.outputFileEntropyTopFasta, max_line_len_top_fasta);
+			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+			params.mkmcParams.outputFileEntropyTop, { "entropy" },
+			params.mkmcParams.outputFileEntropyTopCntMatrix, cnt_matrix_output_header,
+			params.mkmcParams.outputFileEntropyTopFasta);
 
 		flush_for(global.snr,
-			params.mkmcParams.outputFileSNRTop, { "snr" }, max_line_len_top,
-			params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
-			params.mkmcParams.outputFileSNRTopFasta, max_line_len_top_fasta);
+			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+			params.mkmcParams.outputFileSNRTop, { "snr" },
+			params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header,
+			params.mkmcParams.outputFileSNRTopFasta);
 
 		flush_for(global.unnormalizedSnr,
-			params.mkmcParams.outputFileUnnormalizedSNRTop, { "snr_for_unnormalized" }, max_line_len_top,
-			params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
-			params.mkmcParams.outputFileUnnormalizedSNRTopFasta, max_line_len_top_fasta);
+			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+			params.mkmcParams.outputFileUnnormalizedSNRTop, { "snr_for_unnormalized" },
+			params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, cnt_matrix_output_header,
+			params.mkmcParams.outputFileUnnormalizedSNRTopFasta);
 
 		flush_for(global.dids,
-			params.mkmcParams.outputFileDIDSTop, { "dids" }, max_line_len_top,
-			params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header, max_line_len_top_matrix,
-			params.mkmcParams.outputFileDIDSTopFasta, max_line_len_top_fasta);
+			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+			params.mkmcParams.outputFileDIDSTop, { "dids" },
+			params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header,
+			params.mkmcParams.outputFileDIDSTopFasta);
 	}
 };
 
 
-template<typename Statistics_T>
+template<typename Statistics_T, typename VALUE_T>
 class WritingGathererBin
 {
-	friend WritingGatherer<Statistics_T>;
-	WritingGatherer<Statistics_T>& mainWritingGatherer;
+	friend WritingGatherer<Statistics_T, VALUE_T>;
+	WritingGatherer<Statistics_T, VALUE_T>& mainWritingGatherer;
 
 	const uint32_t kmerLength;
 	const uint32_t numSamples;
 	const double maxCorrectedPval;
 
 	struct {
-		std::unique_ptr<OutputBuffer> pearson;
-		std::unique_ptr<OutputBuffer> spearman;
-		std::unique_ptr<OutputBuffer> kendall;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> pearson;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> spearman;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> kendall;
 
-		std::unique_ptr<OutputBuffer> entropy;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> entropy;
 
-		std::unique_ptr<OutputBuffer> tTest;
-		std::unique_ptr<OutputBuffer> tTestSignificant;
-		std::unique_ptr<OutputBuffer> tTestSignificantCntMatrix;
-		std::unique_ptr<OutputBuffer> tTestSignificantFasta;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> tTest;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> tTestSignificant;
+		std::unique_ptr<MatrixOutputBuffer<VALUE_T>> tTestSignificantCntMatrix;
+		std::unique_ptr<FastaOutputBuffer> tTestSignificantFasta;
 
-		std::unique_ptr<OutputBuffer> snr;
-		std::unique_ptr<OutputBuffer> unnormalizedSnr;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> snr;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> unnormalizedSnr;
 
-		std::unique_ptr<OutputBuffer> wrs;
-		std::unique_ptr<OutputBuffer> wrsSignificant;
-		std::unique_ptr<OutputBuffer> wrsSignificantCntMatrix;
-		std::unique_ptr<OutputBuffer> wrsSignificantFasta;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> wrs;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> wrsSignificant;
+		std::unique_ptr<MatrixOutputBuffer<VALUE_T>> wrsSignificantCntMatrix;
+		std::unique_ptr<FastaOutputBuffer> wrsSignificantFasta;
 
-		std::unique_ptr<OutputBuffer> dids;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> dids;
 
-		std::unique_ptr<OutputBuffer> anova;
-		std::unique_ptr<OutputBuffer> anovaSignificant;
-		std::unique_ptr<OutputBuffer> anovaSignificantCntMatrix;
-		std::unique_ptr<OutputBuffer> anovaSignificantFasta;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> anova;
+		std::unique_ptr<MatrixOutputBuffer<Statistics_T>> anovaSignificant;
+		std::unique_ptr<MatrixOutputBuffer<VALUE_T>> anovaSignificantCntMatrix;
+		std::unique_ptr<FastaOutputBuffer> anovaSignificantFasta;
 	} outputBuffers;
 
-	size_t getMaxLineLength() const
-	{
-		return kmerLength + 1 + refresh::numeric_conversion_max_length<Statistics_T>() + 1; //+ 1 since we also store EOL after value
-	}
-
-	size_t getMaxLineLengthForFasta() const
-	{
-		//     >\n   k-mer       \n
-		return 2   + kmerLength + 1;
-	}
-	size_t getMaxLineLengthForCntMatrix() const
-	{
-		constexpr uint32_t assumed_max_len_for_cnt = 20;
-		//     k-mer      term(\t)            cnt                       term(\t or \n)
-		return kmerLength + 1 + numSamples * (assumed_max_len_for_cnt + 1);
-	}
-
-	WritingGathererBin(WritingGatherer<Statistics_T>& mainWritingGatherer,
+	WritingGathererBin(WritingGatherer<Statistics_T, VALUE_T>& mainWritingGatherer,
 		const uint32_t kmerLength,
 		uint32_t binId,
 		uint32_t numSamples,
@@ -310,7 +279,7 @@ class WritingGathererBin
 		bool gatherNotCorrected);
 
 public:
-	template<unsigned SIZE, typename VALUE_T>
+	template<unsigned SIZE>
 	void writeKmer(
 		const std::vector<Statistics_T>& outEntry, // outEntry - normalized values (if any) followed by statistics
 		const kmcdb::CKmer<SIZE>& kmer,
@@ -322,39 +291,39 @@ public:
 
 
 
-template<typename Statistics_T>
+template<typename Statistics_T, typename VALUE_T>
 class WritingGatherer
 {
-	friend WritingGathererBin<Statistics_T>;
+	friend WritingGathererBin<Statistics_T, VALUE_T>;
 	const Params& params;
 
 	struct
 	{
-		std::unique_ptr<DumpWriter> pearson;
-		std::unique_ptr<DumpWriter> spearman;
-		std::unique_ptr<DumpWriter> kendall;
+		std::unique_ptr<TextFileWriter> pearson;
+		std::unique_ptr<TextFileWriter> spearman;
+		std::unique_ptr<TextFileWriter> kendall;
 
-		std::unique_ptr<DumpWriter> entropy;
+		std::unique_ptr<TextFileWriter> entropy;
 
-		std::unique_ptr<DumpWriter> tTest;
-		std::unique_ptr<DumpWriter> tTestSignificant;
-		std::unique_ptr<DumpWriter> tTestSignificantCntMatrix;
-		std::unique_ptr<DumpWriter> tTestSignificantFasta;
+		std::unique_ptr<TextFileWriter> tTest;
+		std::unique_ptr<TextFileWriter> tTestSignificant;
+		std::unique_ptr<TextFileWriter> tTestSignificantCntMatrix;
+		std::unique_ptr<TextFileWriter> tTestSignificantFasta;
 
-		std::unique_ptr<DumpWriter> snr;
-		std::unique_ptr<DumpWriter> unnormalizedSnr;
+		std::unique_ptr<TextFileWriter> snr;
+		std::unique_ptr<TextFileWriter> unnormalizedSnr;
 
-		std::unique_ptr<DumpWriter> wrs;
-		std::unique_ptr<DumpWriter> wrsSignificant;
-		std::unique_ptr<DumpWriter> wrsSignificantCntMatrix;
-		std::unique_ptr<DumpWriter> wrsSignificantFasta;
+		std::unique_ptr<TextFileWriter> wrs;
+		std::unique_ptr<TextFileWriter> wrsSignificant;
+		std::unique_ptr<TextFileWriter> wrsSignificantCntMatrix;
+		std::unique_ptr<TextFileWriter> wrsSignificantFasta;
 
-		std::unique_ptr<DumpWriter> dids;
+		std::unique_ptr<TextFileWriter> dids;
 
-		std::unique_ptr<DumpWriter> anova;
-		std::unique_ptr<DumpWriter> anovaSignificant;
-		std::unique_ptr<DumpWriter> anovaSignificantCntMatrix;
-		std::unique_ptr<DumpWriter> anovaSignificantFasta;
+		std::unique_ptr<TextFileWriter> anova;
+		std::unique_ptr<TextFileWriter> anovaSignificant;
+		std::unique_ptr<TextFileWriter> anovaSignificantCntMatrix;
+		std::unique_ptr<TextFileWriter> anovaSignificantFasta;
 	} writers;
 
 	const StatisticsToGeneration& statisticsToGeneration;
@@ -369,13 +338,13 @@ public:
 		const std::unique_ptr<kmcdb::MetadataReader>& matrixMetadataReader,
 		const std::vector<std::string>& cnt_matrix_output_header);
 
-	std::unique_ptr<WritingGathererBin<Statistics_T>> getBin(
+	std::unique_ptr<WritingGathererBin<Statistics_T, VALUE_T>> getBin(
 		uint32_t binId,
 		bool gatherCorrected = true,
 		bool gatherNotCorrected = true)
 	{
 		// explicit new calling is necessary due to constructor's privacy
-		return std::unique_ptr<WritingGathererBin<Statistics_T>>(new WritingGathererBin<Statistics_T>(
+		return std::unique_ptr<WritingGathererBin<Statistics_T, VALUE_T>>(new WritingGathererBin<Statistics_T, VALUE_T>(
 			*this,
 			params.stage1Params.GetKmerLen(),
 			binId,
@@ -389,9 +358,9 @@ public:
 
 
 
-template<typename Statistics_T>
-WritingGathererBin<Statistics_T>::WritingGathererBin(
-	WritingGatherer<Statistics_T>& mainWritingGatherer,
+template<typename Statistics_T, typename VALUE_T>
+WritingGathererBin<Statistics_T, VALUE_T>::WritingGathererBin(
+	WritingGatherer<Statistics_T, VALUE_T>& mainWritingGatherer,
 	const uint32_t kmerLength,
 	uint32_t binId,
 	uint32_t numSamples,
@@ -407,68 +376,68 @@ WritingGathererBin<Statistics_T>::WritingGathererBin(
 	assert(gatherCorrected || gatherNotCorrected);
 
 	if (gatherNotCorrected && mainWritingGatherer.writers.pearson)
-		outputBuffers.pearson = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.pearson, getMaxLineLength());
+		outputBuffers.pearson = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.pearson, kmerLength, 1);
 	if (gatherNotCorrected && mainWritingGatherer.writers.spearman)
-		outputBuffers.spearman = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.spearman, getMaxLineLength());
+		outputBuffers.spearman = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.spearman, kmerLength, 1);
 	if (gatherNotCorrected && mainWritingGatherer.writers.kendall)
-		outputBuffers.kendall = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.kendall, getMaxLineLength());
+		outputBuffers.kendall = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.kendall, kmerLength, 1);
 
 	if (gatherNotCorrected && mainWritingGatherer.writers.entropy)
-		outputBuffers.entropy = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.entropy, getMaxLineLength());
+		outputBuffers.entropy = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.entropy, kmerLength, 1);
 
 	if (gatherCorrected && mainWritingGatherer.writers.tTest)
 	{
-		outputBuffers.tTest = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.tTest, getMaxLineLength());
+		outputBuffers.tTest = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.tTest, kmerLength, 3);
 		if (mainWritingGatherer.writers.tTestSignificant)
 		{
 			assert(mainWritingGatherer.writers.tTestSignificantCntMatrix);
 			assert(mainWritingGatherer.writers.tTestSignificantFasta);
 
-			outputBuffers.tTestSignificant = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.tTestSignificant, getMaxLineLength());
-			outputBuffers.tTestSignificantCntMatrix = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.tTestSignificantCntMatrix, getMaxLineLengthForCntMatrix());
-			outputBuffers.tTestSignificantFasta = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.tTestSignificantFasta, getMaxLineLengthForFasta());
+			outputBuffers.tTestSignificant = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.tTestSignificant, kmerLength, 3);
+			outputBuffers.tTestSignificantCntMatrix = std::make_unique<MatrixOutputBuffer<VALUE_T>>(*mainWritingGatherer.writers.tTestSignificantCntMatrix, kmerLength, numSamples);
+			outputBuffers.tTestSignificantFasta = std::make_unique<FastaOutputBuffer>(*mainWritingGatherer.writers.tTestSignificantFasta, kmerLength);
 		}
 	}
 	if (gatherNotCorrected && mainWritingGatherer.writers.snr)
-		outputBuffers.snr = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.snr, getMaxLineLength());
+		outputBuffers.snr = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.snr, kmerLength, 1);
 	if (gatherNotCorrected && mainWritingGatherer.writers.unnormalizedSnr)
-		outputBuffers.unnormalizedSnr = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.unnormalizedSnr, getMaxLineLength());
+		outputBuffers.unnormalizedSnr = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.unnormalizedSnr, kmerLength, 1);
 	if (gatherCorrected && mainWritingGatherer.writers.wrs)
 	{
-		outputBuffers.wrs = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.wrs, getMaxLineLength());
+		outputBuffers.wrs = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.wrs, kmerLength, 3);
 		if (mainWritingGatherer.writers.wrsSignificant)
 		{
 			assert(mainWritingGatherer.writers.wrsSignificantCntMatrix);
 			assert(mainWritingGatherer.writers.wrsSignificantFasta);
 
-			outputBuffers.wrsSignificant = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.wrsSignificant, getMaxLineLength());
-			outputBuffers.wrsSignificantCntMatrix = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.wrsSignificantCntMatrix, getMaxLineLengthForCntMatrix());
-			outputBuffers.wrsSignificantFasta = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.wrsSignificantFasta, getMaxLineLengthForFasta());
+			outputBuffers.wrsSignificant = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.wrsSignificant, kmerLength, 3);
+			outputBuffers.wrsSignificantCntMatrix = std::make_unique<MatrixOutputBuffer<VALUE_T>>(*mainWritingGatherer.writers.wrsSignificantCntMatrix, kmerLength, numSamples);
+			outputBuffers.wrsSignificantFasta = std::make_unique<FastaOutputBuffer>(*mainWritingGatherer.writers.wrsSignificantFasta, kmerLength);
 		}
 	}
 
 	if (gatherNotCorrected && mainWritingGatherer.writers.dids)
-		outputBuffers.dids = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.dids, getMaxLineLength());
+		outputBuffers.dids = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.dids, kmerLength, 1);
 	if (gatherCorrected && mainWritingGatherer.writers.anova)
 	{
-		outputBuffers.anova = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.anova, getMaxLineLength());
+		outputBuffers.anova = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.anova, kmerLength, 3);
 		if (mainWritingGatherer.writers.anovaSignificant)
 		{
 			assert(mainWritingGatherer.writers.anovaSignificantCntMatrix);
 			assert(mainWritingGatherer.writers.anovaSignificantFasta);
 
-			outputBuffers.anovaSignificant = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.anovaSignificant, getMaxLineLength());
-			outputBuffers.anovaSignificantCntMatrix = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.anovaSignificantCntMatrix, getMaxLineLengthForCntMatrix());
-			outputBuffers.anovaSignificantFasta = std::make_unique<OutputBuffer>(*mainWritingGatherer.writers.anovaSignificantFasta, getMaxLineLengthForFasta());
+			outputBuffers.anovaSignificant = std::make_unique<MatrixOutputBuffer<Statistics_T>>(*mainWritingGatherer.writers.anovaSignificant, kmerLength, 3);
+			outputBuffers.anovaSignificantCntMatrix = std::make_unique<MatrixOutputBuffer<VALUE_T>>(*mainWritingGatherer.writers.anovaSignificantCntMatrix, kmerLength, numSamples);
+			outputBuffers.anovaSignificantFasta = std::make_unique<FastaOutputBuffer>(*mainWritingGatherer.writers.anovaSignificantFasta, kmerLength);
 		}
 	}
 }
 
 
 
-template<typename Statistics_T>
-template<unsigned SIZE, typename VALUE_T>
-void WritingGathererBin<Statistics_T>::writeKmer(
+template<typename Statistics_T, typename VALUE_T>
+template<unsigned SIZE>
+void WritingGathererBin<Statistics_T, VALUE_T>::writeKmer(
 	const std::vector<Statistics_T>& outEntry,
 	const kmcdb::CKmer<SIZE>& kmer,
 	const std::string& kmerSeq,
@@ -480,7 +449,7 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 	if (outputBuffers.pearson)
 	{
 		const auto value = outEntry[valuesIdx++];
-		outputBuffers.pearson->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+		outputBuffers.pearson->StoreKmer(kmerSeq, value);
 
 		if (safeNTop)
 			keepNLargestCollection->pearson->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
@@ -488,7 +457,7 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 	if (outputBuffers.spearman)
 	{
 		const auto value = outEntry[valuesIdx++];
-		outputBuffers.spearman->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+		outputBuffers.spearman->StoreKmer(kmerSeq, value);
 
 		if (safeNTop)
 			keepNLargestCollection->spearman->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
@@ -496,7 +465,7 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 	if (outputBuffers.kendall)
 	{
 		const auto value = outEntry[valuesIdx++];
-		outputBuffers.kendall->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+		outputBuffers.kendall->StoreKmer(kmerSeq, value);
 
 		if (safeNTop)
 			keepNLargestCollection->kendall->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
@@ -505,7 +474,7 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 	if (outputBuffers.entropy)
 	{
 		const auto value = outEntry[valuesIdx++];
-		outputBuffers.entropy->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+		outputBuffers.entropy->StoreKmer(kmerSeq, value);
 
 		if (safeNTop)
 			keepNLargestCollection->entropy->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
@@ -518,24 +487,24 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 			const auto df = outEntry[valuesIdx++];
 			const auto statistic = outEntry[valuesIdx++];
 
-			const std::vector<double> valuesToSave{ pValue, df, statistic };
+			const std::vector<Statistics_T> valuesToSave{ pValue, df, statistic };
 
-			outputBuffers.tTest->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
+			outputBuffers.tTest->StoreKmer(kmerSeq, valuesToSave);
 
 			if (outputBuffers.tTestSignificant)
 			{
 				if (pValue <= maxCorrectedPval)
 				{
-					outputBuffers.tTestSignificant->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
-					outputBuffers.tTestSignificantCntMatrix->StoreKmer(kmerSeq, original_counts, StoreMethods::AsMatrixRow);
-					outputBuffers.tTestSignificantFasta->StoreKmer(kmerSeq, original_counts, StoreMethods::AsFastaRecord);
+					outputBuffers.tTestSignificant->StoreKmer(kmerSeq, valuesToSave);
+					outputBuffers.tTestSignificantCntMatrix->StoreKmer(kmerSeq, original_counts);
+					outputBuffers.tTestSignificantFasta->StoreKmer(kmerSeq);
 				}
 			}
 		}
 		if (outputBuffers.snr)
 		{
 			const auto value = outEntry[valuesIdx++];
-			outputBuffers.snr->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+			outputBuffers.snr->StoreKmer(kmerSeq, value);
 
 			if (safeNTop)
 				keepNLargestCollection->snr->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
@@ -543,7 +512,7 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 		if (outputBuffers.unnormalizedSnr)
 		{
 			const auto value = outEntry[valuesIdx++];
-			outputBuffers.unnormalizedSnr->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+			outputBuffers.unnormalizedSnr->StoreKmer(kmerSeq, value);
 
 			if (safeNTop)
 				keepNLargestCollection->unnormalizedSnr->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
@@ -554,24 +523,24 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 			const auto statisticU1 = outEntry[valuesIdx++];
 			const auto statisticU2 = outEntry[valuesIdx++];
 
-			const std::vector<double> valuesToSave{ pValue, statisticU1, statisticU2 };
+			const std::vector<Statistics_T> valuesToSave{ pValue, statisticU1, statisticU2 };
 
-			outputBuffers.wrs->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
+			outputBuffers.wrs->StoreKmer(kmerSeq, valuesToSave);
 
 			if (outputBuffers.wrsSignificant)
 			{
 				if (pValue <= maxCorrectedPval)
 				{
-					outputBuffers.wrsSignificant->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
-					outputBuffers.wrsSignificantCntMatrix->StoreKmer(kmerSeq, original_counts, StoreMethods::AsMatrixRow);
-					outputBuffers.wrsSignificantFasta->StoreKmer(kmerSeq, original_counts, StoreMethods::AsFastaRecord);
+					outputBuffers.wrsSignificant->StoreKmer(kmerSeq, valuesToSave);
+					outputBuffers.wrsSignificantCntMatrix->StoreKmer(kmerSeq, original_counts);
+					outputBuffers.wrsSignificantFasta->StoreKmer(kmerSeq);
 				}
 			}
 		}
 		if (outputBuffers.dids)
 		{
 			const auto value = outEntry[valuesIdx++];
-			outputBuffers.dids->StoreKmer(kmerSeq, value, StoreMethods::AsMatrixRow_single_val);
+			outputBuffers.dids->StoreKmer(kmerSeq, value);
 
 			if (safeNTop)
 				keepNLargestCollection->dids->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
@@ -581,17 +550,17 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 			const auto pValue = outEntry[valuesIdx++];
 			const auto statistic = outEntry[valuesIdx++];
 
-			const std::vector<double> valuesToSave{ pValue, statistic };
+			const std::vector<Statistics_T> valuesToSave{ pValue, statistic };
 
-			outputBuffers.anova->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
+			outputBuffers.anova->StoreKmer(kmerSeq, valuesToSave);
 
 			if (outputBuffers.anovaSignificant)
 			{
 				if (pValue <= maxCorrectedPval)
 				{
-					outputBuffers.anovaSignificant->StoreKmer(kmerSeq, valuesToSave, StoreMethods::AsMatrixRow);
-					outputBuffers.anovaSignificantCntMatrix->StoreKmer(kmerSeq, original_counts, StoreMethods::AsMatrixRow);
-					outputBuffers.anovaSignificantFasta->StoreKmer(kmerSeq, original_counts, StoreMethods::AsFastaRecord);
+					outputBuffers.anovaSignificant->StoreKmer(kmerSeq, valuesToSave);
+					outputBuffers.anovaSignificantCntMatrix->StoreKmer(kmerSeq, original_counts);
+					outputBuffers.anovaSignificantFasta->StoreKmer(kmerSeq);
 				}
 			}
 		}
@@ -599,8 +568,8 @@ void WritingGathererBin<Statistics_T>::writeKmer(
 }
 
 
-template<typename Statistics_T>
-void WritingGatherer<Statistics_T>::initWriting(
+template<typename Statistics_T, typename VALUE_T>
+void WritingGatherer<Statistics_T, VALUE_T>::initWriting(
 	const std::unique_ptr<kmcdb::MetadataReader>& matrixMetadataReader,
 	const std::vector<std::string>& cnt_matrix_output_header)
 {
@@ -608,99 +577,99 @@ void WritingGatherer<Statistics_T>::initWriting(
 
 	if (statisticsToGeneration.pearson)
 	{
-		writers.pearson = std::make_unique<DumpWriter>(params.mkmcParams.outputFilePearson, multiThreadedGeneration);
+		writers.pearson = std::make_unique<TextFileWriter>(params.mkmcParams.outputFilePearson, multiThreadedGeneration);
 		writers.pearson->StoreHeader({ "pearson" });
 	}
 	if (statisticsToGeneration.spearman)
 	{
-		writers.spearman = std::make_unique<DumpWriter>(params.mkmcParams.outputFileSpearman, multiThreadedGeneration);
+		writers.spearman = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileSpearman, multiThreadedGeneration);
 		writers.spearman->StoreHeader({ "spearman" });
 	}
 	if (statisticsToGeneration.kendall)
 	{
-		writers.kendall = std::make_unique<DumpWriter>(params.mkmcParams.outputFileKendall, multiThreadedGeneration);
+		writers.kendall = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileKendall, multiThreadedGeneration);
 		writers.kendall->StoreHeader({ "kendall" });
 	}
 	if (statisticsToGeneration.entropy)
 	{
-		writers.entropy = std::make_unique<DumpWriter>(params.mkmcParams.outputFileEntropy, multiThreadedGeneration);
+		writers.entropy = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileEntropy, multiThreadedGeneration);
 		writers.entropy->StoreHeader({ "entropy" });
 	}
 	if (statisticsToGeneration.tTest)
 	{
 		if (params.statisticsParams.correctPvalues)
 		{
-			writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCor, multiThreadedGeneration);
+			writers.tTest = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileTTestCor, multiThreadedGeneration);
 			writers.tTest->StoreHeader({ "ttest_p_val_corrected", "ttest_df", "ttest_statistic" });
 
-			writers.tTestSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCorSignificant, multiThreadedGeneration);
+			writers.tTestSignificant = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileTTestCorSignificant, multiThreadedGeneration);
 			writers.tTestSignificant->StoreHeader({ "ttest_p_val_corrected", "ttest_df", "ttest_statistic" });
 
-			writers.tTestSignificantCntMatrix = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCorSignificantCntMatrix, multiThreadedGeneration);
+			writers.tTestSignificantCntMatrix = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileTTestCorSignificantCntMatrix, multiThreadedGeneration);
 			writers.tTestSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
 
-			writers.tTestSignificantFasta = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTestCorSignificantFasta, multiThreadedGeneration);
+			writers.tTestSignificantFasta = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileTTestCorSignificantFasta, multiThreadedGeneration);
 		}
 		else
 		{
-			writers.tTest = std::make_unique<DumpWriter>(params.mkmcParams.outputFileTTest, multiThreadedGeneration);
+			writers.tTest = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileTTest, multiThreadedGeneration);
 			writers.tTest->StoreHeader({ "ttest_p_val", "ttest_df", "ttest_statistic" });
 		}
 	}
 	if (statisticsToGeneration.snr)
 	{
-		writers.snr = std::make_unique<DumpWriter>(params.mkmcParams.outputFileSNR, multiThreadedGeneration);
+		writers.snr = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileSNR, multiThreadedGeneration);
 		writers.snr->StoreHeader({ "snr" });
 	}
 	if (statisticsToGeneration.unnormalizedSnr)
 	{
-		writers.unnormalizedSnr = std::make_unique<DumpWriter>(params.mkmcParams.outputFileUnnormalizedSNR, multiThreadedGeneration);
+		writers.unnormalizedSnr = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileUnnormalizedSNR, multiThreadedGeneration);
 		writers.unnormalizedSnr->StoreHeader({ "snr_for_unnormalized" });
 	}
 	if (statisticsToGeneration.wrs)
 	{
 		if (params.statisticsParams.correctPvalues)
 		{
-			writers.wrs = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCor, multiThreadedGeneration);
+			writers.wrs = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileWilcoxonRankSumCor, multiThreadedGeneration);
 			writers.wrs->StoreHeader({ "wrs_p_val_corrected", "wrs_U1_statistic", "wrs_U2_statistic" });
 
-			writers.wrsSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificant, multiThreadedGeneration);
+			writers.wrsSignificant = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificant, multiThreadedGeneration);
 			writers.wrsSignificant->StoreHeader({ "wrs_p_val_corrected", "wrs_U1_statistic", "wrs_U2_statistic" });
 
-			writers.wrsSignificantCntMatrix = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificantCntMatrix, multiThreadedGeneration);
+			writers.wrsSignificantCntMatrix = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificantCntMatrix, multiThreadedGeneration);
 			writers.wrsSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
 
-			writers.wrsSignificantFasta = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificantFasta, multiThreadedGeneration);
+			writers.wrsSignificantFasta = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificantFasta, multiThreadedGeneration);
 		}
 		else
 		{
-			writers.wrs = std::make_unique<DumpWriter>(params.mkmcParams.outputFileWilcoxonRankSum, multiThreadedGeneration);
+			writers.wrs = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileWilcoxonRankSum, multiThreadedGeneration);
 			writers.wrs->StoreHeader({ "wrs_p_val", "wrs_U1_statistic", "wrs_U2_statistic" });
 		}
 	}
 	if (statisticsToGeneration.dids)
 	{
-		writers.dids = std::make_unique<DumpWriter>(params.mkmcParams.outputFileDIDS, multiThreadedGeneration);
+		writers.dids = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileDIDS, multiThreadedGeneration);
 		writers.dids->StoreHeader({ "dids" });
 	}
 	if (statisticsToGeneration.anova)
 	{
 		if (params.statisticsParams.correctPvalues)
 		{
-			writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACor, multiThreadedGeneration);
+			writers.anova = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileANOVACor, multiThreadedGeneration);
 			writers.anova->StoreHeader({ "anova_p_val_corrected", "anova_statistic" });
 
-			writers.anovaSignificant = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACorSignificant, multiThreadedGeneration);
+			writers.anovaSignificant = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileANOVACorSignificant, multiThreadedGeneration);
 			writers.anovaSignificant->StoreHeader({ "anova_p_val_corrected", "anova_statistic" });
 
-			writers.anovaSignificantCntMatrix = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACorSignificantCntMatrix, multiThreadedGeneration);
+			writers.anovaSignificantCntMatrix = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileANOVACorSignificantCntMatrix, multiThreadedGeneration);
 			writers.anovaSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
 
-			writers.anovaSignificantFasta = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVACorSignificantFasta, multiThreadedGeneration);
+			writers.anovaSignificantFasta = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileANOVACorSignificantFasta, multiThreadedGeneration);
 		}
 		else
 		{
-			writers.anova = std::make_unique<DumpWriter>(params.mkmcParams.outputFileANOVA, multiThreadedGeneration);
+			writers.anova = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileANOVA, multiThreadedGeneration);
 			writers.anova->StoreHeader({ "anova_p_val", "anova_statistic" });
 		}
 	}
