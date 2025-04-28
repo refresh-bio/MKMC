@@ -54,7 +54,7 @@ public:
 class OutputBuffer
 {
 	TextFileWriter& writer;
-	size_t max_line_len;
+	size_t max_record_len;
 	size_t out_buff_pos{};
 	std::vector<char> buff_owner;
 	char* buff;
@@ -72,10 +72,10 @@ protected:
 
 	size_t store_kmer(const std::string& kmerSeq, char*& out, char term) const;
 
-	OutputBuffer(TextFileWriter& writer, size_t max_line_len, size_t buff_size = 1ull << 23) :
+	OutputBuffer(TextFileWriter& writer, size_t max_record_len, size_t buff_size = 1ull << 23) :
 		writer(writer),
-		max_line_len(max_line_len),
-		buff_owner((std::max)(buff_size, max_line_len)),
+		max_record_len(max_record_len),
+		buff_owner((std::max)(buff_size, max_record_len)),
 		buff(buff_owner.data())
 	{}
 
@@ -162,7 +162,7 @@ public:
 
 inline char* OutputBuffer::get_buffer_for_record()
 {
-	if (out_buff_pos + max_line_len > buff_owner.size())
+	if (out_buff_pos + max_record_len > buff_owner.size())
 	{
 		writer.Write(buff, out_buff_pos);
 		out_buff_pos = 0;

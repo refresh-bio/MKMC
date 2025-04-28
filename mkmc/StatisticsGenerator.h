@@ -152,8 +152,8 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 	outNormEntry.resize(num_samples);
 	outStatsEntry.resize(statisticsToGeneration.nStatistics + statisticsToGeneration.nAdditionalValuesOfCorrectedStats);
 
-	const auto first_col_len = params.stage1Params.GetKmerLen();
-	std::string kmerSequence(first_col_len, ' ');
+	const auto kmer_len = params.stage1Params.GetKmerLen();
+	std::string kmerSequence(kmer_len, ' ');
 
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
@@ -171,7 +171,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 
 			normalization.initialize();
 
-			normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, params.stage1Params.GetKmerLen(), num_samples);
+			normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, kmer_len, num_samples);
 		}
 
 		refresh::correlation correlation;
@@ -187,7 +187,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 		std::vector<double> inMatrixEntryScaled(num_samples); // for t-test
 		for (auto kmer_idx = binsOffsets[taskData.binId]; bin->NextKmer(kmer, inMatrixEntry.data()); ++kmer_idx)
 		{
-			kmer.to_string(first_col_len, kmerSequence.data());
+			kmer.to_string(kmer_len, kmerSequence.data());
 
 			if (statisticsToGeneration.normalize)
 			{
@@ -338,8 +338,8 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 	outNormEntry.resize(num_samples);
 	outStatsEntry.resize(statisticsToGeneration.nStatistics - statisticsToGeneration.nStatisticsWithPValues);
 
-	const auto first_col_len = params.stage1Params.GetKmerLen();
-	std::string kmerSequence(first_col_len, ' ');
+	const auto kmer_len = params.stage1Params.GetKmerLen();
+	std::string kmerSequence(kmer_len, ' ');
 
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
@@ -349,7 +349,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 		uint64_t outPValuesToCorrectIdx = binsOffsets[taskData.binId];
 		const uint64_t outPValuesToCorrectIdxEnd = binsOffsets[taskData.binId + 1];
 
-		std::unique_ptr<MatrixOutputBuffer<out_kmcdb_value_type>> normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, params.stage1Params.GetKmerLen(), num_samples);
+		std::unique_ptr<MatrixOutputBuffer<out_kmcdb_value_type>> normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, kmer_len, num_samples);
 
 		assert(params.statisticsParams.generateNormalization);
 		refresh::normalization_work<cnt_value_type, out_kmcdb_value_type> normalization;
@@ -372,7 +372,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 		std::vector<double> inMatrixEntryScaled(num_samples); // for t-test
 		while (bin->NextKmer(kmer, inMatrixEntry.data()))
 		{
-			kmer.to_string(first_col_len, kmerSequence.data());
+			kmer.to_string(kmer_len, kmerSequence.data());
 
 			normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormEntry);
 
@@ -513,8 +513,8 @@ void StatisticsGenerator::safeCorrectedPValuesEntries()
 	inMatrixEntry.resize(num_samples);
 	outStatsEntry.resize(statisticsToGeneration.nStatistics + statisticsToGeneration.nAdditionalValuesOfCorrectedStats);
 
-	const auto first_col_len = params.stage1Params.GetKmerLen();
-	std::string kmerSequence(first_col_len, ' ');
+	const auto kmer_len = params.stage1Params.GetKmerLen();
+	std::string kmerSequence(kmer_len, ' ');
 
 	TaskData taskData;
 	while (tasksPool.getTask(taskData))
@@ -530,7 +530,7 @@ void StatisticsGenerator::safeCorrectedPValuesEntries()
 		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type, cnt_value_type>> outGathererBin = gatherer.getBin(taskData.binId, true, false);
 		while (bin->NextKmer(kmer, inMatrixEntry.data()))
 		{
-			kmer.to_string(first_col_len, kmerSequence.data());
+			kmer.to_string(kmer_len, kmerSequence.data());
 
 			size_t outPvaluesIdx = 0;
 			size_t outAdditionalValuesIdx = 0;
