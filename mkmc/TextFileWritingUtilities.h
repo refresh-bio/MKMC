@@ -60,12 +60,12 @@ class OutputBuffer
 	char* buff;
 
 protected:
-	char* get_buffer() const
-	{
-		return buff + out_buff_pos;
-	}
+	char* get_buffer_for_record();
 
-	void shift_buffer_after_saving(size_t record_len);
+	void shift_buffer_after_saving(size_t record_len)
+	{
+		out_buff_pos += record_len;
+	}
 
 	template<typename VALUE_T>
 	size_t store_single_value(const VALUE_T& val, char*& out, char term) const;
@@ -110,7 +110,7 @@ public:
 			return res;
 		};
 
-		shift_buffer_after_saving(AsMatrixRow(kmerSeq, values, get_buffer()));
+		shift_buffer_after_saving(AsMatrixRow(kmerSeq, values, get_buffer_for_record()));
 	}
 
 	void StoreKmer(const std::string& kmerSeq, const VALUE_T value)
@@ -124,7 +124,7 @@ public:
 			return res;
 		};
 
-		shift_buffer_after_saving(AsMatrixRow_single_val(kmerSeq, value, get_buffer()));
+		shift_buffer_after_saving(AsMatrixRow_single_val(kmerSeq, value, get_buffer_for_record()));
 	}
 };
 
@@ -156,11 +156,11 @@ public:
 			return res;
 		};
 
-		shift_buffer_after_saving(AsFastaRecord(kmerSeq, get_buffer()));
+		shift_buffer_after_saving(AsFastaRecord(kmerSeq, get_buffer_for_record()));
 	}
 };
 
-inline void OutputBuffer::shift_buffer_after_saving(size_t record_len)
+inline char* OutputBuffer::get_buffer_for_record()
 {
 	if (out_buff_pos + max_line_len > buff_owner.size())
 	{
@@ -168,7 +168,7 @@ inline void OutputBuffer::shift_buffer_after_saving(size_t record_len)
 		out_buff_pos = 0;
 	}
 
-	out_buff_pos += record_len;
+	return buff + out_buff_pos;
 }
 
 template<typename VALUE_T>
