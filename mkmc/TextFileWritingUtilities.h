@@ -131,10 +131,11 @@ public:
 class FastaOutputBuffer : public OutputBuffer
 {
 private:
+	// Function return maximal length for a case, when there are two k-mer ids. Hence for a case of single id, the value is overestimated, but it is not a problem
 	size_t get_max_record_len(uint32_t kmer_len) const
 	{
-		//     >\n k-mer                           \n
-		return 2 + static_cast<size_t>(kmer_len) + 1;
+		//     >   id1                                                  _   id2                                                  \n  k-mer                           \n
+		return 1 + refresh::numeric_conversion_max_length<uint32_t>() + 1 + refresh::numeric_conversion_max_length<uint64_t>() + 1 + static_cast<size_t>(kmer_len) + 1;
 	}
 
 public:
@@ -142,21 +143,41 @@ public:
 		OutputBuffer(writer, get_max_record_len(kmer_len), buff_size)
 	{}
 
-	void StoreKmer(const std::string& kmerSeq)
+	void StoreKmer(const std::string& kmerSeq, const uint32_t id1, const uint64_t id2)
 	{
-		auto AsFastaRecord = [this](const std::string & kmerSeq, char* out) -> size_t
+		auto AsFastaRecord = [this](const std::string & kmerSeq, const uint32_t id1, const uint64_t id2, char* out) -> size_t
 		{
 			out[0] = '>';
-			out[1] = '\n';
-			size_t res = 2;
-			out += 2;
+			++out;
+			size_t res = 1;
+
+			res += store_single_value(id1, out, '_');
+			res += store_single_value(id2, out, '\n');
 
 			res += store_kmer(kmerSeq, out, '\n');
 
 			return res;
 		};
 
-		shift_buffer_after_saving(AsFastaRecord(kmerSeq, get_buffer_for_record()));
+		shift_buffer_after_saving(AsFastaRecord(kmerSeq, id1, id2, get_buffer_for_record()));
+	}
+
+	void StoreKmer(const std::string& kmerSeq, const uint64_t id)
+	{
+		auto AsFastaRecord = [this](const std::string & kmerSeq, const uint64_t id, char* out) -> size_t
+		{
+			out[0] = '>';
+			++out;
+			size_t res = 1;
+
+			res += store_single_value(id, out, '\n');
+
+			res += store_kmer(kmerSeq, out, '\n');
+
+			return res;
+		};
+
+		shift_buffer_after_saving(AsFastaRecord(kmerSeq, id, get_buffer_for_record()));
 	}
 };
 

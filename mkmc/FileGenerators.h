@@ -38,7 +38,7 @@ public:
 	}
 
 	template<typename KmersSamplesData_T>
-	void writeKmer(const KmersSamplesData_T& kmersData);
+	void writeKmer(const KmersSamplesData_T& kmersData, uint64_t kmerIdInBin);
 
 	static void initWriter(const Params& params, const kmcdb::Config& config)
 	{
@@ -99,7 +99,7 @@ public:
 	void setBinId(uint32_t binId){}
 
 	template<typename KmersSamplesData_T>
-	void writeKmer(const KmersSamplesData_T& kmersData);
+	void writeKmer(const KmersSamplesData_T& kmersData, uint64_t kmerIdInBin);
 
 	static void initWriter(const Params& params, const kmcdb::Config& config)
 	{
@@ -130,6 +130,8 @@ class FASTAFileGenerator
 	static TextFileWriter* dumpWriter;
 	static bool writerWasOpened;
 
+	uint32_t binId;
+
 	FastaOutputBuffer outputBuffer;
 	uint64_t kmerLength;
 	std::string kmerSeqBuf;
@@ -140,10 +142,13 @@ public:
 		kmerSeqBuf(params.stage1Params.GetKmerLen(), ' ')
 	{}
 
-	void setBinId(uint32_t binId) {}
+	void setBinId(uint32_t binId)
+	{
+		this->binId = binId;
+	}
 
 	template<typename KmersSamplesData_T>
-	void writeKmer(const KmersSamplesData_T& kmersData);
+	void writeKmer(const KmersSamplesData_T& kmersData, uint64_t kmerIdInBin);
 
 	static void initWriter(const Params& params, const kmcdb::Config& config)
 	{
@@ -181,10 +186,10 @@ public:
 	}
 
 	template<typename KmersSamplesData_T>
-	void writeKmer(const KmersSamplesData_T& kmersData)
+	void writeKmer(const KmersSamplesData_T& kmersData, uint64_t kmerIdInBin)
 	{
-		generator.writeKmer(kmersData);
-		nextPerformGenerate.writeKmer(kmersData);
+		generator.writeKmer(kmersData, kmerIdInBin);
+		nextPerformGenerate.writeKmer(kmersData, kmerIdInBin);
 	}
 
 	static void initWriters(const Params& params, const kmcdb::Config& config)
@@ -217,9 +222,9 @@ public:
 	}
 
 	template<typename KmersSamplesData_T>
-	void writeKmer(const KmersSamplesData_T& kmersData)
+	void writeKmer(const KmersSamplesData_T& kmersData, uint64_t kmerIdInBin)
 	{
-		generator.writeKmer(kmersData);
+		generator.writeKmer(kmersData, kmerIdInBin);
 	}
 
 	static void initWriters(const Params& params, const kmcdb::Config& config)
@@ -236,7 +241,7 @@ public:
 
 
 template<typename KmersSamplesData_T>
-void BinFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
+void BinFileGenerator::writeKmer(const KmersSamplesData_T& kmersData, uint64_t kmerIdInBin)
 {
 	assert(kmcBinDBWriter != nullptr);
 	kmcBinDBWriter->AddKmer(kmersData.kmer, kmersData.kMersCounts.data());
@@ -245,7 +250,7 @@ void BinFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 
 
 template<typename KmersSamplesData_T>
-void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
+void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData, uint64_t kmerIdInBin)
 {
 	kmersData.kmer.to_string(kmerLength, kmerSeqBuf.data());
 	outputBuffer.StoreKmer(kmerSeqBuf, kmersData.kMersCounts);
@@ -254,8 +259,8 @@ void MatrixFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
 
 
 template<typename KmersSamplesData_T>
-void FASTAFileGenerator::writeKmer(const KmersSamplesData_T& kmersData)
+void FASTAFileGenerator::writeKmer(const KmersSamplesData_T& kmersData, uint64_t kmerIdInBin)
 {
 	kmersData.kmer.to_string(kmerLength, kmerSeqBuf.data());
-	outputBuffer.StoreKmer(kmerSeqBuf);
+	outputBuffer.StoreKmer(kmerSeqBuf, binId, kmerIdInBin);
 }

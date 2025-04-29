@@ -163,11 +163,13 @@ private:
 
 		std::vector<KeepTopElem<SIZE>> data;
 		to_flush->StealSorted(data, PRED{}); //could actually be Steal (no sorted), but lets keep it deterministic
+		uint64_t outputKmerId = 0;
 		for (auto& elem : data)
 		{
 			buff_top.StoreKmer(elem.kmerSeq, elem.key);
 			buff_top_matrix.StoreKmer(elem.kmerSeq, elem.counts);
-			buff_top_fasta.StoreKmer(elem.kmerSeq);
+			buff_top_fasta.StoreKmer(elem.kmerSeq, outputKmerId);
+			++outputKmerId;
 		}
 	}
 public:
@@ -285,6 +287,8 @@ public:
 		const kmcdb::CKmer<SIZE>& kmer,
 		const std::string& kmerSeq,
 		const std::vector<VALUE_T>& original_counts,
+		uint32_t binId,
+		uint64_t kmerIdInBin,
 		KeepNLargestCollection<SIZE>* keepNLargestCollection = nullptr);
 
 };
@@ -442,6 +446,8 @@ void WritingGathererBin<Statistics_T, VALUE_T>::writeKmer(
 	const kmcdb::CKmer<SIZE>& kmer,
 	const std::string& kmerSeq,
 	const std::vector<VALUE_T>& original_counts,
+	uint32_t binId,
+	uint64_t kmerIdInBin,
 	KeepNLargestCollection<SIZE>* keepNLargestCollection/* = nullptr*/)
 {
 	const bool safeNTop = keepNLargestCollection && mainWritingGatherer.params.statisticsParams.nTop;
@@ -497,7 +503,7 @@ void WritingGathererBin<Statistics_T, VALUE_T>::writeKmer(
 				{
 					outputBuffers.tTestSignificant->StoreKmer(kmerSeq, valuesToSave);
 					outputBuffers.tTestSignificantCntMatrix->StoreKmer(kmerSeq, original_counts);
-					outputBuffers.tTestSignificantFasta->StoreKmer(kmerSeq);
+					outputBuffers.tTestSignificantFasta->StoreKmer(kmerSeq, binId, kmerIdInBin);
 				}
 			}
 		}
@@ -533,7 +539,7 @@ void WritingGathererBin<Statistics_T, VALUE_T>::writeKmer(
 				{
 					outputBuffers.wrsSignificant->StoreKmer(kmerSeq, valuesToSave);
 					outputBuffers.wrsSignificantCntMatrix->StoreKmer(kmerSeq, original_counts);
-					outputBuffers.wrsSignificantFasta->StoreKmer(kmerSeq);
+					outputBuffers.wrsSignificantFasta->StoreKmer(kmerSeq, binId, kmerIdInBin);
 				}
 			}
 		}
@@ -560,7 +566,7 @@ void WritingGathererBin<Statistics_T, VALUE_T>::writeKmer(
 				{
 					outputBuffers.anovaSignificant->StoreKmer(kmerSeq, valuesToSave);
 					outputBuffers.anovaSignificantCntMatrix->StoreKmer(kmerSeq, original_counts);
-					outputBuffers.anovaSignificantFasta->StoreKmer(kmerSeq);
+					outputBuffers.anovaSignificantFasta->StoreKmer(kmerSeq, binId, kmerIdInBin);
 				}
 			}
 		}

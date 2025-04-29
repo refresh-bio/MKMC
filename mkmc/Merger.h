@@ -191,6 +191,7 @@ void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_
 	if (heap.Empty())
 		return;
 
+	uint64_t outputKmerId = 0;
 	kmcdb::CKmer<SIZE> minKmer;
 
 	heap.ProcessElem(do_with_elem_if_exists, [&](size_t elem, size_t id)
@@ -212,7 +213,8 @@ void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_
 						for (size_t i = 0; i < kMersCounts.size(); ++i)
 							tot_cnts[i] += kMersCounts[i];
 
-						fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
+						fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts }, outputKmerId);
+						++outputKmerId;
 						currentBinNormalizationLearning.add_entry(kMersCounts);
 					}
 
@@ -229,7 +231,7 @@ void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_
 		for (size_t i = 0; i < kMersCounts.size(); ++i)
 			tot_cnts[i] += kMersCounts[i];
 
-		fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts });
+		fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts }, outputKmerId);
 		currentBinNormalizationLearning.add_entry(kMersCounts);
 	}
 }
