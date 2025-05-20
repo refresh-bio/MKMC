@@ -101,7 +101,7 @@ template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
 class KeepNLargestCollectionBase
 {
 protected:
-	using Elem = typename KeepTopElem<SIZE, typename Statistics_T, typename VALUE_T>;
+	using Elem = KeepTopElem<SIZE, Statistics_T, VALUE_T>;
 
 	using ABSGreater = typename Elem::ABSGreater;
 	using Greater = typename Elem::Greater;
@@ -128,7 +128,7 @@ protected:
 template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
 class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>
 {
-	template<unsigned SIZE, typename Statistics_T, typename VALUE_T, typename KeepNLargestCollection_T>
+	template<unsigned SIZE_, typename Statistics_T_, typename VALUE_T_, typename KeepNLargestCollection_T_>
 	friend struct KeepNLargestCollectionGlobal;
 
 	using KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::add_for;
@@ -334,7 +334,7 @@ public:
 
 template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
 template<typename PRED>
-static void KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::add_for(
+void KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::add_for(
 	std::unique_ptr<KeepNLargests<Elem, PRED>>& src,
 	std::unique_ptr<KeepNLargests<Elem, PRED>>& dest)
 {
@@ -357,7 +357,7 @@ static void KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::add_for(
 
 template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
 template<typename PRED>
-static void KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::flush_for(
+void KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::flush_for(
 	std::unique_ptr<KeepNLargests<Elem, PRED>>& to_flush,
 	uint32_t first_col_len, size_t num_columns,
 	const std::string& fname_top, const std::vector<std::string>& header_top,
