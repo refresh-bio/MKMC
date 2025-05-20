@@ -79,14 +79,11 @@ class StatisticsGenerator
 	StatisticsToGeneration statisticsToGeneration;
 
 	template<unsigned SIZE>
-	void initKeepNLargest(KeepNLargestCollection<SIZE>& keepNLargestCollection);
-
-	template<unsigned SIZE>
-	void processEntries(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type>& keepNLargestCollectionGlobal,
+	void processEntries(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionGlobal,
 		DimensionalityReduction& dimensionalityReduction);
 
 	template<unsigned SIZE>
-	void processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type>& keepNLargestCollectionGlobal,
+	void processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionGlobal,
 		DimensionalityReduction& dimensionalityReduction);
 
 	void correctPValuesEntries();
@@ -104,44 +101,17 @@ public:
 
 
 template<unsigned SIZE>
-void StatisticsGenerator::initKeepNLargest(KeepNLargestCollection<SIZE>& keepNLargestCollection)
-{
-	if (params.statisticsParams.nTop == 0)
-		return;
-
-	using KeepTopNLargestABS_T = typename KeepNLargestCollection<SIZE>::KeepTopNLargestABS_T;
-	using KeepTopNLargestPlain_T = typename KeepNLargestCollection<SIZE>::KeepTopNLargestPlain_T;
-
-	if (statisticsToGeneration.pearson)
-		keepNLargestCollection.pearson = std::make_unique<KeepTopNLargestABS_T>(params.statisticsParams.nTop);
-
-	if (statisticsToGeneration.spearman)
-		keepNLargestCollection.spearman = std::make_unique<KeepTopNLargestABS_T>(params.statisticsParams.nTop);
-
-	if (statisticsToGeneration.kendall)
-		keepNLargestCollection.kendall = std::make_unique<KeepTopNLargestABS_T>(params.statisticsParams.nTop);
-
-	if (statisticsToGeneration.entropy)
-		keepNLargestCollection.entropy = std::make_unique<KeepTopNLargestPlain_T>(params.statisticsParams.nTop);
-
-	if (statisticsToGeneration.snr)
-		keepNLargestCollection.snr = std::make_unique<KeepTopNLargestPlain_T>(params.statisticsParams.nTop);
-
-	if (statisticsToGeneration.unnormalizedSnr)
-		keepNLargestCollection.unnormalizedSnr = std::make_unique<KeepTopNLargestPlain_T>(params.statisticsParams.nTop);
-
-	if (statisticsToGeneration.dids)
-		keepNLargestCollection.dids = std::make_unique<KeepTopNLargestPlain_T>(params.statisticsParams.nTop);
-
-}
-
-template<unsigned SIZE>
-void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type>& keepNLargestCollectionGlobal,
+void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionGlobal,
 	DimensionalityReduction& dimensionalityReduction)
 {
-	KeepNLargestCollection<SIZE> keepNLargestCollection;
-
-	initKeepNLargest(keepNLargestCollection);
+	KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type> keepNLargestCollection(params.statisticsParams.nTop,
+		statisticsToGeneration.pearson,
+		statisticsToGeneration.spearman,
+		statisticsToGeneration.kendall,
+		statisticsToGeneration.entropy,
+		statisticsToGeneration.snr,
+		statisticsToGeneration.unnormalizedSnr,
+		statisticsToGeneration.dids);
 
 	const std::size_t num_samples = params.mkmcParams.samples.size();
 
@@ -322,15 +292,20 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 
 
 template<unsigned SIZE>
-void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type>& keepNLargestCollectionGlobal,
+void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionGlobal,
 	DimensionalityReduction& dimensionalityReduction)
 {
 	assert(statisticsToGeneration.differentialAnalysis);
 	assert(params.statisticsParams.generateNormalization);
 
-	KeepNLargestCollection<SIZE> keepNLargestCollection;
-
-	initKeepNLargest(keepNLargestCollection);
+	KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type> keepNLargestCollection(params.statisticsParams.nTop,
+		statisticsToGeneration.pearson,
+		statisticsToGeneration.spearman,
+		statisticsToGeneration.kendall,
+		statisticsToGeneration.entropy,
+		statisticsToGeneration.snr,
+		statisticsToGeneration.unnormalizedSnr,
+		statisticsToGeneration.dids);
 
 	const std::size_t num_samples = params.mkmcParams.samples.size();
 

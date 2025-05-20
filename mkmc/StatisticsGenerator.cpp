@@ -252,7 +252,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 				samples_names,
 				binsOffsets.back() //number of k-mers
 			);
-			KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type> keepNLargestCollectionGlobal;
+			KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>> keepNLargestCollectionGlobal;
 
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
@@ -299,7 +299,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 				samples_names,
 				binsOffsets.back() //number of k-mers
 				);
-			KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type> keepNLargestCollectionGlobal;
+			KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>> keepNLargestCollectionGlobal;
 
 			std::vector<std::thread> threads(params.mkmcParams.nThreads);
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)

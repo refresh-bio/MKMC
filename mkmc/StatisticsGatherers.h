@@ -44,196 +44,6 @@ class WritingGatherer;
 
 
 
-
-//mkokot_TODO: move to some other file?
-
-//mkokot_TODO: its not perfect because I am copying this vector with values
-//This could be avoided if I copy it only if my element is large enough to
-//be keep in the heap
-//but it would require some extension in KeepNLargest probably
-template<unsigned SIZE>
-struct KeepTopElem
-{
-	std::string kmerSeq;
-	kmcdb::CKmer<SIZE> kmer;
-	double key;
-	std::vector<uint64_t> counts;
-
-	KeepTopElem(std::string kmerSeq,
-	kmcdb::CKmer<SIZE> kmer,
-	double key,
-	std::vector<uint64_t> counts):
-	kmerSeq(std::move(kmerSeq)),
-	kmer(kmer),
-	key(key),
-	counts(std::move(counts))
-	{
-
-	}
-
-	struct ABSGreater
-	{
-		bool operator()(const KeepTopElem<SIZE>& lhs, const KeepTopElem<SIZE>& rhs)
-		{
-			return std::make_pair(std::abs(lhs.key), rhs.kmer) > std::make_pair(std::abs(rhs.key), lhs.kmer);
-		}
-	};
-
-	struct Greater
-	{
-		bool operator()(const KeepTopElem<SIZE>& lhs, const KeepTopElem<SIZE>& rhs)
-		{
-			return std::make_pair(lhs.key, rhs.kmer) > std::make_pair(rhs.key, lhs.kmer);
-		}
-	};
-};
-
-
-
-
-//mkokot_TODO: move it somewhere else?
-template<unsigned SIZE>
-struct KeepNLargestCollection
-{
-	using ABSGreater = typename KeepTopElem<SIZE>::ABSGreater;
-	using Greater = typename KeepTopElem<SIZE>::Greater;
-
-	using KeepTopNLargestABS_T = KeepNLargests<KeepTopElem<SIZE>, ABSGreater>;
-	using KeepTopNLargestPlain_T = KeepNLargests<KeepTopElem<SIZE>, Greater>;
-
-	std::unique_ptr<KeepTopNLargestABS_T> pearson;
-	std::unique_ptr<KeepTopNLargestABS_T> spearman;
-	std::unique_ptr<KeepTopNLargestABS_T> kendall;
-
-	std::unique_ptr<KeepTopNLargestPlain_T> entropy;
-
-	std::unique_ptr<KeepTopNLargestPlain_T> snr;
-	std::unique_ptr<KeepTopNLargestPlain_T> unnormalizedSnr;
-	std::unique_ptr<KeepTopNLargestPlain_T> dids;
-};
-
-template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
-struct KeepNLargestCollectionGlobal
-{
-private:
-	std::mutex mtx;
-	KeepNLargestCollection<SIZE> global;
-
-	template<typename PRED>
-	static void add_for(
-		std::unique_ptr<KeepNLargests<KeepTopElem<SIZE>, PRED>>& src,
-		std::unique_ptr<KeepNLargests<KeepTopElem<SIZE>, PRED>>& dest)
-	{
-		//if source was not collected do nothing
-		if (!src)
-			return;
-
-		if (!dest)
-			dest = std::make_unique<KeepNLargests<KeepTopElem<SIZE>, PRED>>(src->GetN());
-
-		assert(dest->GetN() == src->GetN()); //just to be sure that all source have the same N
-
-		std::vector<KeepTopElem<SIZE>> data;
-		src->Steal(data);
-		for (auto& elem : data)
-			dest->Add(std::move(elem));
-	}
-
-	template<typename PRED>
-	static void flush_for(
-		std::unique_ptr<KeepNLargests<KeepTopElem<SIZE>, PRED>>& to_flush,
-		uint32_t first_col_len, size_t num_columns,
-		const std::string& fname_top, const std::vector<std::string>& header_top,
-		const std::string& fname_top_matrix, const std::vector<std::string>& header_top_matrix,
-		const std::string& fname_top_fasta)
-	{
-		if (!to_flush)
-			return;
-
-		TextFileWriter writer_top(fname_top, false);
-		writer_top.StoreHeader(header_top);
-		MatrixOutputBuffer<Statistics_T> buff_top(writer_top, first_col_len, 1);
-
-		TextFileWriter writer_top_matrix(fname_top_matrix, false);
-		writer_top_matrix.StoreHeader(header_top_matrix);
-		MatrixOutputBuffer<VALUE_T> buff_top_matrix(writer_top_matrix, first_col_len, num_columns);
-
-		TextFileWriter writer_fasta(fname_top_fasta, false);
-		FastaOutputBuffer buff_top_fasta(writer_fasta, first_col_len);
-
-		std::vector<KeepTopElem<SIZE>> data;
-		to_flush->StealSorted(data, PRED{}); //could actually be Steal (no sorted), but lets keep it deterministic
-		uint64_t outputKmerId = 0;
-		for (auto& elem : data)
-		{
-			buff_top.StoreKmer(elem.kmerSeq, elem.key);
-			buff_top_matrix.StoreKmer(elem.kmerSeq, elem.counts);
-			buff_top_fasta.StoreKmer(elem.kmerSeq, outputKmerId);
-			++outputKmerId;
-		}
-	}
-public:
-	void Add(KeepNLargestCollection<SIZE>& collection)
-	{
-		std::lock_guard lck(mtx);
-		add_for(collection.pearson, global.pearson);
-		add_for(collection.spearman, global.spearman);
-		add_for(collection.kendall, global.kendall);
-
-		add_for(collection.entropy, global.entropy);
-
-		add_for(collection.snr, global.snr);
-		add_for(collection.unnormalizedSnr, global.unnormalizedSnr);
-		add_for(collection.dids, global.dids);
-	}
-
-	void Flush(const Params& params, const std::vector<std::string>& cnt_matrix_output_header)
-	{
-		flush_for(global.pearson,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFilePearsonTop, { "pearson" },
-			params.mkmcParams.outputFilePearsonTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFilePearsonTopFasta);
-
-		flush_for(global.spearman,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileSpearmanTop, { "spearman" },
-			params.mkmcParams.outputFileSpearmanTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileSpearmanTopFasta);
-
-		flush_for(global.kendall,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileKendallTop, { "kendall" },
-			params.mkmcParams.outputFileKendallTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileKendallTopFasta);
-
-		flush_for(global.entropy,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileEntropyTop, { "entropy" },
-			params.mkmcParams.outputFileEntropyTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileEntropyTopFasta);
-
-		flush_for(global.snr,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileSNRTop, { "snr" },
-			params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileSNRTopFasta);
-
-		flush_for(global.unnormalizedSnr,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileUnnormalizedSNRTop, { "snr_for_unnormalized" },
-			params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileUnnormalizedSNRTopFasta);
-
-		flush_for(global.dids,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileDIDSTop, { "dids" },
-			params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileDIDSTopFasta);
-	}
-};
-
-
 template<typename Statistics_T, typename VALUE_T>
 class WritingGathererBin
 {
@@ -289,7 +99,7 @@ public:
 		const std::vector<VALUE_T>& original_counts,
 		uint32_t binId,
 		uint64_t kmerIdInBin,
-		KeepNLargestCollection<SIZE>* keepNLargestCollection = nullptr);
+		KeepNLargestCollection<SIZE, Statistics_T, VALUE_T>* keepNLargestCollection = nullptr);
 
 };
 
@@ -448,42 +258,34 @@ void WritingGathererBin<Statistics_T, VALUE_T>::writeKmer(
 	const std::vector<VALUE_T>& original_counts,
 	uint32_t binId,
 	uint64_t kmerIdInBin,
-	KeepNLargestCollection<SIZE>* keepNLargestCollection/* = nullptr*/)
+	KeepNLargestCollection<SIZE, Statistics_T, VALUE_T>* keepNLargestCollection/* = nullptr*/)
 {
-	const bool safeNTop = keepNLargestCollection && mainWritingGatherer.params.statisticsParams.nTop;
+	assert(keepNLargestCollection != nullptr || (!outputBuffers.pearson && !outputBuffers.spearman && !outputBuffers.kendall && !outputBuffers.entropy && !outputBuffers.snr && !outputBuffers.unnormalizedSnr && !outputBuffers.dids));
 	size_t valuesIdx = 0;
 	if (outputBuffers.pearson)
 	{
 		const auto value = outEntry[valuesIdx++];
 		outputBuffers.pearson->StoreKmer(kmerSeq, value);
-
-		if (safeNTop)
-			keepNLargestCollection->pearson->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+		keepNLargestCollection->addPearson(kmerSeq, kmer, value, original_counts);
 	}
 	if (outputBuffers.spearman)
 	{
 		const auto value = outEntry[valuesIdx++];
 		outputBuffers.spearman->StoreKmer(kmerSeq, value);
-
-		if (safeNTop)
-			keepNLargestCollection->spearman->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+		keepNLargestCollection->addSpearman(kmerSeq, kmer, value, original_counts);
 	}
 	if (outputBuffers.kendall)
 	{
 		const auto value = outEntry[valuesIdx++];
 		outputBuffers.kendall->StoreKmer(kmerSeq, value);
-
-		if (safeNTop)
-			keepNLargestCollection->kendall->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+		keepNLargestCollection->addKendall(kmerSeq, kmer, value, original_counts);
 	}
 
 	if (outputBuffers.entropy)
 	{
 		const auto value = outEntry[valuesIdx++];
 		outputBuffers.entropy->StoreKmer(kmerSeq, value);
-
-		if (safeNTop)
-			keepNLargestCollection->entropy->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+		keepNLargestCollection->addEntropy(kmerSeq, kmer, value, original_counts);
 	}
 	if (mainWritingGatherer.statisticsToGeneration.differentialAnalysis)
 	{
@@ -511,17 +313,13 @@ void WritingGathererBin<Statistics_T, VALUE_T>::writeKmer(
 		{
 			const auto value = outEntry[valuesIdx++];
 			outputBuffers.snr->StoreKmer(kmerSeq, value);
-
-			if (safeNTop)
-				keepNLargestCollection->snr->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+			keepNLargestCollection->addSnr(kmerSeq, kmer, value, original_counts);
 		}
 		if (outputBuffers.unnormalizedSnr)
 		{
 			const auto value = outEntry[valuesIdx++];
 			outputBuffers.unnormalizedSnr->StoreKmer(kmerSeq, value);
-
-			if (safeNTop)
-				keepNLargestCollection->unnormalizedSnr->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+			keepNLargestCollection->addUnnormalizedSnr(kmerSeq, kmer, value, original_counts);
 		}
 		if (outputBuffers.wrs)
 		{
@@ -547,9 +345,7 @@ void WritingGathererBin<Statistics_T, VALUE_T>::writeKmer(
 		{
 			const auto value = outEntry[valuesIdx++];
 			outputBuffers.dids->StoreKmer(kmerSeq, value);
-
-			if (safeNTop)
-				keepNLargestCollection->dids->Add(KeepTopElem<SIZE>{kmerSeq, kmer, value, original_counts});
+			keepNLargestCollection->addDids(kmerSeq, kmer, value, original_counts);
 		}
 		if (outputBuffers.anova)
 		{
