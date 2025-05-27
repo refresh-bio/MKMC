@@ -111,12 +111,12 @@ protected:
 
 	template<typename PRED>
 	static void add_for(
-		std::unique_ptr<KeepNLargests<Elem, PRED>>& src,
-		std::unique_ptr<KeepNLargests<Elem, PRED>>& dest);
+		KeepNLargests<Elem, PRED>& src,
+		KeepNLargests<Elem, PRED>& dest);
 
 	template<typename PRED>
 	static void flush_for(
-		std::unique_ptr<KeepNLargests<Elem, PRED>>& to_flush,
+		KeepNLargests<Elem, PRED>& to_flush,
 		uint32_t first_col_len, size_t num_columns,
 		const std::string& fname_top, const std::vector<std::string>& header_top,
 		const std::string& fname_top_matrix, const std::vector<std::string>& header_top_matrix,
@@ -151,59 +151,71 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 	KeepNLargestCollection()
 	{}
 
+	template<typename PRED>
+	void add_impl(std::unique_ptr<KeepNLargests<Elem, PRED>>& src, std::unique_ptr<KeepNLargests<Elem, PRED>>& dest)
+	{
+		//if source was not collected do nothing
+		if (!src)
+			return;
+
+		if (!dest)
+			dest = std::make_unique<KeepNLargests<Elem, PRED>>(src->GetN());
+
+		add_for(*src, *dest);
+	}
 
 	void add(KeepNLargestCollection<SIZE, Statistics_T, VALUE_T>& collection)
 	{
-		add_for(collection.pearson, pearson);
-		add_for(collection.spearman, spearman);
-		add_for(collection.kendall, kendall);
+		add_impl(collection.pearson, pearson);
+		add_impl(collection.spearman, spearman);
+		add_impl(collection.kendall, kendall);
 
-		add_for(collection.entropy, entropy);
+		add_impl(collection.entropy, entropy);
 
-		add_for(collection.snr, snr);
-		add_for(collection.unnormalizedSnr, unnormalizedSnr);
-		add_for(collection.dids, dids);
+		add_impl(collection.snr, snr);
+		add_impl(collection.unnormalizedSnr, unnormalizedSnr);
+		add_impl(collection.dids, dids);
 	}
 
 	void flush(const Params& params, const std::vector<std::string>& cnt_matrix_output_header)
 	{
-		flush_for(pearson,
+		flush_for(*pearson,
 			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 			params.mkmcParams.outputFilePearsonTop, { "pearson" },
 			params.mkmcParams.outputFilePearsonTopCntMatrix, cnt_matrix_output_header,
 			params.mkmcParams.outputFilePearsonTopFasta);
 
-		flush_for(spearman,
+		flush_for(*spearman,
 			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 			params.mkmcParams.outputFileSpearmanTop, { "spearman" },
 			params.mkmcParams.outputFileSpearmanTopCntMatrix, cnt_matrix_output_header,
 			params.mkmcParams.outputFileSpearmanTopFasta);
 
-		flush_for(kendall,
+		flush_for(*kendall,
 			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 			params.mkmcParams.outputFileKendallTop, { "kendall" },
 			params.mkmcParams.outputFileKendallTopCntMatrix, cnt_matrix_output_header,
 			params.mkmcParams.outputFileKendallTopFasta);
 
-		flush_for(entropy,
+		flush_for(*entropy,
 			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 			params.mkmcParams.outputFileEntropyTop, { "entropy" },
 			params.mkmcParams.outputFileEntropyTopCntMatrix, cnt_matrix_output_header,
 			params.mkmcParams.outputFileEntropyTopFasta);
 
-		flush_for(snr,
+		flush_for(*snr,
 			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 			params.mkmcParams.outputFileSNRTop, { "snr" },
 			params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header,
 			params.mkmcParams.outputFileSNRTopFasta);
 
-		flush_for(unnormalizedSnr,
+		flush_for(*unnormalizedSnr,
 			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 			params.mkmcParams.outputFileUnnormalizedSNRTop, { "snr_for_unnormalized" },
 			params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, cnt_matrix_output_header,
 			params.mkmcParams.outputFileUnnormalizedSNRTopFasta);
 
-		flush_for(dids,
+		flush_for(*dids,
 			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 			params.mkmcParams.outputFileDIDSTop, { "dids" },
 			params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header,
@@ -335,22 +347,15 @@ public:
 template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
 template<typename PRED>
 void KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::add_for(
-	std::unique_ptr<KeepNLargests<Elem, PRED>>& src,
-	std::unique_ptr<KeepNLargests<Elem, PRED>>& dest)
+	KeepNLargests<Elem, PRED>& src,
+	KeepNLargests<Elem, PRED>& dest)
 {
-	//if source was not collected do nothing
-	if (!src)
-		return;
-
-	if (!dest)
-		dest = std::make_unique<KeepNLargests<Elem, PRED>>(src->GetN());
-
-	assert(dest->GetN() == src->GetN()); //just to be sure that all source have the same N
+	assert(dest.GetN() == src.GetN()); //just to be sure that all source have the same N
 
 	std::vector<Elem> data;
-	src->Steal(data);
+	src.Steal(data);
 	for (auto& elem : data)
-		dest->Add(std::move(elem));
+		dest.Add(std::move(elem));
 }
 
 
@@ -358,15 +363,12 @@ void KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::add_for(
 template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
 template<typename PRED>
 void KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::flush_for(
-	std::unique_ptr<KeepNLargests<Elem, PRED>>& to_flush,
+	KeepNLargests<Elem, PRED>& to_flush,
 	uint32_t first_col_len, size_t num_columns,
 	const std::string& fname_top, const std::vector<std::string>& header_top,
 	const std::string& fname_top_matrix, const std::vector<std::string>& header_top_matrix,
 	const std::string& fname_top_fasta)
 {
-	if (!to_flush)
-		return;
-
 	TextFileWriter writer_top(fname_top, false);
 	writer_top.StoreHeader(header_top);
 	MatrixOutputBuffer<Statistics_T> buff_top(writer_top, first_col_len, 1);
@@ -379,7 +381,7 @@ void KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::flush_for(
 	FastaOutputBuffer buff_top_fasta(writer_fasta, first_col_len);
 
 	std::vector<Elem> data;
-	to_flush->StealSorted(data, PRED{}); //could actually be Steal (no sorted), but lets keep it deterministic
+	to_flush.StealSorted(data, PRED{}); //could actually be Steal (no sorted), but lets keep it deterministic
 	uint64_t outputKmerId = 0;
 	for (auto& elem : data)
 	{
