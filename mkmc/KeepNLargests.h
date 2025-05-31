@@ -179,47 +179,54 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 
 	void flush(const Params& params, const std::vector<std::string>& cnt_matrix_output_header)
 	{
-		flush_for(*pearson,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFilePearsonTop, { "pearson" },
-			params.mkmcParams.outputFilePearsonTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFilePearsonTopFasta);
+		if (pearson)
+			flush_for(*pearson,
+				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+				params.mkmcParams.outputFilePearsonTop, { "pearson" },
+				params.mkmcParams.outputFilePearsonTopCntMatrix, cnt_matrix_output_header,
+				params.mkmcParams.outputFilePearsonTopFasta);
 
-		flush_for(*spearman,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileSpearmanTop, { "spearman" },
-			params.mkmcParams.outputFileSpearmanTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileSpearmanTopFasta);
+		if (spearman)
+			flush_for(*spearman,
+				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+				params.mkmcParams.outputFileSpearmanTop, { "spearman" },
+				params.mkmcParams.outputFileSpearmanTopCntMatrix, cnt_matrix_output_header,
+				params.mkmcParams.outputFileSpearmanTopFasta);
 
-		flush_for(*kendall,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileKendallTop, { "kendall" },
-			params.mkmcParams.outputFileKendallTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileKendallTopFasta);
+		if (kendall)
+			flush_for(*kendall,
+				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+				params.mkmcParams.outputFileKendallTop, { "kendall" },
+				params.mkmcParams.outputFileKendallTopCntMatrix, cnt_matrix_output_header,
+				params.mkmcParams.outputFileKendallTopFasta);
 
-		flush_for(*entropy,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileEntropyTop, { "entropy" },
-			params.mkmcParams.outputFileEntropyTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileEntropyTopFasta);
+		if (entropy)
+			flush_for(*entropy,
+				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+				params.mkmcParams.outputFileEntropyTop, { "entropy" },
+				params.mkmcParams.outputFileEntropyTopCntMatrix, cnt_matrix_output_header,
+				params.mkmcParams.outputFileEntropyTopFasta);
 
-		flush_for(*snr,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileSNRTop, { "snr" },
-			params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileSNRTopFasta);
+		if (snr)
+			flush_for(*snr,
+				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+				params.mkmcParams.outputFileSNRTop, { "snr" },
+				params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header,
+				params.mkmcParams.outputFileSNRTopFasta);
 
-		flush_for(*unnormalizedSnr,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileUnnormalizedSNRTop, { "snr_for_unnormalized" },
-			params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileUnnormalizedSNRTopFasta);
+		if (unnormalizedSnr)
+			flush_for(*unnormalizedSnr,
+				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+				params.mkmcParams.outputFileUnnormalizedSNRTop, { "snr_for_unnormalized" },
+				params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, cnt_matrix_output_header,
+				params.mkmcParams.outputFileUnnormalizedSNRTopFasta);
 
-		flush_for(*dids,
-			params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-			params.mkmcParams.outputFileDIDSTop, { "dids" },
-			params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header,
-			params.mkmcParams.outputFileDIDSTopFasta);
+		if (dids)
+			flush_for(*dids,
+				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
+				params.mkmcParams.outputFileDIDSTop, { "dids" },
+				params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header,
+				params.mkmcParams.outputFileDIDSTopFasta);
 	}
 
 public:
