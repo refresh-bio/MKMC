@@ -333,7 +333,7 @@ public:
 template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
 class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>
 {
-	template<unsigned SIZE, typename Statistics_T, typename VALUE_T, typename KeepNLargestCollection_T>
+	template<unsigned SIZE_, typename Statistics_T_, typename VALUE_T_, typename KeepNLargestCollection_T_>
 	friend class KeepNLargestCollectionGlobal;
 
 	using KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::add_for;
