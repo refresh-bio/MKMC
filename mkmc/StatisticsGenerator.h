@@ -15,6 +15,80 @@
 #include "DimensionalityReduction.h"
 
 
+
+template<unsigned SIZE, typename out_kmcdb_value_type, typename cnt_value_type>
+class CVGenerator
+{
+	const bool cv;
+	const std::vector<out_kmcdb_value_type>& wholeCorrelationPhenotype;
+
+	const size_t numSamples;
+	const std::vector<size_t> samplesToExcludeOrder;
+
+	const size_t p;
+	const size_t nTests;
+	const size_t nInputsPerTest;
+
+	std::vector<out_kmcdb_value_type> entry;
+	std::vector<out_kmcdb_value_type> correlationPhenotype; // Actually we can pregenerate all the possible sequences and store them, but updating this vector for every iteration shouldn't be a huge cost
+
+	// If not empty, compute the correlation
+	std::vector<out_kmcdb_value_type> outPearsonStatsEntry, outSpearmanStatsEntry, outKendallStatsEntry;
+
+	KeepNLargestCollectionCV<SIZE, out_kmcdb_value_type, cnt_value_type> keepNLargestCollection;
+	KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollectionCV<SIZE, out_kmcdb_value_type, cnt_value_type>> &keepNLargestCollectionCVGlobal;
+
+	refresh::correlation& correlation;
+
+public:
+	CVGenerator(Params& params,
+		const std::vector<out_kmcdb_value_type>& wholeCorrelationPhenotype,
+		size_t numSamples,
+		bool pearson,
+		bool spearman,
+		bool kendall,
+		KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollectionCV<SIZE, out_kmcdb_value_type, cnt_value_type>>&keepNLargestCollectionCVGlobal,
+		refresh::correlation& correlation) :
+		cv(params.statisticsParams.cvParams.cv),
+		wholeCorrelationPhenotype(wholeCorrelationPhenotype),
+		numSamples(numSamples),
+		samplesToExcludeOrder(params.statisticsParams.cvParams.samplesToExcludeOrder),
+		p(params.statisticsParams.cvParams.p),
+		nTests(numSamples / p),
+		nInputsPerTest(numSamples - p),
+		entry(nInputsPerTest),
+		correlationPhenotype(nInputsPerTest),
+		keepNLargestCollection(params.statisticsParams.nTop,
+			nTests,
+			pearson,
+			spearman,
+			kendall),
+		keepNLargestCollectionCVGlobal(keepNLargestCollectionCVGlobal),
+		correlation(correlation)
+	{
+		if (params.statisticsParams.cvParams.cv)
+		{
+			assert(pearson || spearman || kendall);
+			assert(params.statisticsParams.generateNormalization);
+
+			if (pearson)
+				outPearsonStatsEntry.resize(nTests);
+			if (spearman)
+				outSpearmanStatsEntry.resize(nTests);
+			if (kendall)
+				outKendallStatsEntry.resize(nTests);
+		}
+	}
+
+	~CVGenerator() {
+		keepNLargestCollectionCVGlobal.Add(keepNLargestCollection);
+	}
+
+	void correlationCV(const kmcdb::CKmer<SIZE>& kmer, const std::string& kmerSeq, const std::vector<cnt_value_type>& wholeInputMatrixEntry, const std::vector<out_kmcdb_value_type>& wholeEntry);
+};
+
+
+
 class StatisticsGenerator
 {
 	Params& params;
@@ -80,10 +154,12 @@ class StatisticsGenerator
 
 	template<unsigned SIZE>
 	void processEntries(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionGlobal,
+		KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollectionCV<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionCVGlobal,
 		DimensionalityReduction& dimensionalityReduction);
 
 	template<unsigned SIZE>
 	void processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionGlobal,
+		KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollectionCV<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionCVGlobal,
 		DimensionalityReduction& dimensionalityReduction);
 
 	void correctPValuesEntries();
@@ -100,10 +176,90 @@ public:
 };
 
 
+template<unsigned SIZE, typename out_kmcdb_value_type, typename cnt_value_type>
+void CVGenerator<SIZE, out_kmcdb_value_type, cnt_value_type>::correlationCV(const kmcdb::CKmer<SIZE>& kmer, const std::string& kmerSeq, const std::vector<cnt_value_type>& wholeInputMatrixEntry, const std::vector<out_kmcdb_value_type>& wholeEntry)
+{
+	if (!cv)
+		return;
+
+	// For wholeEntry = ABCDEFGH, p = 2, and samplesToExcludeOrder = 01234567
+	// exclude samples 0 and 1, then 2 and 3...
+	// Entry will contain subsequences of wholeEntry after exclusion subsets of samples counts of size p:
+	// CDEFGH
+	// ABEFGH
+	// ABCDGH
+	// ABCDEF
+	// For wholeEntry = ABCDEFGH, p = 2, and samplesToExcludeOrder = 57041326:
+	// AEBDCG
+	// FHBDCG
+	// FHAECG
+	// FHAEBD
+
+	// First, test for all samples except p ones of indices on first p positions of samplesToExcludeOrder
+	for (size_t i = 0; i < nInputsPerTest; ++i)
+	{
+		entry[i] = wholeEntry[samplesToExcludeOrder[i + p]];
+		correlationPhenotype[i] = wholeCorrelationPhenotype[samplesToExcludeOrder[i + p]];
+	}
+
+	size_t outStatsEntryIdx = 0;
+
+	for (size_t iTest = 0; iTest < nTests; ++iTest)
+	{
+		if (!outPearsonStatsEntry.empty())
+		{
+			const double pearson = refresh::correlation::pearson_n(
+				entry.begin(),
+				correlationPhenotype.begin(),
+				nInputsPerTest);
+
+			outPearsonStatsEntry[outStatsEntryIdx] = pearson;
+		}
+		if (!outSpearmanStatsEntry.empty())
+		{
+			const double spearman = correlation.spearman_n(
+				entry.begin(),
+				correlationPhenotype.begin(),
+				nInputsPerTest);
+
+			outSpearmanStatsEntry[outStatsEntryIdx] = spearman;
+		}
+		if (!outKendallStatsEntry.empty())
+		{
+			const double kendall = refresh::correlation::kendall_tau_n(
+				entry.begin(),
+				correlationPhenotype.begin(),
+				nInputsPerTest);
+
+			outKendallStatsEntry[outStatsEntryIdx] = kendall;
+		}
+
+		++outStatsEntryIdx;
+
+		// Take indicies of next p samples counts to exclude and replace counts at the first p positions of entry, which wasn't changed:
+		// for p = 2 replace at positions 2 and 3, then 4 and 5...
+		if (iTest != nTests - 1)
+			for (size_t i = 0; i < p; ++i)
+			{
+				entry[iTest * p + i] = wholeEntry[samplesToExcludeOrder[iTest * p + i]];
+				correlationPhenotype[iTest * p + i] = wholeCorrelationPhenotype[samplesToExcludeOrder[iTest * p + i]];
+			}
+	}
+
+	keepNLargestCollection.addPearson(kmerSeq, kmer, outPearsonStatsEntry, wholeInputMatrixEntry);
+	keepNLargestCollection.addSpearman(kmerSeq, kmer, outSpearmanStatsEntry, wholeInputMatrixEntry);
+	keepNLargestCollection.addKendall(kmerSeq, kmer, outKendallStatsEntry, wholeInputMatrixEntry);
+}
+
+
+
 template<unsigned SIZE>
 void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionGlobal,
+	KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollectionCV<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionCVGlobal,
 	DimensionalityReduction& dimensionalityReduction)
 {
+	const std::size_t num_samples = params.mkmcParams.samples.size();
+
 	KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type> keepNLargestCollection(params.statisticsParams.nTop,
 		statisticsToGeneration.pearson,
 		statisticsToGeneration.spearman,
@@ -113,7 +269,19 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 		statisticsToGeneration.unnormalizedSnr,
 		statisticsToGeneration.dids);
 
-	const std::size_t num_samples = params.mkmcParams.samples.size();
+	refresh::correlation correlation;
+	refresh::statistics_entropy entropyObj;
+	refresh::statistical_test statistics;
+	refresh::scorers scorer;
+
+	CVGenerator<SIZE, out_kmcdb_value_type, cnt_value_type> cvGenerator(params,
+		correlationPhenotype,
+		num_samples,
+		statisticsToGeneration.pearson,
+		statisticsToGeneration.spearman,
+		statisticsToGeneration.kendall,
+		keepNLargestCollectionCVGlobal,
+		correlation);
 
 	std::vector<cnt_value_type> inMatrixEntry;
 	std::vector<out_kmcdb_value_type> outNormEntry; // normalized stats
@@ -143,11 +311,6 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 
 			normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, kmer_len, num_samples);
 		}
-
-		refresh::correlation correlation;
-		refresh::statistics_entropy entropyObj;
-		refresh::statistical_test statistics;
-		refresh::scorers scorer;
 
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
@@ -279,6 +442,8 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 			}
 			assert(outStatsEntryIdx == statisticsToGeneration.nStatistics + statisticsToGeneration.nAdditionalValuesOfCorrectedStats);
 
+			cvGenerator.correlationCV(kmer, kmerSequence, inMatrixEntry, outNormEntry);
+
 			++progress_bar_updater;
 
 			assert(binsOffsets[taskData.binId] - kmer_idx == outputKmerIdInBin);
@@ -293,10 +458,13 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 
 template<unsigned SIZE>
 void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionGlobal,
+	KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollectionCV<SIZE, out_kmcdb_value_type, cnt_value_type>>& keepNLargestCollectionCVGlobal,
 	DimensionalityReduction& dimensionalityReduction)
 {
 	assert(statisticsToGeneration.differentialAnalysis);
 	assert(params.statisticsParams.generateNormalization);
+
+	const std::size_t num_samples = params.mkmcParams.samples.size();
 
 	KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type> keepNLargestCollection(params.statisticsParams.nTop,
 		statisticsToGeneration.pearson,
@@ -307,7 +475,19 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 		statisticsToGeneration.unnormalizedSnr,
 		statisticsToGeneration.dids);
 
-	const std::size_t num_samples = params.mkmcParams.samples.size();
+	refresh::correlation correlation;
+	refresh::statistics_entropy entropyObj;
+	refresh::statistical_test statistics;
+	refresh::scorers scorer;
+
+	CVGenerator<SIZE, out_kmcdb_value_type, cnt_value_type> cvGenerator(params,
+		correlationPhenotype,
+		num_samples,
+		statisticsToGeneration.pearson,
+		statisticsToGeneration.spearman,
+		statisticsToGeneration.kendall,
+		keepNLargestCollectionCVGlobal,
+		correlation);
 
 	std::vector<cnt_value_type> inMatrixEntry;
 	std::vector<out_kmcdb_value_type> outNormEntry; // normalized counts
@@ -336,11 +516,6 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 		normalization.deserialize(params.statisticsParams.normalizationMethod, normalizationData);
 
 		normalization.initialize();
-
-		refresh::correlation correlation;
-		refresh::statistics_entropy entropyObj;
-		refresh::statistical_test statistics;
-		refresh::scorers scorer;
 
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
@@ -470,6 +645,9 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			assert(outPValuesToCorrectAlg == statisticsToGeneration.nStatisticsWithPValues);
 
 			++outPValuesToCorrectIdx;
+
+			cvGenerator.correlationCV(kmer, kmerSequence, inMatrixEntry, outNormEntry);
+
 			++progress_bar_updater;
 
 			outGathererBin->writeKmer(outStatsEntry, kmer, kmerSequence, inMatrixEntry, taskData.binId, outputKmerIdInBin, &keepNLargestCollection);

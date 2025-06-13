@@ -129,7 +129,7 @@ template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
 class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>
 {
 	template<unsigned SIZE_, typename Statistics_T_, typename VALUE_T_, typename KeepNLargestCollection_T_>
-	friend struct KeepNLargestCollectionGlobal;
+	friend class KeepNLargestCollectionGlobal;
 
 	using KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::add_for;
 	using KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::flush_for;
@@ -152,7 +152,7 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 	{}
 
 	template<typename PRED>
-	void add_impl(std::unique_ptr<KeepNLargests<Elem, PRED>>& src, std::unique_ptr<KeepNLargests<Elem, PRED>>& dest)
+	void add_impl(std::unique_ptr<KeepNLargests<Elem, PRED>>& src, std::unique_ptr<KeepNLargests<Elem, PRED>>& dest) const
 	{
 		//if source was not collected do nothing
 		if (!src)
@@ -325,6 +325,193 @@ public:
 	{
 		if (dids)
 			dids->Add(Elem{ kmerSeq, kmer, key, counts });
+	}
+};
+
+
+
+template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
+class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>
+{
+	template<unsigned SIZE, typename Statistics_T, typename VALUE_T, typename KeepNLargestCollection_T>
+	friend class KeepNLargestCollectionGlobal;
+
+	using KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::add_for;
+	using KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::flush_for;
+
+	using typename KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::Elem;
+	using typename KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::KeepTopNLargestABS_T;
+
+	std::vector<std::unique_ptr<KeepTopNLargestABS_T>> pearson;
+	std::vector<std::unique_ptr<KeepTopNLargestABS_T>> spearman;
+	std::vector<std::unique_ptr<KeepTopNLargestABS_T>> kendall;
+
+	KeepNLargestCollectionCV()
+	{}
+
+	template<typename PRED>
+	void add_impl(std::vector<std::unique_ptr<KeepNLargests<Elem, PRED>>>& src, std::vector<std::unique_ptr<KeepNLargests<Elem, PRED>>>& dest) const
+	{
+		if (src.empty())
+			return;
+		
+		if (dest.empty())
+		{
+			dest.resize(src.size());
+			for (auto& it : dest)
+				it = std::make_unique<KeepNLargests<Elem, PRED>>(src.front()->GetN());
+		}
+		else
+			assert(src.size() == dest.size());
+
+		for (size_t i = 0; i < src.size(); ++i)
+			add_for(*src[i], *dest[i]);
+	}
+
+	void add(KeepNLargestCollectionCV<SIZE, Statistics_T, VALUE_T>& collection)
+	{
+		add_impl(collection.pearson, pearson);
+		add_impl(collection.spearman, spearman);
+		add_impl(collection.kendall, kendall);
+	}
+
+	void flush(const Params& params, const std::vector<std::string>& whole_cnt_matrix_output_header)
+	{
+		const size_t p = params.statisticsParams.cvParams.p;
+		const size_t nSamples = params.mkmcParams.samples.size();
+		const size_t nInputsPerTest = nSamples - p;
+
+		assert(nSamples % p == 0);
+		const size_t nCols = nSamples / p;
+
+		size_t nTests = pearson.size();
+		if (spearman.size() > 0)
+		{
+			assert(nTests == 0 || nTests == spearman.size());
+			nTests = spearman.size();
+		}
+		if (kendall.size() > 0)
+		{
+			assert(nTests == 0 || nTests == kendall.size());
+			nTests = kendall.size();
+		}
+
+		using enum StatisticsParams::CorrelationMethod;
+
+		const std::vector<size_t>& samplesToExcludeOrder = params.statisticsParams.cvParams.samplesToExcludeOrder;
+
+		std::vector<std::string> matrixHeader(nInputsPerTest); // method of matrixHeader content generation is similar as in CVGenerator
+		for (size_t i = 0; i < nInputsPerTest; ++i)
+			matrixHeader[i] = whole_cnt_matrix_output_header[samplesToExcludeOrder[i + p]];
+
+		for (size_t iTest = 0; iTest < nTests; ++iTest)
+		{
+			if (!pearson.empty())
+			{
+				flush_for(*pearson[iTest],
+					params.stage1Params.GetKmerLen(), nCols,
+					params.statisticsParams.cvParams.getOuputFileNameTop(Pearson, nSamples, iTest, pearson.size()), { "pearson" },
+					params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Pearson, nSamples, iTest, pearson.size()), matrixHeader,
+					params.statisticsParams.cvParams.getOuputFileNameTopFasta(Pearson, nSamples, iTest, pearson.size()));
+			}
+			if (!spearman.empty())
+			{
+				flush_for(*spearman[iTest],
+					params.stage1Params.GetKmerLen(), nCols,
+					params.statisticsParams.cvParams.getOuputFileNameTop(Spearman, nSamples, iTest, pearson.size()), { "spearman" },
+					params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Spearman, nSamples, iTest, pearson.size()), matrixHeader,
+					params.statisticsParams.cvParams.getOuputFileNameTopFasta(Spearman, nSamples, iTest, pearson.size()));
+			}
+			if (!kendall.empty())
+			{
+				flush_for(*kendall[iTest],
+					params.stage1Params.GetKmerLen(), nCols,
+					params.statisticsParams.cvParams.getOuputFileNameTop(Kendall, nSamples, iTest, pearson.size()), { "kendall" },
+					params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Kendall, nSamples, iTest, pearson.size()), matrixHeader,
+					params.statisticsParams.cvParams.getOuputFileNameTopFasta(Kendall, nSamples, iTest, pearson.size()));
+			}
+
+			if (iTest != nTests - 1)
+				for (size_t i = 0; i < p; ++i)
+					matrixHeader[iTest * p + i] = whole_cnt_matrix_output_header[samplesToExcludeOrder[iTest * p + i]];
+		}
+	}
+
+public:
+	KeepNLargestCollectionCV(size_t nTop, size_t nTests, bool bPearson, bool bSpearman, bool bKendall)
+	{
+		if (nTop == 0)
+			return;
+
+		if (bPearson)
+		{
+			pearson.resize(nTests);
+			for (auto& it : pearson)
+				it = std::make_unique<KeepTopNLargestABS_T>(nTop);
+		}
+
+		if (bSpearman)
+		{
+			spearman.resize(nTests);
+			for (auto& it : spearman)
+				it = std::make_unique<KeepTopNLargestABS_T>(nTop);
+		}
+
+		if (bKendall)
+		{
+			kendall.resize(nTests);
+			for (auto& it : kendall)
+				it = std::make_unique<KeepTopNLargestABS_T>(nTop);
+		}
+	}
+
+	void addAllResultsForSingleStatistic(
+		std::vector<std::unique_ptr<KeepTopNLargestABS_T>>& statisticResults,
+		const std::string& kmerSeq,
+		const kmcdb::CKmer<SIZE>& kmer,
+		const std::vector<Statistics_T>& keys,
+		const std::vector<VALUE_T>& allCounts) const
+	{
+		const size_t p = allCounts.size() / keys.size();
+
+		std::vector<VALUE_T> counts(allCounts.begin() + p, allCounts.end());
+		for (size_t iTest = 0; iTest < statisticResults.size(); ++iTest)
+		{
+			statisticResults[iTest]->Add(Elem{ kmerSeq, kmer, keys[iTest], counts });
+			if (iTest != statisticResults.size() - 1)
+				for (size_t iP = 0; iP < p; ++iP)
+					counts[iTest * p + iP] = allCounts[iTest * p + iP];
+		}
+	}
+
+	void addPearson(
+		const std::string& kmerSeq,
+		const kmcdb::CKmer<SIZE>& kmer,
+		const std::vector<Statistics_T>& keys,
+		const std::vector<VALUE_T>& allCounts)
+	{
+		if (!pearson.empty())
+			addAllResultsForSingleStatistic(pearson, kmerSeq, kmer, keys, allCounts);
+	}
+
+	void addSpearman(
+		const std::string& kmerSeq,
+		const kmcdb::CKmer<SIZE>& kmer,
+		const std::vector<Statistics_T>& keys,
+		const std::vector<VALUE_T>& allCounts)
+	{
+		if (!spearman.empty())
+			addAllResultsForSingleStatistic(spearman, kmerSeq, kmer, keys, allCounts);
+	}
+
+	void addKendall(
+		const std::string& kmerSeq,
+		const kmcdb::CKmer<SIZE>& kmer,
+		const std::vector<Statistics_T>& keys,
+		const std::vector<VALUE_T>& allCounts)
+	{
+		if (!kendall.empty())
+			addAllResultsForSingleStatistic(kendall, kmerSeq, kmer, keys, allCounts);
 	}
 };
 

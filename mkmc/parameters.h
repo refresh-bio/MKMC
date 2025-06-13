@@ -133,7 +133,7 @@ struct StatisticsParams
 	using NormalizationLearning = refresh::normalization_learn<uint64_t, double>;
 
 	bool generateNormalization = false;
-	NormalizationMethod normalizationMethod;
+	NormalizationMethod normalizationMethod = NormalizationMethod::frequency_count; // initialization due to compiler warnings
 	bool normalizationLearningWasSupplemented = false;
 
 	bool runUMAP = false;
@@ -151,18 +151,53 @@ struct StatisticsParams
 	size_t nTop = 10000;
 	bool nTopUserDefined = false;
 
+	struct CVParams
+	{
+		bool cv = false;
+		size_t p = 2;
+
+		uint64_t seed = 1234567890;
+		bool seedUserDefined = false;
+
+		std::vector<size_t> samplesToExcludeOrder;
+
+		CVParams(const std::string& outputFilesTemplate) : outputFilesTemplate(outputFilesTemplate) {}
+
+		std::string getOuputFileNameTop(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nTests) const
+		{
+			return getOutputFileNameImpl(method, nSamples, iTest, nTests) + "_top";
+		}
+		std::string getOuputFileNameTopCntMatrix(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nTests) const
+		{
+			return getOutputFileNameImpl(method, nSamples, iTest, nTests) + "_top_matrix";
+		}
+		std::string getOuputFileNameTopFasta(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nTests) const
+		{
+			return getOutputFileNameImpl(method, nSamples, iTest, nTests) + "_top.fa";
+		}
+
+		void generateSamplesToExcludeOrder(const size_t nSamples);
+
+	private:
+		const std::string& outputFilesTemplate;
+
+		std::string getOutputFileNameImpl(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nTests) const;
+	} cvParams;
+
 	enum class DifferentialAnalysisMethod { TTest, SNR, WilcoxonRankSum, DIDS, ANOVA };
 	std::vector<DifferentialAnalysisMethod> classificationMethods;
 
 	bool correctPvalues = false;
 	enum class DifferentialAnalysisCorrectionMethod { Bonferroni, HolmBonferroni, BenjaminiHochberg, BenjaminiYekutieli };
-	DifferentialAnalysisCorrectionMethod classificationPValueCorrection;
+	DifferentialAnalysisCorrectionMethod classificationPValueCorrection = DifferentialAnalysisCorrectionMethod::Bonferroni; // initialization due to compiler warnings
 	double maxCorrectedPval = 0.05;
 
 	bool generateEntropy = false;
 	inline const static std::string normDeseq2StreamName = "norm_deseq2";
 	inline const static std::string normFrequencyStreamName = "norm_frequency";
 	inline const static std::string normQuantileStreamName = "norm_quantile";
+
+	StatisticsParams(const std::string& outputFilesTemplate) : cvParams(outputFilesTemplate) {}
 };
 
 struct MutableParams
@@ -198,7 +233,7 @@ struct Params
 	KMC::Stage2Params stage2Params;
 
 	FilterParams filterParams;
-	StatisticsParams statisticsParams;
+	StatisticsParams statisticsParams = mkmcParams.outputFilesTemplate;
 
 	Phenotypes phenotypes;
 

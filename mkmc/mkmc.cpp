@@ -132,6 +132,18 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	c = diffGroup->add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a sequence of natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
 
+
+	CLI::Option_group* cvGroup = app.add_option_group("cross-validation");
+	auto cv = cvGroup->add_flag("--cv", statisticsParams.cvParams.cv, "perform cross-validation for correlation")->needs(cor);
+	cvGroup->add_option("--leave", statisticsParams.cvParams.p, "number of samples to leave in every test")->needs(cv)->default_val(statisticsParams.cvParams.p);
+	std::function<void(const decltype(statisticsParams.cvParams.seed)&)> nCVSeed = [&](const decltype(statisticsParams.cvParams.seed)& seed)
+	{
+		statisticsParams.cvParams.seed = seed;
+		statisticsParams.cvParams.seedUserDefined = true;
+	};
+	cvGroup->add_option_function("--cv-seed", nCVSeed, "random seed")->needs(cv)->default_val(statisticsParams.cvParams.seed);
+
+
 	CLI::Option_group* otherStatsGroup = app.add_option_group("other statistical parameters");
 
 	otherStatsGroup->add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy; counts are increased by 1");
@@ -312,12 +324,20 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 
 bool checkAndPrintArgumentsWarnings(const Params& params)
 {
+	bool result = false;
 	if (params.mkmcParams.samples.size() <= 8 && std::find(params.statisticsParams.classificationMethods.begin(), params.statisticsParams.classificationMethods.end(), StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum) != params.statisticsParams.classificationMethods.end())
 	{
 		std::cerr << "Warning: Wilcoxon-rank sum (Mann-Whitney U test) uses approximate algorithm, thus for less than 9 samples its results may be slightly different than in e.g. SciPy.\n";
-		return true;
+		result = true;
 	}
-	return false;
+
+	if (params.statisticsParams.cvParams.seedUserDefined && params.statisticsParams.cvParams.p == 1)
+	{
+		std::cerr << "Warning: as --leave parameter is set to 1, LOOCV will be performed, which does not need randomness (--cv-seed parameter will be ignored).\n";
+		result = true;
+	}
+
+	return result;
 }
 
 
@@ -377,6 +397,12 @@ int main(int argc, char** argv)
 		std::exit(1);
 	}
 
+	if (params.statisticsParams.cvParams.p == 0 || params.statisticsParams.cvParams.p >= params.mkmcParams.samples.size() || params.mkmcParams.samples.size() % params.statisticsParams.cvParams.p != 0)
+	{
+		std::cerr << "Error: Number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples.\n";
+		std::exit(1);
+	}
+
 	bool warningPrinted = checkAndPrintArgumentsWarnings(params);
 
 	params.generateTempAndOutputFilesNames();
@@ -424,6 +450,8 @@ int main(int argc, char** argv)
 				tasks.push_back("normalizing");
 			if (!params.statisticsParams.correlationMethods.empty())
 				tasks.push_back("computing correlation");
+			if (params.statisticsParams.cvParams.cv)
+				tasks.push_back("performing cross-validation");
 			if (params.statisticsParams.generateEntropy)
 				tasks.push_back("generating entropy");
 			if (!params.statisticsParams.classificationMethods.empty())

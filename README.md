@@ -34,7 +34,7 @@ Options:
  
 [Option Group: k-mers filtering]
   Options:
- - `--thr UINT:POSITIVE [1]` -  filter out k-mers occuring less than specified number of times...
+ - `--thr UINT:POSITIVE [1]` - filter out k-mers occuring less than specified number of times...
  - `--thr_rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
  - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only; if `-b` is not set, the k-mers are converted to canonical form
  
@@ -50,6 +50,12 @@ Options:
  - `--pval_corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files
  - `--max_corrected_pval FLOAT:FLOAT in [0 - 1] [0.05]` Needs: `--pval_corr` - statistical significance for --pval_corr parameter
  - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a sequence of natural numbers or text labels, one in each line)
+ 
+[Option Group: cross-validation]
+  Options:
+ - `--cv` Needs: `--cor` - perform cross-validation for correlation
+ - `--leave UINT [2]` Needs: `--cv` - number of samples to leave in every test
+ - `--cv-seed UINT [1234567890]` Needs: `--cv` - random seed
  
 [Option Group: other statistical parameters]
   Options:

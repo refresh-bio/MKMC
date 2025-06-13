@@ -1,8 +1,37 @@
 #include "parameters.h"
 #include "SamplesFileReader.h"
+#include "refresh/deterministic_random/lib/deterministic_random.h"
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
+
+
+
+void StatisticsParams::CVParams::generateSamplesToExcludeOrder(const size_t nSamples)
+{
+	samplesToExcludeOrder.resize(nSamples);
+	std::generate(samplesToExcludeOrder.begin(), samplesToExcludeOrder.end(), []() { static size_t n = 0; return n++; });
+	if (p != 1) // For LOOCV random order is not necessary
+	{
+		std::mt19937 gen(seed);
+		partial_shuffle(samplesToExcludeOrder.begin(), samplesToExcludeOrder.end(), samplesToExcludeOrder.end(), gen); // deterministic portable random
+	}
+}
+
+
+
+std::string StatisticsParams::CVParams::getOutputFileNameImpl(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nTests) const
+{
+	std::string methodStr;
+	switch (method)
+	{
+	case CorrelationMethod::Pearson: methodStr = "pearson"; break;
+	case CorrelationMethod::Spearman: methodStr = "spearman"; break;
+	case CorrelationMethod::Kendall: methodStr = "kendall_tau"; break;
+	}
+
+	return outputFilesTemplate + "_cv_" + methodStr + "_" + std::to_string(iTest) + "_" + std::to_string(nTests);
+}
 
 
 
@@ -194,6 +223,8 @@ bool Params::adjustAnotherParams()
 	}
 
 	statisticsParams.umap_params.num_threads = mkmcParams.nThreads;
+
+	statisticsParams.cvParams.generateSamplesToExcludeOrder(mkmcParams.samples.size());
 
 	return warningPrinted;
 }
