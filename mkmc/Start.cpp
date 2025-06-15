@@ -27,7 +27,7 @@ bool Start::verifyFiles(bool& warningPrinted)
 {
 	if (!canCreateFile(params.mkmcParams.outputFilesTemplate))
 	{
-		std::cerr << "Error: Cannot create output file: " << params.mkmcParams.outputFilesTemplate << "." << std::endl;
+		std::cerr << "Error: Cannot create output file: " << params.mkmcParams.outputFilesTemplate << ". If " << params.mkmcParams.outputFilesTemplate << " is a path to another directory - does the directory exist?" << std::endl;
 		return false;
 	}
 

@@ -317,6 +317,14 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 		std::cerr << "Error: --n_top requires correlation (--cor) or entropy (--entropy) or differential k-mers analysis with SNR or DIDS (--diff)";
 		return true;
 	}
+
+	if (statisticsParams.nTopUserDefined &&
+		statisticsParams.nTop < 1)
+	{
+		std::cerr << "Error: --n_top has to be at least 1";
+		return true;
+	}
+
 	return false;
 }
 
@@ -457,12 +465,12 @@ int main(int argc, char** argv)
 				tasks.push_back("computing correlation");
 			if (params.statisticsParams.cvParams.cv)
 				tasks.push_back("performing cross-validation");
-			if (params.statisticsParams.generateEntropy)
-				tasks.push_back("generating entropy");
 			if (!params.statisticsParams.classificationMethods.empty())
 				tasks.push_back("performing differential k-mers analysis");
+			if (params.statisticsParams.generateEntropy)
+				tasks.push_back("generating entropy");
 			if (params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
-				tasks.push_back("reducting number of dimensions");
+				tasks.push_back("reducing number of dimensions");
 
 			std::cerr << "Starting " << MessagesUtilities::generateStartingSentence(tasks) << "..." << std::endl << std::endl;
 

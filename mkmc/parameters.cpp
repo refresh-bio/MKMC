@@ -30,7 +30,7 @@ std::string StatisticsParams::CVParams::getOutputFileNameImpl(CorrelationMethod 
 	case CorrelationMethod::Kendall: methodStr = "kendall_tau"; break;
 	}
 
-	return outputFilesTemplate + "_cv_" + methodStr + "_" + std::to_string(iTest) + "_" + std::to_string(nTests);
+	return outputFilesTemplate + "_cv_" + methodStr + "_" + std::to_string(iTest + 1) + "_" + std::to_string(nTests);
 }
 
 
