@@ -137,6 +137,7 @@ class FASTAFileGenerator
 	std::string kmerSeqBuf;
 public:
 	FASTAFileGenerator(const Params& params) :
+		binId(std::numeric_limits<uint32_t>::max()),
 		outputBuffer(*dumpWriter, params.stage1Params.GetKmerLen()),
 		kmerLength(params.stage1Params.GetKmerLen()),
 		kmerSeqBuf(params.stage1Params.GetKmerLen(), ' ')

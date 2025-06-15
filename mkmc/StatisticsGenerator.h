@@ -284,7 +284,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 		correlation);
 
 	std::vector<cnt_value_type> inMatrixEntry;
-	std::vector<out_kmcdb_value_type> outNormEntry; // normalized stats
+	std::vector<out_kmcdb_value_type> outNormEntry; // normalized counts
 	std::vector<out_kmcdb_value_type> outStatsEntry; // statistics
 	inMatrixEntry.resize(num_samples);
 	outNormEntry.resize(num_samples);

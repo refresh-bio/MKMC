@@ -322,6 +322,24 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 
 
 
+bool checkAndPrintParamsFromFilesErrors(const Params& params)
+{
+	if ((params.statisticsParams.runPCA || params.statisticsParams.runUMAP) &&
+		(params.statisticsParams.nDimensionReduction < 1 || params.statisticsParams.nDimensionReduction >= params.mkmcParams.samples.size()))
+	{
+		std::cerr << "Error: Number of dimensions (--dimensions) must be at least 1 and lower than number of samples\n";
+		return true;
+	}
+
+	if (params.statisticsParams.cvParams.p == 0 || params.statisticsParams.cvParams.p >= params.mkmcParams.samples.size() || params.mkmcParams.samples.size() % params.statisticsParams.cvParams.p != 0)
+	{
+		std::cerr << "Error: Number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples.\n";
+		return true;
+	}
+	return false;
+}
+
+
 bool checkAndPrintArgumentsWarnings(const Params& params)
 {
 	bool result = false;
@@ -377,31 +395,18 @@ int main(int argc, char** argv)
 
 		const bool CLIErrors = checkAndPrintArgumentsErrors(params);
 		if (CLIErrors)
-		{
 			std::exit(1);
-		}
 	}
 
 	if (params.mkmcParams.verbosity_level > 0)
 		Logger::Inst().Enable();
 
 	if (!params.readAdditionalParamsFromFiles())
-	{
 		std::exit(1);
-	}
 
-	if ((params.statisticsParams.runPCA || params.statisticsParams.runUMAP) &&
-		(params.statisticsParams.nDimensionReduction < 1 || params.statisticsParams.nDimensionReduction >= params.mkmcParams.samples.size()))
-	{
-		std::cerr << "Error: Number of dimensions (--dimensions) must be at least 1 and lower than number of samples\n";
+	const bool CLIAndParamsFromFilesErrors = checkAndPrintParamsFromFilesErrors(params);
+	if (CLIAndParamsFromFilesErrors)
 		std::exit(1);
-	}
-
-	if (params.statisticsParams.cvParams.p == 0 || params.statisticsParams.cvParams.p >= params.mkmcParams.samples.size() || params.mkmcParams.samples.size() % params.statisticsParams.cvParams.p != 0)
-	{
-		std::cerr << "Error: Number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples.\n";
-		std::exit(1);
-	}
 
 	bool warningPrinted = checkAndPrintArgumentsWarnings(params);
 
