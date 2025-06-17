@@ -82,6 +82,7 @@ Options:
  - `--umap-negative_sample_rate FLOAT [5]` Needs: `--umap` - `negative_sample_rate` parameter
  - `--umap-seed UINT [1234567890]` Needs: `--umap` - `seed` parameter
  - `--umap-parallel_optimization INT [0]` Needs: `--umap` - `parallel_optimization` parameter
+ - `--pca-mode ENUM:value in {covariance,svd} [svd]` Needs: `--pca` - PCA mode
 
 [Option Group: additional parameters]
   Options:

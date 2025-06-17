@@ -158,7 +158,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	CLI::Option_group* dimReductionGroup = app.add_option_group("dimentionality reduction");
 
 	auto umap = dimReductionGroup->add_flag("--umap", statisticsParams.runUMAP, "run dimentionality reduction on normalized matrix with UMAP")->needs(n);
-	dimReductionGroup->add_flag("--pca", statisticsParams.runPCA, "run dimentionality reduction on normalized matrix with PCA")->needs(n);
+	auto pca = dimReductionGroup->add_flag("--pca", statisticsParams.runPCA, "run dimentionality reduction on normalized matrix with PCA")->needs(n);
 
 	std::function<void(const decltype(statisticsParams.nDimensionReduction)&)> dimensionsCallback = [&](const decltype(statisticsParams.nDimensionReduction)& dimensions)
 	{
@@ -191,6 +191,10 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	//umapGroup->add_option("--umap-num_threads", statisticsParams.umap_params.num_threads, "num_threads parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.num_threads);
 
 	dimReductionGroup->add_option("--umap-parallel_optimization", statisticsParams.umap_params.parallel_optimization, "parallel_optimization parameter")->needs(umap)->default_val(statisticsParams.umap_params.parallel_optimization);
+
+	std::map<std::string, refresh::pca<double>::computation_mode_t> pcaModeValuesMap{ { "svd", refresh::pca<double>::computation_mode_t::svd }, { "covariance", refresh::pca<double>::computation_mode_t::covariance } };
+	dimReductionGroup->add_option("--pca-mode", statisticsParams.pca_mod, "PCA mode")->transform(CLI::CheckedTransformer(pcaModeValuesMap))->needs(pca)->default_val(statisticsParams.pca_mod)->default_str("svd");
+
 
 	CLI::Option_group* optionalGroup = app.add_option_group("additional parameters");
 

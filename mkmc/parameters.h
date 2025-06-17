@@ -10,6 +10,7 @@
 #undef small
 #include "refresh/statistics/lib/statistics_normalization.h"
 #include "refresh/statistics/lib/statistics_umap.h"
+#include "refresh/statistics/lib/statistics_pca.h"
 
 
 enum class OutputFileType { FASTA, Matrix, _N }; // _N - number of possibilities
@@ -143,7 +144,7 @@ struct StatisticsParams
 	uint32_t nDimensionReduction = 2;
 
 	refresh::umap<double>::params_t umap_params{};  // default initialize="spectral" value in input parameters
-
+	refresh::pca<double>::computation_mode_t pca_mod = refresh::pca<double>::computation_mode_t::svd; // also default "svd" value in input parameters
 
 	enum class CorrelationMethod { Pearson, Spearman, Kendall };
 	std::vector<CorrelationMethod> correlationMethods;

@@ -44,7 +44,7 @@ void DimensionalityReduction::runAndStorePCA()
 {
 	try
 	{
-		pca->run(params.statisticsParams.nDimensionReduction);
+		pca->run(params.statisticsParams.nDimensionReduction, params.statisticsParams.pca_mod);
 	}
 	catch (const std::length_error&)
 	{
