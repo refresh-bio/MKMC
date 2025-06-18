@@ -98,6 +98,7 @@ struct MKMCParams
 
 	std::string outputFileUMAP;
 	std::string outputFilePCA;
+	std::string outputFilePCAVariance;
 
 	bool totCntGeneration = false;
 	std::string outputFileTotCnt;

@@ -23,6 +23,7 @@ class DimensionalityReduction {
 	std::unique_ptr<refresh::pca_parallel_add<out_kmcdb_value_type>> pca;
 
 	void store(const std::string& fileName, const std::string& firstColPrefix, const std::vector<std::vector< out_kmcdb_value_type>>& results);
+	void store(const std::string& fileName, const std::vector<std::string>& firstCol, const std::vector<std::string>& header, const std::vector<std::vector<out_kmcdb_value_type>>& results);
 
 	void runAndStoreUMAP();
 	void runAndStorePCA();

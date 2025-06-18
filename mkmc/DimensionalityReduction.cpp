@@ -21,6 +21,26 @@ void DimensionalityReduction::store(const std::string& fileName, const std::stri
 	}
 }
 
+void DimensionalityReduction::store(const std::string& fileName, const std::vector<std::string>& firstCol, const std::vector<std::string>& header, const std::vector<std::vector<out_kmcdb_value_type>>& results)
+{
+	TextFileWriter writer(fileName, false);
+	writer.StoreHeader(header, "Statistic");
+
+	size_t firstColLen = 0;
+	for (const auto& s : firstCol)
+		if (s.length() > firstColLen)
+			firstColLen = s.length();
+
+	MatrixOutputBuffer<out_kmcdb_value_type> out(writer, firstColLen, params.mkmcParams.samples.size());
+
+	std::vector<out_kmcdb_value_type> values(samplesNames.size());
+	for (size_t row = 0; row < firstCol.size(); ++row)
+	{
+		for (size_t sample_id = 0; sample_id < samplesNames.size(); ++sample_id)
+			values[sample_id] = results[sample_id][row];
+		out.StoreKmer(firstCol[row], values);
+	}
+}
 
 void DimensionalityReduction::runAndStoreUMAP()
 {
@@ -59,6 +79,17 @@ void DimensionalityReduction::runAndStorePCA()
 	assert(pca_res.front().size() == params.statisticsParams.nDimensionReduction);
 
 	store(params.mkmcParams.outputFilePCA, "PCA", pca_res);
+
+	assert(pca->get_explained_variance().size() == pca->get_explained_variance_ratio().size());
+	std::vector<std::vector<out_kmcdb_value_type>> variances;
+	std::vector<std::string> header;
+	for (size_t i = 0; i < samplesNames.size(); ++i)
+	{
+		header.push_back("D" + std::to_string(i));
+		variances.push_back({ pca->get_explained_variance()[i], pca->get_explained_variance_ratio()[i] });
+	}
+	
+	store(params.mkmcParams.outputFilePCAVariance, std::vector<std::string>{ "variance", "variance_ratio"}, header, variances);
 }
 
 

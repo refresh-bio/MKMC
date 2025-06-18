@@ -23,6 +23,10 @@ namespace refresh
 
 		std::vector<entry_t> input_data;
 		std::vector<entry_t> ret_data;
+		
+		std::vector<VALUE_T> explained_variance;
+		std::vector<VALUE_T> explained_variance_ratio;
+
 
 		input_mode_t input_mode = input_mode_t::unknown;
 		size_t input_vector_size{};
@@ -114,6 +118,15 @@ namespace refresh
 			Eigen::VectorXd eigenvalues = eig.eigenvalues().reverse();
 			Eigen::MatrixXd eigenvectors = eig.eigenvectors().rowwise().reverse();
 
+			explained_variance.resize(eigenvalues.size());
+			for (int i = 0; i < eigenvalues.size(); ++i)
+				explained_variance[i] = eigenvalues(i);
+
+			double total = std::accumulate(explained_variance.begin(), explained_variance.end(), VALUE_T(0));
+			explained_variance_ratio.resize(explained_variance.size());
+			for (size_t i = 0; i < explained_variance.size(); ++i)
+				explained_variance_ratio[i] = explained_variance[i] / total;
+
 			auto principal_components = eigenvectors.leftCols(no_dimensions);
 
 			auto transformed = centered * principal_components;
@@ -181,6 +194,16 @@ namespace refresh
 			
 			auto transformed = centered * principal_components;			
 
+			Eigen::VectorXd s = svd.singularValues();
+			explained_variance.resize(s.size());
+			for (int i = 0; i < s.size(); ++i)
+				explained_variance[i] = (s(i) * s(i)) / (no_objects - 1);
+
+			double total = std::accumulate(explained_variance.begin(), explained_variance.end(), VALUE_T(0));
+			explained_variance_ratio.resize(explained_variance.size());
+			for (size_t i = 0; i < explained_variance.size(); ++i)
+				explained_variance_ratio[i] = explained_variance[i] / total;
+
 			// Convert results to vector of vectors
 			ret_data.clear();
 			ret_data.resize(no_objects, entry_t(no_dimensions));
@@ -226,9 +249,19 @@ namespace refresh
 		}
 
 
-		std::vector<std::vector<VALUE_T>>& result()
+		const std::vector<std::vector<VALUE_T>>& result() const noexcept
 		{
 			return ret_data;
+		}
+
+		const std::vector<VALUE_T>& get_explained_variance() const noexcept 
+		{
+			return explained_variance;
+		}
+
+		const std::vector<VALUE_T>& get_explained_variance_ratio() const noexcept 
+		{
+			return explained_variance_ratio;
 		}
 	};
 

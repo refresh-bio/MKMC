@@ -148,6 +148,7 @@ void Params::generateTempAndOutputFilesNames()
 
 	mkmcParams.outputFileUMAP = mkmcParams.outputFilesTemplate + "_umap";
 	mkmcParams.outputFilePCA = mkmcParams.outputFilesTemplate + "_pca";
+	mkmcParams.outputFilePCAVariance = mkmcParams.outputFilesTemplate + "_pca_variance";
 
 	mkmcParams.outputFileTotCnt = mkmcParams.outputFilesTemplate + "_tot_cnt";
 }
