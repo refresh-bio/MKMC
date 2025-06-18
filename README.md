@@ -50,7 +50,8 @@ Options:
  - `--pval_corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files
  - `--max_corrected_pval FLOAT:FLOAT in [0 - 1] [0.05]` Needs: `--pval_corr` - statistical significance for --pval_corr parameter
  - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a sequence of natural numbers or text labels, one in each line)
- 
+ - `--dids-mode ENUM:value in {quadratic,sqrt,tanh} [sqrt]` - DIDS mode (x*x, square root, 1 + tanh(3x - 3)
+
 [Option Group: cross-validation]
   Options:
  - `--cv` Needs: `--cor` - perform cross-validation for correlation

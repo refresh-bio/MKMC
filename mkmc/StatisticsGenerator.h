@@ -420,11 +420,34 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 				}
 				if (statisticsToGeneration.dids)
 				{
-					const double dids = scorer.dids_n(
-						outNormEntry.begin(),
-						differentialAnalysisPhenotype.begin(),
-						differentialAnalysisNClasses,
-						num_samples);
+					typedef StatisticsParams::DIDSMode DIDSMode;
+					double dids;
+					switch (params.statisticsParams.didsMode)
+					{
+					case DIDSMode::sqrt:
+						dids = scorer.dids_n(
+							outNormEntry.begin(),
+							differentialAnalysisPhenotype.begin(),
+							differentialAnalysisNClasses,
+							num_samples);
+						break;
+					case DIDSMode::quadratic:
+						dids = scorer.dids_quadratic_n(
+							outNormEntry.begin(),
+							differentialAnalysisPhenotype.begin(),
+							differentialAnalysisNClasses,
+							num_samples);
+						break;
+					case DIDSMode::tanh:
+						dids = scorer.dids_tanh_n(
+							outNormEntry.begin(),
+							differentialAnalysisPhenotype.begin(),
+							differentialAnalysisNClasses,
+							num_samples);
+						break;
+					default:
+						assert(false);
+					}
 
 					outStatsEntry[outStatsEntryIdx++] = dids;
 				}
@@ -623,11 +646,34 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			}
 			if (statisticsToGeneration.dids)
 			{
-				const double dids = scorer.dids_n(
-					outNormEntry.begin(),
-					differentialAnalysisPhenotype.begin(),
-					differentialAnalysisNClasses,
-					num_samples);
+				typedef StatisticsParams::DIDSMode DIDSMode;
+				double dids;
+				switch (params.statisticsParams.didsMode)
+				{
+				case DIDSMode::sqrt:
+					dids = scorer.dids_n(
+						outNormEntry.begin(),
+						differentialAnalysisPhenotype.begin(),
+						differentialAnalysisNClasses,
+						num_samples);
+					break;
+				case DIDSMode::quadratic:
+					dids = scorer.dids_quadratic_n(
+						outNormEntry.begin(),
+						differentialAnalysisPhenotype.begin(),
+						differentialAnalysisNClasses,
+						num_samples);
+					break;
+				case DIDSMode::tanh:
+					dids = scorer.dids_tanh_n(
+						outNormEntry.begin(),
+						differentialAnalysisPhenotype.begin(),
+						differentialAnalysisNClasses,
+						num_samples);
+					break;
+				default:
+					assert(false);
+				}
 
 				outStatsEntry[outStatsIdx++] = dids;
 			}

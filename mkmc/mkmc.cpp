@@ -112,7 +112,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	CLI::Option_group* diffGroup = app.add_option_group("differential k-mers analysis");
 	typedef StatisticsParams::DifferentialAnalysisMethod DAMethod;
-	std::map<std::string, StatisticsParams::DifferentialAnalysisMethod> differentialAnalysisValuesMap{ {"ttest", DAMethod::TTest }, {"snr", DAMethod::SNR }, {"wrs", DAMethod::WilcoxonRankSum }, {"dids", DAMethod::DIDS }, {"anova", DAMethod::ANOVA } };
+	std::map<std::string, DAMethod> differentialAnalysisValuesMap{ {"ttest", DAMethod::TTest }, {"snr", DAMethod::SNR }, {"wrs", DAMethod::WilcoxonRankSum }, {"dids", DAMethod::DIDS }, {"anova", DAMethod::ANOVA } };
 	differentialAnalysis = diffGroup->add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need -n; counts for T-Test are increased by 1 and logarithmized")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
 
 	typedef StatisticsParams::DifferentialAnalysisCorrectionMethod CorrectionMethod;
@@ -131,6 +131,15 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 		phenotypes.differentialAnalysisPhenotype.setFileName(fileName);
 	};
 	c = diffGroup->add_option_function("-c", cCallback, "set a phenotype file for differential k-mers analysis (a sequence of natural numbers or text labels, one in each line)")->check(CLI::ExistingFile)->needs(differentialAnalysis);
+
+	typedef StatisticsParams::DIDSMode DIDSMode;
+	std::map<std::string, DIDSMode> didsModeValuesMap{ { "sqrt", DIDSMode::sqrt }, { "quadratic", DIDSMode::quadratic }, { "tanh", DIDSMode::tanh } };
+	std::function<void(const decltype(statisticsParams.didsMode)&)> didsModeCallback = [&](const decltype(statisticsParams.didsMode)& didsMode)
+	{
+		statisticsParams.didsMode = didsMode;
+		statisticsParams.didsModeUserDefined = true;
+	};
+	diffGroup->add_option_function("--dids-mode", didsModeCallback, "DIDS mode (x*x, square root, 1 + tanh(3x - 3)")->transform(CLI::CheckedTransformer(didsModeValuesMap))->default_val(statisticsParams.didsMode)->default_str("sqrt");
 
 
 	CLI::Option_group* cvGroup = app.add_option_group("cross-validation");
@@ -309,7 +318,12 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 	{
 		std::cerr << "Error: --pval_corr requires differential k-mers analysis with ANOVA, T-Test, or Wilcoxon-rank sum (Mann-Whitney U test) (--diff)";
 		return true;
+	}
 
+	if (statisticsParams.didsModeUserDefined && !isDAMethod(StatisticsParams::DifferentialAnalysisMethod::DIDS))
+	{
+		std::cerr << "Error: --dids-mode requires differential k-mers analysis with DIDS (--diff)";
+		return true;
 	}
 
 	if (statisticsParams.nTopUserDefined &&

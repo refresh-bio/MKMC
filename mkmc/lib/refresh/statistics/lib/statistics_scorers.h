@@ -23,10 +23,25 @@ namespace refresh
 
 	private:
 		std::vector<VALUE_T> maxes;
-		std::vector<VALUE_T> sum_sqrts;
+		std::vector<VALUE_T> sum_f;
 
 		std::vector<size_t> anova_n_items;
 		std::vector<double> anova_sums;
+
+		template<typename X_Iter, typename C_Iter>
+		void compute_dids_maxes(X_Iter X_first, C_Iter C_first, size_t no_classes, size_t n)
+		{
+			maxes.clear();
+			maxes.resize(no_classes, (VALUE_T)0);
+
+			auto p_C = C_first;
+			auto p_X = X_first;
+
+			// Find maximum for each class
+			for (size_t i = 0; i < n; ++i, ++p_C, ++p_X)
+				if ((VALUE_T)*p_X > maxes[*p_C])
+					maxes[*p_C] = (VALUE_T)*p_X;
+		}
 
 	public:
 		template<typename X_Iter, typename C_Iter>
@@ -36,33 +51,78 @@ namespace refresh
 		}
 
 		template<typename X_Iter, typename C_Iter>
+		VALUE_T dids_quadratic(X_Iter X_first, X_Iter X_last, C_Iter C_first, size_t no_classes)
+		{
+			return dids_quadratic_n(X_first, C_first, no_classes, std::distance(X_first, X_last));
+		}
+
+		template<typename X_Iter, typename C_Iter>
+		VALUE_T dids_tanh(X_Iter X_first, X_Iter X_last, C_Iter C_first, size_t no_classes)
+		{
+			return dids_tanh_n(X_first, C_first, no_classes, std::distance(X_first, X_last));
+		}
+
+		template<typename X_Iter, typename C_Iter>
 		VALUE_T dids_n(X_Iter X_first, C_Iter C_first, size_t no_classes, size_t n)
 		{
-			maxes.clear();
-			maxes.resize(no_classes, (VALUE_T) 0);
+			compute_dids_maxes(X_first, C_first, no_classes, n);
 
-			sum_sqrts.clear();
-			sum_sqrts.resize(no_classes, (VALUE_T) 0);
-
-			auto p_C = C_first;
-			auto p_X = X_first;
-
-			// Find maximum for each class
-			for (size_t i = 0; i < n; ++i, p_C++, ++p_X)
-				if ((VALUE_T) *p_X > maxes[*p_C])
-					maxes[*p_C] = (VALUE_T) *p_X;
+			sum_f.clear();
+			sum_f.resize(no_classes, (VALUE_T) 0);
 
 			// Calculate sums of sqrts for "large" values
-			p_C = C_first;
-			p_X = X_first;
-
-			for (size_t i = 0; i < n; ++i, ++p_C, ++p_X)
+			for (size_t i = 0; i < n; ++i, ++C_first, ++X_first)
 				for(size_t j = 0; j < no_classes; ++j)
-					if (j != *p_C)
-						if ((VALUE_T) *p_X > maxes[j])
-							sum_sqrts[j] += sqrt((VALUE_T)*p_X - maxes[j]);
+					if (j != *C_first)
+						if ((VALUE_T)*X_first > maxes[j])
+						{
+							VALUE_T diff = (VALUE_T)*X_first - maxes[j];
+							sum_f[j] += sqrt(diff);
+						}
 
-			return *std::max_element(sum_sqrts.begin(), sum_sqrts.end());
+			return *std::max_element(sum_f.begin(), sum_f.end());
+		}
+
+		template<typename X_Iter, typename C_Iter>
+		VALUE_T dids_quadratic_n(X_Iter X_first, C_Iter C_first, size_t no_classes, size_t n)
+		{
+			compute_dids_maxes(X_first, C_first, no_classes, n);
+
+			sum_f.clear();
+			sum_f.resize(no_classes, (VALUE_T)0);
+
+			// Calculate sums of squares for "large" values
+			for (size_t i = 0; i < n; ++i, ++C_first, ++X_first)
+				for (size_t j = 0; j < no_classes; ++j)
+					if (j != *C_first)
+						if ((VALUE_T)*X_first > maxes[j])
+						{
+							VALUE_T diff = (VALUE_T)*X_first - maxes[j];
+							sum_f[j] += diff * diff;
+						}
+
+			return *std::max_element(sum_f.begin(), sum_f.end());
+		}
+
+		template<typename X_Iter, typename C_Iter>
+		VALUE_T dids_tanh_n(X_Iter X_first, C_Iter C_first, size_t no_classes, size_t n)
+		{
+			compute_dids_maxes(X_first, C_first, no_classes, n);
+
+			sum_f.clear();
+			sum_f.resize(no_classes, (VALUE_T)0);
+
+			// Calculate sums of function (1 + tanh(3x-3)) values for "large" values
+			for (size_t i = 0; i < n; ++i, ++C_first, ++X_first)
+				for (size_t j = 0; j < no_classes; ++j)
+					if (j != *C_first)
+						if ((VALUE_T)*X_first > maxes[j])
+						{
+							VALUE_T diff = (VALUE_T)*X_first - maxes[j];
+							sum_f[j] += 1 + tanh(3*diff - 3);
+						}
+
+			return *std::max_element(sum_f.begin(), sum_f.end());
 		}
 
 

@@ -187,6 +187,9 @@ struct StatisticsParams
 
 	enum class DifferentialAnalysisMethod { TTest, SNR, WilcoxonRankSum, DIDS, ANOVA };
 	std::vector<DifferentialAnalysisMethod> classificationMethods;
+	bool didsModeUserDefined = false;
+	enum class DIDSMode { sqrt, quadratic, tanh };
+	DIDSMode didsMode = DIDSMode::sqrt; // also default "sqrt" value in input parameters
 
 	bool correctPvalues = false;
 	enum class DifferentialAnalysisCorrectionMethod { Bonferroni, HolmBonferroni, BenjaminiHochberg, BenjaminiYekutieli };
