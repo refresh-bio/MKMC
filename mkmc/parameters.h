@@ -113,6 +113,7 @@ struct MKMCParams
 	bool nKMCWorkersUserSet = false;
 
 	bool keepTmpFiles = false;
+	bool reuseDBFiles = false;
 
 	bool generateForNonNormalized = false;
 
@@ -133,6 +134,16 @@ struct StatisticsParams
 {
 	using NormalizationMethod = refresh::normalization_base<uint64_t, double>::method_t;
 	using NormalizationLearning = refresh::normalization_learn<uint64_t, double>;
+
+	static std::string getNormalizationMethodStreamName(const NormalizationMethod& normalizationMethod)
+	{
+		switch (normalizationMethod) {
+		case NormalizationMethod::frequency_count: return "norm_frequency";
+		case NormalizationMethod::quantile: return "norm_quantile";
+		case NormalizationMethod::deseq2: return "norm_deseq2";
+		default: assert(false);
+		}
+	}
 
 	bool generateNormalization = false;
 	NormalizationMethod normalizationMethod = NormalizationMethod::frequency_count; // initialization due to compiler warnings
@@ -198,9 +209,6 @@ struct StatisticsParams
 	double maxCorrectedPval = 0.05;
 
 	bool generateEntropy = false;
-	inline const static std::string normDeseq2StreamName = "norm_deseq2";
-	inline const static std::string normFrequencyStreamName = "norm_frequency";
-	inline const static std::string normQuantileStreamName = "norm_quantile";
 
 	StatisticsParams(const std::string& outputFilesTemplate) : cvParams(outputFilesTemplate) {}
 };

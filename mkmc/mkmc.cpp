@@ -4,6 +4,7 @@
 #include <limits>
 #include <map>
 #include <functional>
+#include <filesystem>
 #include "kmc_core/kmc_runner.h"
 #include "parameters.h"
 #include "KMCRunner.h"
@@ -266,6 +267,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
 	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
+	debugGroup->add_flag("--reuse-db", mkmcParams.reuseDBFiles, "reuse samples and filtering databases (if possible)");
 
 	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 
@@ -386,6 +388,65 @@ bool checkAndPrintArgumentsWarnings(const Params& params)
 
 
 
+bool verifyDBsReusability(const Params& params)
+{
+	if (params.filterParams.filterKmersSequences)
+	{
+		if (!std::filesystem::exists(params.filterParams.kmersSequencesToFilterOutDB)) // workaround for a problem with MetadataReader constructor exceptions
+			return false;
+
+		try
+		{
+			kmcdb::MetadataReader sequencesToFilterMetadataReader(params.filterParams.kmersSequencesToFilterOutDB, false);
+			if (params.stage1Params.GetKmerLen() != sequencesToFilterMetadataReader.GetConfig().kmer_len)
+				return false;
+		}
+		catch (const std::runtime_error&)
+		{
+			return false;
+		}
+	}
+
+	if (!std::filesystem::exists(params.mkmcParams.outputMatrixBinFile)) // workaround
+		return false;
+
+	try
+	{
+		kmcdb::MetadataReader matrixMetadataReader(params.mkmcParams.outputMatrixBinFile, false);
+		if (params.stage1Params.GetKmerLen() != matrixMetadataReader.GetConfig().kmer_len)
+			return false;
+
+		if (matrixMetadataReader.GetConfig().num_samples != params.mkmcParams.samples.size())
+			return false;
+	}
+	catch (const std::runtime_error&)
+	{
+		return false;
+	}
+
+	if (params.statisticsParams.generateNormalization)
+	{
+		try
+		{
+			MatrixStatsReader statsReader(params.mkmcParams.normLearningBinFile);
+			std::vector<uint8_t> tmp;
+			// For DESeq2 there is possibility to supplement required statistics later, but here we verify reusability, thus data should be consistent.
+			if (!statsReader.Get(StatisticsParams::getNormalizationMethodStreamName(params.statisticsParams.normalizationMethod), tmp))
+				return false;
+		}
+		catch (const std::runtime_error&)
+		{
+			return false;
+		}
+	}
+
+	// Actually, values of old --thr and --thr_rat parameters should be equal to current,
+	// however currently it is impossible to compare them.
+
+	return true;
+}
+
+
 //----------------------------------------------------------------------------------
 // Main function
 int main(int argc, char** argv)
@@ -465,14 +526,27 @@ int main(int argc, char** argv)
 			kmersFilter.prepareKmersSequencesToFilter();
 		}
 
-		std::cerr << "Starting k-mer counting..." << std::endl << std::endl;
-		KMCRunner kmcRunner(params);
-		kmc_timer.startTimer();
-		kmcRunner.runKMCParallel();
-		kmc_timer.stopTimer();
+		bool dbsReusable = false;
+		if (!params.mkmcParams.reuseDBFiles)
+			std::cerr << "Starting k-mer counting..." << std::endl << std::endl;
+		else {
+			dbsReusable = verifyDBsReusability(params);
+			if (!dbsReusable)
+				std::cerr << "Samples databases does not exist or are not possible to reuse. Starting k-mer counting..." << std::endl << std::endl;
+			else
+				std::cerr << "Samples databases exist and outwardly seem to be possible to reuse." << std::endl << std::endl;
+		}
 
-		MergerRunner dump_runner(params, merger_timer);
-		DispatchKmerSize(params.stage1Params.GetKmerLen(), dump_runner);
+		if (!dbsReusable)
+		{
+			KMCRunner kmcRunner(params);
+			kmc_timer.startTimer();
+			kmcRunner.runKMCParallel();
+			kmc_timer.stopTimer();
+
+			MergerRunner dump_runner(params, merger_timer);
+			DispatchKmerSize(params.stage1Params.GetKmerLen(), dump_runner);
+		}
 
 		if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
 		{
@@ -500,18 +574,21 @@ int main(int argc, char** argv)
 
 		finish.finishProcessing();
 
-		if (params.mutableParams.createdFastaFile)
+		if (!dbsReusable)
 		{
-			std::cerr << "Preparing temporary FASTA file for sequences filtering out:\n";
-			std::cerr << "\tStart: " << sequence_filter_init.getStartTime() << "\n";
-			std::cerr << "\tEnd:   " << sequence_filter_init.getStopTime() << "\n";
+			if (params.mutableParams.createdFastaFile)
+			{
+				std::cerr << "Preparing temporary FASTA file for sequences filtering out:\n";
+				std::cerr << "\tStart: " << sequence_filter_init.getStartTime() << "\n";
+				std::cerr << "\tEnd:   " << sequence_filter_init.getStopTime() << "\n";
+			}
+			std::cerr << "k-mer counting:\n";
+			std::cerr << "\tStart: " << kmc_timer.getStartTime() << "\n";
+			std::cerr << "\tEnd:   " << kmc_timer.getStopTime() << "\n";
+			std::cerr << "Merging and dumping:\n";
+			std::cerr << "\tStart: " << merger_timer.getStartTime() << "\n";
+			std::cerr << "\tEnd:   " << merger_timer.getStopTime() << "\n";
 		}
-		std::cerr << "k-mer counting:\n";
-		std::cerr << "\tStart: " << kmc_timer.getStartTime() << "\n";
-		std::cerr << "\tEnd:   " << kmc_timer.getStopTime() << "\n";
-		std::cerr << "Merging and dumping:\n";
-		std::cerr << "\tStart: " << merger_timer.getStartTime() << "\n";
-		std::cerr << "\tEnd:   " << merger_timer.getStopTime() << "\n";
 
 		if (params.statisticsParams.generateNormalization)
 		{

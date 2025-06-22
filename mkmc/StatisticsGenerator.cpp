@@ -65,15 +65,17 @@ void StatisticsGenerator::fillTaskData()
 
 bool StatisticsGenerator::readNormalizationData()
 {
+	typedef StatisticsParams::NormalizationMethod NormalizationMethod;
+
 	MatrixStatsReader stats_reader(params.mkmcParams.normLearningBinFile);
 	bool success = false;
-	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2) {
-		success = stats_reader.Get(params.statisticsParams.normDeseq2StreamName, normalizationData);
+	if (params.statisticsParams.normalizationMethod == NormalizationMethod::deseq2) {
+		success = stats_reader.Get(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::deseq2), normalizationData);
 		if (!success) {
 			// try to open file supplemented with DESeq2
 			try { // will be useful after modularization
 				MatrixStatsReader stats_reader_supplemented(params.mkmcParams.normLearningBinFileSupplemented);
-				success = stats_reader_supplemented.Get(params.statisticsParams.normDeseq2StreamName, normalizationData);
+				success = stats_reader_supplemented.Get(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::deseq2), normalizationData);
 			}
 			catch (...) {
 				// do nothing, because missing file is not a problem symptom
@@ -91,7 +93,7 @@ bool StatisticsGenerator::readNormalizationData()
 				// try to open file lately supplemented with DESeq2
 				try {
 					MatrixStatsReader stats_reader_currently_supplemented(params.mkmcParams.normLearningBinFileSupplemented);
-					success = stats_reader_currently_supplemented.Get(params.statisticsParams.normDeseq2StreamName, normalizationData);
+					success = stats_reader_currently_supplemented.Get(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::deseq2), normalizationData);
 				}
 				catch (...) {
 					// do nothing, because success == false cause following error message
@@ -99,10 +101,8 @@ bool StatisticsGenerator::readNormalizationData()
 			}
 		}
 	}
-	else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::frequency_count)
-		success = stats_reader.Get(params.statisticsParams.normFrequencyStreamName, normalizationData);
-	else if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile)
-		success = stats_reader.Get(params.statisticsParams.normQuantileStreamName, normalizationData);
+	else
+		success = stats_reader.Get(StatisticsParams::getNormalizationMethodStreamName(params.statisticsParams.normalizationMethod), normalizationData);
 
 	return success;
 }

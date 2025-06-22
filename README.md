@@ -102,6 +102,7 @@ Options:
 [Option Group: debug parameters]
   Options:
  - `--keep` - keep temporary files and binary results file
+ - `--reuse-db` - reuse samples and filtering databases (if possible)
  - `--on UINT:POSITIVE [512]` - number of internal bins, modify carefully
  - `--generate_snr_for_unnormalized_data` - generate Signal to Noise ratio also for unnormalized counts
 K-mers order in output files is not specified and may vary between runnings.

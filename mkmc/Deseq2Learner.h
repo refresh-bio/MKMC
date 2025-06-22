@@ -155,17 +155,19 @@ void Deseq2Learner<SIZE>::fillTaskData()
 template<unsigned SIZE>
 void Deseq2Learner<SIZE>::serializeNormalizationAndSave()
 {
+	typedef StatisticsParams::NormalizationMethod NormalizationMethod;
+
 	std::vector<uint8_t> deseq2NormalizationData;
 
-	normalizationLearning.serialize(StatisticsParams::NormalizationMethod::deseq2, deseq2NormalizationData);
+	normalizationLearning.serialize(NormalizationMethod::deseq2, deseq2NormalizationData);
 
 	// read another stats from input binary file
 	MatrixStatsReader stats_reader(params.mkmcParams.normLearningBinFile);
 	std::vector<uint8_t> deseq2DummyNormalizationData, freqNormalizationData, quantileNormalizationData;
 
-	assert(!stats_reader.Get(params.statisticsParams.normDeseq2StreamName, deseq2DummyNormalizationData));
-	bool success = stats_reader.Get(params.statisticsParams.normFrequencyStreamName, freqNormalizationData);
-	success &= stats_reader.Get(params.statisticsParams.normQuantileStreamName, quantileNormalizationData);
+	assert(!stats_reader.Get(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::deseq2), deseq2DummyNormalizationData));
+	bool success = stats_reader.Get(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::frequency_count), freqNormalizationData);
+	success &= stats_reader.Get(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::quantile), quantileNormalizationData);
 
 	if (!success)
 	{
@@ -174,7 +176,7 @@ void Deseq2Learner<SIZE>::serializeNormalizationAndSave()
 	}
 
 	MatrixStatsWriter stats_writer(params.mkmcParams.normLearningBinFileSupplemented);
-	stats_writer.Add(params.statisticsParams.normDeseq2StreamName, deseq2NormalizationData);
-	stats_writer.Add(params.statisticsParams.normFrequencyStreamName, freqNormalizationData);
-	stats_writer.Add(params.statisticsParams.normQuantileStreamName, quantileNormalizationData);
+	stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::deseq2), deseq2NormalizationData);
+	stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::frequency_count), freqNormalizationData);
+	stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::quantile), quantileNormalizationData);
 }
