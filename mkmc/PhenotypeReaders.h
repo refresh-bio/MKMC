@@ -35,7 +35,7 @@ public:
 	void setFileName(const std::string& _fileName) { fileName = _fileName; }
 	const std::string& getFileName() const { return fileName; }
 
-	void readPhenotype();
+	bool readPhenotype();
 	const std::vector<Phenotype_T>& getPhenotype() const { return phenotype; }
 };
 
@@ -68,7 +68,7 @@ public:
 		PhenotypeReader<std::string>(params)
 	{}
 
-	void mapPhenotypeToInts();
+	bool mapPhenotypeToInts();
 
 	const std::vector<uint32_t>& getMappedPhenotype() const { return mappedPhenotype; }
 	size_t getClassesNumber() const { return mapToInt.size(); };
@@ -77,13 +77,13 @@ public:
 
 
 template<typename Phenotype_T>
-void PhenotypeReader<Phenotype_T>::readPhenotype()
+bool PhenotypeReader<Phenotype_T>::readPhenotype()
 {
 	std::ifstream phenotypeFile(fileName);
 	if (!phenotypeFile.is_open())
 	{
 		std::cerr << "Error: cannot open " << fileName << "." << std::endl;
-		exit(1);
+		return false;
 	}
 
 	Phenotype_T value;
@@ -93,13 +93,15 @@ void PhenotypeReader<Phenotype_T>::readPhenotype()
 	if (phenotypeFile.fail() && !phenotypeFile.eof())
 	{
 		std::cerr << "Error: wrong value in a file " << fileName << "." << std::endl;
-		exit(1);
+		return false;
 	}
 
 	auto no_samples = PhenotypeReaderHelpers::get_no_samples(params);
 	if (phenotype.size() != no_samples)
 	{
 		std::cerr << "Error: number of a phenotype values in a file " << fileName << " (" << phenotype.size() << ") is different than number of samples (" << no_samples << ")." << std::endl;
-		exit(1);
+		return false;
 	}
+
+	return true;
 }

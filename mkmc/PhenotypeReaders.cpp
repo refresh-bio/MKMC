@@ -50,7 +50,7 @@ bool DifferentialAnalysisPhenotypeReader::verifyClassesSense()
 
 
 
-void DifferentialAnalysisPhenotypeReader::mapPhenotypeToInts()
+bool DifferentialAnalysisPhenotypeReader::mapPhenotypeToInts()
 {
 	mappedPhenotype.reserve(getPhenotype().size());
 
@@ -72,12 +72,14 @@ void DifferentialAnalysisPhenotypeReader::mapPhenotypeToInts()
 	if (mapToInt.size() == 1)
 	{
 		std::cerr << "Error: a number of distinct classes in a file " << getFileName() << " must be greater than 1." << std::endl;
-		exit(1);
+		return false;
 	}
 
 	if (!verifyClassesSense())
 	{
 		std::cerr << "Error: a file " << getFileName() << " must contain classes for all samples which must be natural numbers starting from 0 or text labels." << std::endl;
-		exit(1);
+		return false;
 	}
+
+	return true;
 }

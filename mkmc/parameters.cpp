@@ -232,35 +232,40 @@ bool Params::adjustAnotherParams()
 
 
 
-void Params::readPhenotypes()
+bool Params::readPhenotypes()
 {
 	if (!phenotypes.correlationPhenotype.getFileName().empty())
-		phenotypes.correlationPhenotype.readPhenotype();
+		if (!phenotypes.correlationPhenotype.readPhenotype())
+			return false;
 
 	if (!phenotypes.differentialAnalysisPhenotype.getFileName().empty())
 	{
-		phenotypes.differentialAnalysisPhenotype.readPhenotype();
-		phenotypes.differentialAnalysisPhenotype.mapPhenotypeToInts();
+		if (!phenotypes.differentialAnalysisPhenotype.readPhenotype())
+			return false;
+		if (!phenotypes.differentialAnalysisPhenotype.mapPhenotypeToInts())
+			return false;
 
 		for (auto method : statisticsParams.classificationMethods)
 		{
 			if (method == StatisticsParams::DifferentialAnalysisMethod::TTest && phenotypes.differentialAnalysisPhenotype.getClassesNumber() > 2)
 			{
 				std::cerr << "Error: number of distinct classes in a file " << phenotypes.differentialAnalysisPhenotype.getFileName() << " for T-Test must equal to 2." << std::endl;
-				exit(1);
+				return false;
 			}
 			else if (method == StatisticsParams::DifferentialAnalysisMethod::SNR && phenotypes.differentialAnalysisPhenotype.getClassesNumber() > 2)
 			{
 				std::cerr << "Error: number of distinct classes in a file " << phenotypes.differentialAnalysisPhenotype.getFileName() << " for Signal to Noise ratio determination must equal to 2." << std::endl;
-				exit(1);
+				return false;
 			}
 			else if (method == StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum && phenotypes.differentialAnalysisPhenotype.getClassesNumber() > 2)
 			{
 				std::cerr << "Error: number of distinct classes in a file " << phenotypes.differentialAnalysisPhenotype.getFileName() << " for Wilcoxon-rank sum determination must equal to 2." << std::endl;
-				exit(1);
+				return false;
 			}
 		}
 	}
+
+	return true;
 }
 
 

@@ -143,6 +143,7 @@ struct StatisticsParams
 		case NormalizationMethod::deseq2: return "norm_deseq2";
 		default: assert(false);
 		}
+		return "";
 	}
 
 	bool generateNormalization = false;
@@ -255,7 +256,7 @@ struct Params
 	bool readAdditionalParamsFromFiles();
 	bool adjustKMCPerformanceParams();
 	bool adjustAnotherParams();
-	void readPhenotypes();
+	bool readPhenotypes();
 };
 
 

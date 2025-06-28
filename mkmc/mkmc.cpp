@@ -300,7 +300,8 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 
 
 	if (!statisticsParams.generateNormalization &&
-		(statisticsParams.classificationMethods.size() > 1 || statisticsParams.classificationMethods.size() == 1 && statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest))
+		(statisticsParams.classificationMethods.size() > 1 ||
+			(statisticsParams.classificationMethods.size() == 1 && statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest)))
 	{
 		std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
 		return true;

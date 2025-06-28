@@ -94,6 +94,8 @@ class Merger
 				GeneratorVecToTemplate<I - 1, Generators_T..., FASTAFileGenerator>::callTemplateFunction(generators, callback); break;
 			case OutputFileType::Matrix:
 				GeneratorVecToTemplate<I - 1, Generators_T..., MatrixFileGenerator>::callTemplateFunction(generators, callback); break;
+			default:
+				assert(false);
 			}
 		}
 	};

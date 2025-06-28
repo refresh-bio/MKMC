@@ -475,6 +475,4 @@ void WritingGatherer<Statistics_T, VALUE_T>::initWriting(
 			writers.anova->StoreHeader({ "anova_p_val", "anova_statistic" });
 		}
 	}
-
-	kmcdb::ConfigSortedPlain representation_config{};
 }
