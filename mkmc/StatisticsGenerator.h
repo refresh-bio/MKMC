@@ -318,7 +318,6 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type, cnt_value_type>> outGahtererBin = gatherer.getBin(taskData.binId);
 
 		std::vector<double> inMatrixEntryScaled(num_samples); // for t-test
-		uint64_t outputKmerIdInBin = 0;
 		for (auto kmer_idx = binsOffsets[taskData.binId]; bin->NextKmer(kmer, inMatrixEntry.data()); ++kmer_idx)
 		{
 			kmer.to_string(kmer_len, kmerSequence.data());
@@ -467,11 +466,8 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 
 			cvGenerator.correlationCV(kmer, kmerSequence, inMatrixEntry, outNormEntry);
 
+			outGahtererBin->writeKmer(outStatsEntry, kmer, kmerSequence, inMatrixEntry, taskData.binId, kmer_idx - binsOffsets[taskData.binId], &keepNLargestCollection);
 			++progress_bar_updater;
-
-			assert(binsOffsets[taskData.binId] - kmer_idx == outputKmerIdInBin);
-			outGahtererBin->writeKmer(outStatsEntry, kmer, kmerSequence, inMatrixEntry, taskData.binId, outputKmerIdInBin, &keepNLargestCollection);
-			++outputKmerIdInBin;
 		}
 	}
 	keepNLargestCollectionGlobal.Add(keepNLargestCollection);
@@ -546,7 +542,6 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type, cnt_value_type>> outGathererBin = gatherer.getBin(taskData.binId, false, true);
 
 		std::vector<double> inMatrixEntryScaled(num_samples); // for t-test
-		uint64_t outputKmerIdInBin = 0;
 		while (bin->NextKmer(kmer, inMatrixEntry.data()))
 		{
 			kmer.to_string(kmer_len, kmerSequence.data());
@@ -690,14 +685,11 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 			}
 			assert(outPValuesToCorrectAlg == statisticsToGeneration.nStatisticsWithPValues);
 
-			++outPValuesToCorrectIdx;
-
 			cvGenerator.correlationCV(kmer, kmerSequence, inMatrixEntry, outNormEntry);
 
+			outGathererBin->writeKmer(outStatsEntry, kmer, kmerSequence, inMatrixEntry, taskData.binId, outPValuesToCorrectIdx - binsOffsets[taskData.binId], &keepNLargestCollection);
+			++outPValuesToCorrectIdx;
 			++progress_bar_updater;
-
-			outGathererBin->writeKmer(outStatsEntry, kmer, kmerSequence, inMatrixEntry, taskData.binId, outputKmerIdInBin, &keepNLargestCollection);
-			++outputKmerIdInBin;
 		}
 
 		assert(outPValuesToCorrectIdx == outPValuesToCorrectIdxEnd);
@@ -732,7 +724,6 @@ void StatisticsGenerator::safeCorrectedPValuesEntries()
 
 		kmcdb::CKmer<SIZE> kmer;
 		std::unique_ptr<WritingGathererBin<out_kmcdb_value_type, cnt_value_type>> outGathererBin = gatherer.getBin(taskData.binId, true, false);
-		uint64_t outputKmerIdInBin = 0;
 		while (bin->NextKmer(kmer, inMatrixEntry.data()))
 		{
 			kmer.to_string(kmer_len, kmerSequence.data());
@@ -775,11 +766,9 @@ void StatisticsGenerator::safeCorrectedPValuesEntries()
 			}
 			assert(outPvaluesIdx + outAdditionalValuesIdx == statisticsToGeneration.nStatisticsWithPValues + statisticsToGeneration.nAdditionalValuesOfCorrectedStats);
 
+			outGathererBin->writeKmer(outStatsEntry, kmer, kmerSequence, inMatrixEntry, taskData.binId, outPValuesToCorrectIdx - binsOffsets[taskData.binId]);
 			++outPValuesToCorrectIdx;
 			++progress_bar_updater;
-
-			outGathererBin->writeKmer(outStatsEntry, kmer, kmerSequence, inMatrixEntry, taskData.binId, outputKmerIdInBin);
-			++outputKmerIdInBin;
 		}
 		assert(outPValuesToCorrectIdx == outPValuesToCorrectIdxEnd);
 	}
