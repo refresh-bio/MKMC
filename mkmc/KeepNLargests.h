@@ -377,6 +377,9 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 
 	void flush(const Params& params, const std::vector<std::string>& whole_cnt_matrix_output_header)
 	{
+		if (!params.statisticsParams.cvParams.cv)
+			return;
+
 		const size_t p = params.statisticsParams.cvParams.p;
 		const size_t nSamples = params.mkmcParams.samples.size();
 		const size_t nInputsPerTest = nSamples - p;

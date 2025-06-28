@@ -359,11 +359,12 @@ bool checkAndPrintParamsFromFilesErrors(const Params& params)
 		return true;
 	}
 
-	if (params.statisticsParams.cvParams.p == 0 || params.statisticsParams.cvParams.p >= params.mkmcParams.samples.size() || params.mkmcParams.samples.size() % params.statisticsParams.cvParams.p != 0)
-	{
-		std::cerr << "Error: Number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples.\n";
-		return true;
-	}
+	if (params.statisticsParams.cvParams.cv)
+		if (params.statisticsParams.cvParams.p == 0 || params.statisticsParams.cvParams.p >= params.mkmcParams.samples.size() || params.mkmcParams.samples.size() % params.statisticsParams.cvParams.p != 0)
+		{
+			std::cerr << "Error: Number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples.\n";
+			return true;
+		}
 	return false;
 }
 
@@ -500,7 +501,10 @@ int main(int argc, char** argv)
 	params.generateTempAndOutputFilesNames();
 	warningPrinted |= params.adjustKMCPerformanceParams();
 	warningPrinted |= params.adjustAnotherParams();
-	params.readPhenotypes();
+
+	const bool phenotypesReadSuccess = params.readPhenotypes();
+	if (!phenotypesReadSuccess)
+		std::exit(1);
 
 	Start start(params);
 	Finish finish(params);
