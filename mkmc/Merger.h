@@ -316,7 +316,7 @@ inline void Merger<SIZE>::fillTaskData()
 		exit(1);
 	}
 
-	progress_bar = std::make_unique<ProgressBar>(params.mkmcParams.verbosity_level == 0 ? 0 : totKmersAllSamples, "Dumping", std::cerr, params.mkmcParams.verbosity_level == 0);
+	progress_bar = std::make_unique<ProgressBar>(params.mkmcParams.verbosity_level == 0 ? 0 : totKmersAllSamples, "Merging", std::cerr, params.mkmcParams.verbosity_level == 0);
 
 	tasksData.reserve(samplesMetadata.front()->GetConfig().num_bins);
 	for (uint32_t i = 0; i < samplesMetadata.front()->GetConfig().num_bins; ++i)

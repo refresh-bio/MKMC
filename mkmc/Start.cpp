@@ -44,7 +44,7 @@ bool Start::verifyFiles(bool& warningPrinted)
 			//{
 				std::cerr << "Warning: the specified directory " << params.mkmcParams.tmpPath << " does not exist. It will be temporarily created." << std::endl;
 				if (params.mkmcParams.keepTmpFiles)
-					std::cerr << "Warning: as " << params.mkmcParams.tmpPath << " directory was created by MKC, the temporary files will not be kept (--keep parameter will be ignored)." << std::endl;
+					std::cerr << "Warning: as " << params.mkmcParams.tmpPath << " directory was created by MKC, some of the temporary files will not be kept (--keep parameter)." << std::endl;
 				warningPrinted = true;
 			//}
 			params.mutableParams.tmpDirCreated = true;
