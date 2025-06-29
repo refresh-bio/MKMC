@@ -5,9 +5,9 @@ VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mkmc", "mkmc\mkmc.vcxproj", "{D9FB1092-0060-4D31-B56F-A7DB77612A8E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_core", "kmc\kmc_core\kmc_core.vcxproj", "{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_core", "3rd_party\kmc\kmc_core\kmc_core.vcxproj", "{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "kmc\3rd_party\cloudflare\build\zlib.vcxproj", "{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "3rd_party\kmc\3rd_party\cloudflare\build\zlib.vcxproj", "{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

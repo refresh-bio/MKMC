@@ -1,8 +1,8 @@
 #pragma once
 
 #include "parameters.h"
-#include "lib/refresh/statistics/lib/statistics_umap.h"
-#include "lib/refresh/statistics/lib/statistics_pca.h"
+#include "refresh/statistics/lib/statistics_umap.h"
+#include "refresh/statistics/lib/statistics_pca.h"
 
 #include <vector>
 #include <memory>

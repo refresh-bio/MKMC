@@ -3,8 +3,8 @@ all: mkmc
 dummy := $(shell git submodule update --init --recursive)
 
 MKMC_MAIN_DIR = mkmc
-ZLIB_DIR = kmc/3rd_party/cloudflare
-KMC_DIR = kmc
+ZLIB_DIR = 3rd_party/kmc/3rd_party/cloudflare
+KMC_DIR = 3rd_party/kmc
 
 OUT_BIN_DIR=bin
 

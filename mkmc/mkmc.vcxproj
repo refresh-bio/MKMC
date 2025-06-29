@@ -77,10 +77,10 @@
     <IncludePath>../kmc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>lib;../kmc;../kmc/kmcdb/libs;lib/stats/include/;lib/annoy/include;lib/hnswlib;lib/umappp/include;lib/CppIrlba/include;lib/CppKmeans/include;lib/aarand/include;lib/knncolle/include;lib/eigen;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>lib;../3rd_party/kmc;../3rd_party/kmc/kmcdb/libs;lib/stats/include/;lib/annoy/include;lib/hnswlib;lib/umappp/include;lib/CppIrlba/include;lib/CppKmeans/include;lib/aarand/include;lib/knncolle/include;lib/eigen;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>lib;../kmc;../kmc/kmcdb/libs;lib/stats/include/;lib/annoy/include;lib/hnswlib;lib/umappp/include;lib/CppIrlba/include;lib/CppKmeans/include;lib/aarand/include;lib/knncolle/include;lib/eigen;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>lib;../3rd_party/kmc;../3rd_party/kmc/kmcdb/libs;lib/stats/include/;lib/annoy/include;lib/hnswlib;lib/umappp/include;lib/CppIrlba/include;lib/CppKmeans/include;lib/aarand/include;lib/knncolle/include;lib/eigen;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnabled>false</VcpkgEnabled>
@@ -124,6 +124,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,6 +142,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -151,7 +153,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\kmc\kmc_dump\nc_utils.cpp" />
+    <ClCompile Include="..\3rd_party\kmc\kmc_dump\nc_utils.cpp" />
     <ClCompile Include="DimensionalityReduction.cpp" />
     <ClCompile Include="TextFileWritingUtilities.cpp" />
     <ClCompile Include="FileGenerators.cpp" />
@@ -168,10 +170,10 @@
     <ClCompile Include="TasksPool.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\kmc\3rd_party\cloudflare\build\zlib.vcxproj">
+    <ProjectReference Include="..\3rd_party\kmc\3rd_party\cloudflare\build\zlib.vcxproj">
       <Project>{ae29051e-e1d8-3f22-9ca9-64edd3e02ba3}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\kmc\kmc_core\kmc_core.vcxproj">
+    <ProjectReference Include="..\3rd_party\kmc\kmc_core\kmc_core.vcxproj">
       <Project>{8c8b90da-28b7-4d82-81f3-c0e7ce52d59f}</Project>
     </ProjectReference>
   </ItemGroup>

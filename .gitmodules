@@ -1,5 +1,5 @@
 [submodule "kmc"]
-	path = kmc
+	path = 3rd_party/kmc
 	url = https://github.com/refresh-bio/kmc
 [submodule "mkmc/CLI11"]
 	path = mkmc/CLI11

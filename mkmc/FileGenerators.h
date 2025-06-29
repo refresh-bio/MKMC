@@ -1,6 +1,6 @@
 #pragma once
 
-//#include "lib/refresh/conversions/libs/conversions.h" - has to be included by kmcdb
+//#include "refresh/conversions/libs/conversions.h" - has to be included by kmcdb
 #include <cstdint>
 #include <fstream>
 #include <vector>
