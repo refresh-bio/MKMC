@@ -116,7 +116,7 @@ public:
 	Merger(const Params& params) :
 		params(params), tasksPool(tasksData)
 	{
-		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2 || params.statisticsParams.learnDeseq2)
 			normalizationLearning.register_method(StatisticsParams::NormalizationMethod::deseq2);
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::frequency_count);
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
@@ -335,13 +335,13 @@ void Merger<SIZE>::serializeNormalizationAndSave()
 
 	std::vector<uint8_t> deseq2NormalizationData, frequencyNormalizationData, quantileNormalizationData;
 
-	if (params.statisticsParams.normalizationMethod == NormalizationMethod::deseq2)
+	if (params.statisticsParams.normalizationMethod == NormalizationMethod::deseq2 || params.statisticsParams.learnDeseq2)
 		normalizationLearning.serialize(NormalizationMethod::deseq2, deseq2NormalizationData);
 	normalizationLearning.serialize(NormalizationMethod::frequency_count, frequencyNormalizationData);
 	normalizationLearning.serialize(NormalizationMethod::quantile, quantileNormalizationData);
 
 	MatrixStatsWriter stats_writer(params.mkmcParams.normLearningBinFile);
-	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2 || params.statisticsParams.learnDeseq2)
 		stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::deseq2), deseq2NormalizationData);
 	stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::frequency_count), frequencyNormalizationData);
 	stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::quantile), quantileNormalizationData);
@@ -408,7 +408,6 @@ void Merger<SIZE>::mergeParallel()
 	if (params.mkmcParams.totCntGeneration)
 		StoreTotCnt(tot_cnts, sampleNames, params);
 
-	if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
 		serializeNormalizationAndSave();
 }
 
@@ -424,7 +423,7 @@ void Merger<SIZE>::operator()(std::vector<uint64_t>& tot_cnts)
 	while (tasksPool.getTask(taskData))
 	{
 		StatisticsParams::NormalizationLearning currentBinNormalizationLearning;
-		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2 || params.statisticsParams.learnDeseq2)
 			currentBinNormalizationLearning.register_method(StatisticsParams::NormalizationMethod::deseq2);
 		currentBinNormalizationLearning.register_method(StatisticsParams::NormalizationMethod::frequency_count);
 		currentBinNormalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);

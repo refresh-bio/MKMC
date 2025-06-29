@@ -266,8 +266,9 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	optionalGroup->add_flag_callback("-v", vCallback, "verbose mode, shows progress");
 
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
-	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
+	auto keep = debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
 	debugGroup->add_flag("--reuse-db", mkmcParams.reuseDBFiles, "reuse samples and filtering databases (if possible)");
+	debugGroup->add_flag("--learn-deseq", statisticsParams.learnDeseq2, "collect data for DESeq2 normalization (not necessary for -n deseq, but useful for further --reuse-db)")->needs(keep);
 
 	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 
@@ -385,6 +386,12 @@ bool checkAndPrintArgumentsWarnings(const Params& params)
 		result = true;
 	}
 
+	if (params.statisticsParams.learnDeseq2 && params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
+	{
+		std::cerr << "Warning: --learn-deseq is not necessary, when DESeq2 normalization is performed (-n deseq is set).\n";
+		result = true;
+	}
+
 	return result;
 }
 
@@ -432,7 +439,8 @@ bool verifyDBsReusability(const Params& params)
 		{
 			MatrixStatsReader statsReader(params.mkmcParams.normLearningBinFile);
 			std::vector<uint8_t> tmp;
-			// For DESeq2 there is possibility to supplement required statistics later, but here we verify reusability, thus data should be consistent.
+			// For DESeq2 there is possibility to supplement required learning data later, but here we verify reusability, thus data should be consistent (the more, --learn-deseq is available).
+			// For another methods the learning data should always be present, if file exists.
 			if (!statsReader.Get(StatisticsParams::getNormalizationMethodStreamName(params.statisticsParams.normalizationMethod), tmp))
 				return false;
 		}
