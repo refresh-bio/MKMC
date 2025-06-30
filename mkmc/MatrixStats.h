@@ -1,8 +1,9 @@
 #pragma once
 #include <string>
 
-#include "refresh/archive/lib/archive_output.h"
-#include "refresh/archive/lib/archive_input.h"
+//#include "refresh/archive/lib/archive_output.h" - has to be included by kmcdb
+//#include "refresh/archive/lib/archive_input.h" - has to be included by kmcdb
+#include "kmcdb/kmcdb.h"
 
 class MatrixStatsWriter
 {
