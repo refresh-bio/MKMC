@@ -1,4 +1,4 @@
-KMC_DIR_IN = ../kmc
+KMC_DIR_IN = ../3rd_party/kmc
 
 CC = g++
 CFLAGS = -Wall -I$(KMC_DIR_IN) \

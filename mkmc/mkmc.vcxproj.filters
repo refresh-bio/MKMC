@@ -24,7 +24,7 @@
     <ClCompile Include="parameters.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\kmc\kmc_dump\nc_utils.cpp" />
+    <ClCompile Include="..\3rd_party\kmc\kmc_dump\nc_utils.cpp" />
     <ClCompile Include="Finish.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

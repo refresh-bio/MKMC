@@ -1,12 +1,31 @@
 all: mkmc
 
+
 dummy := $(shell git submodule update --init --recursive)
 
-MKMC_MAIN_DIR = mkmc
-ZLIB_DIR = kmc/3rd_party/cloudflare
-KMC_DIR = kmc
 
-OUT_BIN_DIR=bin
+MKMC_MAIN_DIR = mkmc
+OUT_BIN_DIR = bin
+
+KMC_DIR = 3rd_party/kmc
+KMC_ZLIB_DIR = $(KMC_DIR)/3rd_party/cloudflare
+
+KMC_LIB_ZLIB = $(KMC_ZLIB_DIR)/libz.a
+LIB_KMC = $(KMC_DIR)/bin/libkmc_core.a
+
+KMC_LIB_NC_UTILS = $(KMC_DIR)/kmc_dump/nc_utils.o
+
+
+LIBS=-I$(MKMC_MAIN_DIR)/lib \
+     -I$(MKMC_MAIN_DIR)/lib/stats/include \
+     -I$(MKMC_MAIN_DIR)/lib/annoy/include \
+     -I$(MKMC_MAIN_DIR)/lib/hnswlib \
+     -I$(MKMC_MAIN_DIR)/lib/umappp/include \
+     -I$(MKMC_MAIN_DIR)/lib/CppIrlba/include \
+     -I$(MKMC_MAIN_DIR)/lib/CppKmeans/include \
+     -I$(MKMC_MAIN_DIR)/lib/aarand/include \
+     -I$(MKMC_MAIN_DIR)/lib/knncolle/include \
+     -I$(MKMC_MAIN_DIR)/lib/eigen
 
 
 ifdef MSVC     # Avoid the MingW/Cygwin sections
@@ -68,57 +87,53 @@ else
 	endif
 endif
 
-
-CFLAGS	= -fPIC -Wall -O3 $(PLATFORM_SPECIFIC_FLAGS) $(CPU_FLAGS) -std=c++17 -pthread -I $(ZLIB_DIR) -I $(KMC_DIR) -fpermissive
-CLINK	= -lm -lpthread
-
-release: CLINK = -lm -std=c++17 $(STATIC_LFLAGS)
-release: CLINK = -lm -std=c++17 $(STATIC_LFLAGS)
-
-release: CFLAGS	= -fPIC -Wall -O3 -DNDEBUG $(PLATFORM_SPECIFIC_FLAGS) $(CPU_FLAGS) -std=c++17 -pthread -I $(ZLIB_DIR) -I $(KMC_DIR) -fpermissive
-release: all
-
-debug: CFLAGS	= -fPIC -Wall -O0 -g $(PLATFORM_SPECIFIC_FLAGS) $(CPU_FLAGS) -std=c++17 -pthread -I $(ZLIB_DIR) -I $(KMC_DIR) -fpermissive
-debug: all
-
+CLINK_FABI_VERSION = 
 ifeq ($(UNAME_S),Linux)
-	CLINK+=-fabi-version=6
+	CLINK_FABI_VERSION = -fabi-version=6
 endif
 
-LIB_ZLIB=$(ZLIB_DIR)/libz.a
-LIB_KMC=$(KMC_DIR)/bin/libkmc_core.a
 
-# default install location (binary placed in the /bin folder)
-prefix      = /usr/local
+CFLAGS = -fPIC -Wall -O3 $(PLATFORM_SPECIFIC_FLAGS) $(CPU_FLAGS) -std=c++20 -pthread $(LIBS) -I $(KMC_DIR) -fpermissive
+CLINK = -lm -lpthread
 
-# optional install location
-exec_prefix = $(prefix)
+release: CFLAGS += -DNDEBUG
+release: CLINK += $(STATIC_LFLAGS)
+release: all
 
-$(LIB_ZLIB):
-	cd $(ZLIB_DIR); ./configure; make libz.a
+debug: CFLAGS = -fPIC -Wall -O0 -g $(PLATFORM_SPECIFIC_FLAGS) $(CPU_FLAGS) -std=c++20 -pthread $(LIBS) -I $(KMC_DIR) -fpermissive
+debug: all
+
+CLINK += $(CLINK_FABI_VERSION)
+
+
+MKMC_SRCS = $(wildcard $(MKMC_MAIN_DIR)/*.cpp)	
+MKMC_OBJS = $(MKMC_SRCS:.cpp=.o)
+
+$(MKMC_OBJS): %.o : %.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(LIB_KMC):
 	cd $(KMC_DIR); $(MAKE) bin/libkmc_core.a
 
-%.o: %.cpp
+$(KMC_LIB_NC_UTILS): %.o : %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
-mkmc: $(OUT_BIN_DIR)/mkmc
+$(KMC_LIB_ZLIB):
+	cd $(KMC_ZLIB_DIR); ./configure; $(MAKE) libz.a
 
-$(OUT_BIN_DIR)/mkmc: $(LIB_ZLIB)
-	mkdir -p $(OUT_BIN_DIR)
-	cd $(KMC_DIR); $(MAKE) kmc kmc_dump
-	cd $(MKMC_MAIN_DIR) && $(MAKE) CC=$(CC) CLINK="$(CLINK)"
-	-cp $(MKMC_MAIN_DIR)/mkmc $(OUT_BIN_DIR)
-
+mkmc: $(MKMC_OBJS) $(LIB_KMC) $(KMC_LIB_NC_UTILS) $(KMC_LIB_ZLIB)
+	-mkdir -p $(OUT_BIN_DIR)
+	$(CC) $(CLINK) $(MKMC_OBJS) $(LIB_KMC) $(KMC_LIB_NC_UTILS) $(KMC_LIB_ZLIB) -o $(OUT_BIN_DIR)/$@
 
 install: all
 	install bin/* /usr/local/bin
 
 uninstall:
-	-rm /usr/local/bin/mkmc
+	-rm -f /usr/local/bin/mkmc
 
 clean:
 	-rm -rf $(OUT_BIN_DIR)
-	cd $(MKMC_MAIN_DIR) && $(MAKE) clean
+	-rm -rf $(KMC_LIB_NC_UTILS)
+	-rm -rf $(MKMC_OBJS)
+	cd $(KMC_ZLIB_DIR) && $(MAKE) clean
 	cd $(KMC_DIR) && $(MAKE) clean

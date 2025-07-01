@@ -9,7 +9,7 @@
 #include "TextFileWritingUtilities.h"
 #include "kmcdb/kmcdb.h"
 #include "KeepNLargests.h"
-#include "lib/refresh/statistics/lib/statistics_umap.h"
+#include "refresh/statistics/lib/statistics_umap.h"
 
 
 struct StatisticsToGeneration
