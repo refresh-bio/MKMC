@@ -4,7 +4,6 @@
 #include <limits>
 #include <map>
 #include <functional>
-#include <filesystem>
 #include "kmc_core/kmc_runner.h"
 #include "parameters.h"
 #include "KMCRunner.h"
@@ -401,9 +400,6 @@ bool verifyDBsReusability(const Params& params)
 {
 	if (params.filterParams.filterKmersSequences)
 	{
-		if (!std::filesystem::exists(params.filterParams.kmersSequencesToFilterOutDB)) // workaround for a problem with MetadataReader constructor exceptions
-			return false;
-
 		try
 		{
 			kmcdb::MetadataReader sequencesToFilterMetadataReader(params.filterParams.kmersSequencesToFilterOutDB, false);
@@ -415,9 +411,6 @@ bool verifyDBsReusability(const Params& params)
 			return false;
 		}
 	}
-
-	if (!std::filesystem::exists(params.mkmcParams.outputMatrixBinFile)) // workaround
-		return false;
 
 	try
 	{
