@@ -22,10 +22,8 @@ void Finish::finishProcessing()
 
 		// currently MKMC runs in bulk mode, thus user rather won't need binary files
 		std::filesystem::remove(params.mkmcParams.outputMatrixBinFile);
-		if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
-			std::filesystem::remove(params.mkmcParams.normLearningBinFile);
-		if (params.statisticsParams.normalizationLearningWasSupplemented)
-			std::filesystem::remove(params.mkmcParams.normLearningBinFileSupplemented); // will be useful after modularization
+		std::filesystem::remove(params.mkmcParams.normLearningBinFile); // sometimes not necessary
+		std::filesystem::remove(params.mkmcParams.normLearningBinFileSupplemented); // sometimes not necessary; will be useful after modularization
 	}
 	if (params.mutableParams.tmpDirCreated)
 	{
