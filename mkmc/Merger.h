@@ -408,7 +408,7 @@ void Merger<SIZE>::mergeParallel()
 	if (params.mkmcParams.totCntGeneration)
 		StoreTotCnt(tot_cnts, sampleNames, params);
 
-		serializeNormalizationAndSave();
+	serializeNormalizationAndSave();
 }
 
 

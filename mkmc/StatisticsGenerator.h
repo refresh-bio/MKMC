@@ -1,6 +1,5 @@
 #pragma once
 
-#include <fstream>
 #include <vector>
 #include <string>
 #include <memory>
@@ -702,6 +701,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 template<unsigned SIZE>
 void StatisticsGenerator::safeCorrectedPValuesEntries()
 {
+	assert(statisticsToGeneration.differentialAnalysis); // Currently, p-values are generated for DA statistics only
 	const std::size_t num_samples = params.mkmcParams.samples.size();
 
 	std::vector<cnt_value_type> inMatrixEntry;
@@ -730,39 +730,36 @@ void StatisticsGenerator::safeCorrectedPValuesEntries()
 
 			size_t outPvaluesIdx = 0;
 			size_t outAdditionalValuesIdx = 0;
-			if (statisticsToGeneration.differentialAnalysis)
+			if (statisticsToGeneration.tTest)
 			{
-				if (statisticsToGeneration.tTest)
-				{
-					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = pValuesCorrected[outPvaluesIdx][outPValuesToCorrectIdx];
-					++outPvaluesIdx;
+				outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = pValuesCorrected[outPvaluesIdx][outPValuesToCorrectIdx];
+				++outPvaluesIdx;
 
-					// additional values
-					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
-					++outAdditionalValuesIdx;
-					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
-					++outAdditionalValuesIdx;
-				}
-				if (statisticsToGeneration.wrs)
-				{
-					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = pValuesCorrected[outPvaluesIdx][outPValuesToCorrectIdx];
-					++outPvaluesIdx;
+				// additional values
+				outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
+				++outAdditionalValuesIdx;
+				outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
+				++outAdditionalValuesIdx;
+			}
+			if (statisticsToGeneration.wrs)
+			{
+				outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = pValuesCorrected[outPvaluesIdx][outPValuesToCorrectIdx];
+				++outPvaluesIdx;
 
-					// additional values
-					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
-					++outAdditionalValuesIdx;
-					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
-					++outAdditionalValuesIdx;
-				}
-				if (statisticsToGeneration.anova)
-				{
-					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = pValuesCorrected[outPvaluesIdx][outPValuesToCorrectIdx];
-					++outPvaluesIdx;
+				// additional values
+				outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
+				++outAdditionalValuesIdx;
+				outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
+				++outAdditionalValuesIdx;
+			}
+			if (statisticsToGeneration.anova)
+			{
+				outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = pValuesCorrected[outPvaluesIdx][outPValuesToCorrectIdx];
+				++outPvaluesIdx;
 
-					// additional value
-					outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
-					++outAdditionalValuesIdx;
-				}
+				// additional value
+				outStatsEntry[outPvaluesIdx + outAdditionalValuesIdx] = additionalValuesOfCorrectedStats[outAdditionalValuesIdx][outPValuesToCorrectIdx];
+				++outAdditionalValuesIdx;
 			}
 			assert(outPvaluesIdx + outAdditionalValuesIdx == statisticsToGeneration.nStatisticsWithPValues + statisticsToGeneration.nAdditionalValuesOfCorrectedStats);
 
