@@ -128,6 +128,7 @@ namespace refresh::normalization
 			for (auto& x : counts)
 				serialization::load_little_endian(x, data, pos);
 
+			// mult_factor_fc can be NAN
 			for (size_t i = 0; i < no_series; ++i)
 				mult_factor_fc[i] = mult_factor[i] / counts[i];
 

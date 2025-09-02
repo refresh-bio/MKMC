@@ -6,6 +6,8 @@
 #include <cinttypes>
 #include <cmath>
 
+#include "statistics/fpclassify.h"
+
 #define STATS_ENABLE_STDVEC_WRAPPERS
 #include "stats.hpp"
 
@@ -19,6 +21,31 @@ namespace refresh
 		{
 			double statistic;
 			double p_value;
+
+			bool isnan() const
+			{
+				return std::isnan(statistic) || std::isnan(p_value);
+			}
+
+			bool isinf() const
+			{
+				return std::isinf(statistic) || std::isinf(p_value);
+			}
+
+			bool isfinite() const
+			{
+				return std::isfinite(statistic) && std::isfinite(p_value);
+			}
+
+			bool isnormal() const
+			{
+				return std::isnormal(statistic) && std::isnormal(p_value);
+			}
+
+			bool operator==(const anova_t& other) const
+			{
+				return statistic == other.statistic && p_value == other.p_value;
+			}
 		};
 
 	private:
@@ -138,7 +165,11 @@ namespace refresh
 			anova_t ret{ 0, 0 };
 
 			if (n == 0 || no_classes == 0)
+			{
+				ret.statistic = std::numeric_limits<double>::quiet_NaN();
+				ret.p_value = std::numeric_limits<double>::quiet_NaN();
 				return ret;
+			}
 
 			anova_n_items.resize(no_classes);
 			anova_sums.resize(no_classes);
@@ -166,11 +197,27 @@ namespace refresh
 			double ssbg = 0.0;
 
 			for (size_t i = 0; i < no_classes; ++i)
+			{
+				if (anova_n_items[i] == 0)
+				{
+					ret.statistic = std::numeric_limits<double>::quiet_NaN();
+					ret.p_value = std::numeric_limits<double>::quiet_NaN();
+					return ret;
+				}
+					
 				ssbg += anova_n_items[i] * stats_details::pow2(anova_sums[i] / anova_n_items[i] - X_avg);
+			}
 
 			double sswg = sstot - ssbg;
 			double dfbg = (double)no_classes - 1.0;
 			double dfwg = (double)n - (double)no_classes;
+
+			if (dfbg == 0 || dfwg == 0 || sswg == 0)
+			{
+				ret.statistic = std::numeric_limits<double>::quiet_NaN();
+				ret.p_value = std::numeric_limits<double>::quiet_NaN();
+				return ret;
+			}
 
 			double msb = ssbg / dfbg;
 			double msw = sswg / dfwg;

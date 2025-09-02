@@ -118,6 +118,31 @@ namespace refresh
 			double statistic;
 			double p_value;
 			double df;
+
+			bool isfinite() const
+			{
+				return std::isfinite(statistic) && std::isfinite(p_value) && std::isfinite(df);
+			}
+
+			bool isnormal() const
+			{
+				return std::isnormal(statistic) && std::isnormal(p_value) && std::isnormal(df);
+			}
+
+			bool operator==(const t_test_t& other) const
+			{
+				return statistic == other.statistic && p_value == other.p_value && df == other.df;
+			}
+
+			bool isinf() const
+			{
+				return std::isinf(statistic) || std::isinf(p_value) || std::isinf(df);
+			}
+
+			bool is_nan() const
+			{
+				return std::isnan(statistic) || std::isnan(p_value) || std::isnan(df);
+			}
 		};
 
 		struct mann_whitney_t
@@ -125,6 +150,31 @@ namespace refresh
 			double statistic_U1;
 			double statistic_U2;
 			double p_value;
+
+			bool isfinite() const
+			{
+				return std::isfinite(statistic_U1) && std::isfinite(statistic_U2) && std::isfinite(p_value);
+			}
+
+			bool isnormal() const
+			{
+				return std::isnormal(statistic_U1) && std::isnormal(statistic_U2) && std::isnormal(p_value);
+			}
+
+			bool operator==(const mann_whitney_t& other) const
+			{
+				return statistic_U1 == other.statistic_U1 && statistic_U2 == other.statistic_U2 && p_value == other.p_value;
+			}
+
+			bool isinf() const
+			{
+				return std::isinf(statistic_U1) || std::isinf(statistic_U2) || std::isinf(p_value);
+			}
+
+			bool is_nan() const
+			{
+				return std::isnan(statistic_U1) || std::isnan(statistic_U2) || std::isnan(p_value);
+			}
 		};
 
 	private:
@@ -155,20 +205,62 @@ namespace refresh
 
 			if (equal_var)
 			{
+				if (n < 3 || mean_sd[0].n < 1 || mean_sd[1].n < 1)
+				{
+					ret.statistic = std::numeric_limits<double>::quiet_NaN();
+					ret.p_value = std::numeric_limits<double>::quiet_NaN();
+					ret.df = std::numeric_limits<double>::quiet_NaN();
+					return ret;
+				}
+
 				double sp = sqrt(((mean_sd[0].n - 1) * stats_details::pow2(mean_sd[0].sd) + (mean_sd[1].n - 1) * stats_details::pow2(mean_sd[1].sd)) / (double) (n - 2));
+
+				if (sp == 0)
+				{
+					ret.statistic = std::numeric_limits<double>::quiet_NaN();
+					ret.p_value = std::numeric_limits<double>::quiet_NaN();
+					ret.df = std::numeric_limits<double>::quiet_NaN();
+					return ret;
+				}
 
 				ret.statistic = (mean_sd[0].avg - mean_sd[1].avg) / (sp * sqrt(1.0 / mean_sd[0].n + 1.0 / mean_sd[1].n));
 				ret.df = (double) n - 2.0;
 			}
 			else
 			{
+				if (mean_sd[0].n < 2 || mean_sd[1].n < 2)
+				{
+					ret.statistic = std::numeric_limits<double>::quiet_NaN();
+					ret.p_value = std::numeric_limits<double>::quiet_NaN();
+					ret.df = std::numeric_limits<double>::quiet_NaN();
+					return ret;
+				}
+
 				double s_delta = sqrt(stats_details::pow2(mean_sd[0].sd) / (double) mean_sd[0].n + stats_details::pow2(mean_sd[1].sd) / (double)mean_sd[1].n);
+
+				if (s_delta == 0)
+				{
+					ret.statistic = std::numeric_limits<double>::quiet_NaN();
+					ret.p_value = std::numeric_limits<double>::quiet_NaN();
+					ret.df = std::numeric_limits<double>::quiet_NaN();
+					return ret;
+				}
+
 				ret.statistic = (mean_sd[0].avg - mean_sd[1].avg) / s_delta;
 
 				double a0 = stats_details::pow2(mean_sd[0].sd) / mean_sd[0].n;
 				double a1 = stats_details::pow2(mean_sd[1].sd) / mean_sd[1].n;
 
-				ret.df = stats_details::pow2(a0 + a1) / (stats_details::pow2(a0) / (mean_sd[0].n - 1) + stats_details::pow2(a1) / (mean_sd[1].n - 1));
+				double denom = (stats_details::pow2(a0) / (mean_sd[0].n - 1) + stats_details::pow2(a1) / (mean_sd[1].n - 1));
+				if (denom == 0)
+				{
+					ret.statistic = std::numeric_limits<double>::quiet_NaN();
+					ret.p_value = std::numeric_limits<double>::quiet_NaN();
+					ret.df = std::numeric_limits<double>::quiet_NaN();
+					return ret;
+				}
+
+				ret.df = stats_details::pow2(a0 + a1) / denom;
 			}
 
 			ret.p_value = std::clamp<double>(2.0 * (1.0 - stats::pt(fabs(ret.statistic), ret.df, false)), 0, 1);
