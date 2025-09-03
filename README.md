@@ -47,10 +47,10 @@ Options:
 [Option Group: differential k-mers analysis]
   Options:
  - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` ... Needs: `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need `-n`; counts for T-Test are increased by 1 and logarithmized
- - `--pval_corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files
- - `--max_corrected_pval FLOAT:FLOAT in [0 - 1] [0.05]` Needs: `--pval_corr` - statistical significance for --pval_corr parameter
+ - `--pval_corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files; useful for ANOVA, T-Test, Wilcoxon-rank sum
+ - `--max_corrected_pval FLOAT:FLOAT in [0 - 1] [0.05]` Needs: `--pval_corr` - statistical significance for `--pval_corr` parameter
  - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a sequence of natural numbers or text labels, one in each line)
- - `--dids-mode ENUM:value in {quadratic,sqrt,tanh} [sqrt]` - DIDS mode (x*x, square root, 1 + tanh(3x - 3)
+ - `--dids-mode ENUM:value in {quadratic,sqrt,tanh} [sqrt]` - DIDS mode (x*x, square root, 1 + tanh(3x - 3))
 
 [Option Group: cross-validation]
   Options:
@@ -61,7 +61,7 @@ Options:
 [Option Group: other statistical parameters]
   Options:
  - `--entropy` - generate k-mers counts entropy; counts are increased by 1
- - `--n_top UINT [10000]` - select a maximal number of top k-mers by statistics with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs --cor or --diff
+ - `--n_top UINT [10000]` - select a maximal number of top k-mers by statistics with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs `--cor` or `--diff`
 
 [Option Group: dimentionality reduction]
   Options:
