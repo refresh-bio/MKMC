@@ -480,7 +480,6 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 	DimensionalityReduction& dimensionalityReduction)
 {
 	assert(statisticsToGeneration.differentialAnalysis);
-	assert(params.statisticsParams.generateNormalization);
 
 	const std::size_t num_samples = params.mkmcParams.samples.size();
 
@@ -525,15 +524,19 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 		uint64_t outPValuesToCorrectIdx = binsOffsets[taskData.binId];
 		const uint64_t outPValuesToCorrectIdxEnd = binsOffsets[taskData.binId + 1];
 
-		std::unique_ptr<MatrixOutputBuffer<out_kmcdb_value_type>> normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, kmer_len, num_samples);
+		std::unique_ptr<MatrixOutputBuffer<out_kmcdb_value_type>> normOutputBuffer;
 
-		assert(params.statisticsParams.generateNormalization);
 		refresh::normalization_work<cnt_value_type, out_kmcdb_value_type> normalization;
-		normalization.register_method(params.statisticsParams.normalizationMethod);
-		normalization.set_no_series(params.mkmcParams.samples.size());
-		normalization.deserialize(params.statisticsParams.normalizationMethod, normalizationData);
+		if (params.statisticsParams.generateNormalization)
+		{
+			normalization.register_method(params.statisticsParams.normalizationMethod);
+			normalization.set_no_series(params.mkmcParams.samples.size());
+			normalization.deserialize(params.statisticsParams.normalizationMethod, normalizationData);
 
-		normalization.initialize();
+			normalization.initialize();
+
+			normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, kmer_len, num_samples);
+		}
 
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
 
@@ -545,10 +548,13 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 		{
 			kmer.to_string(kmer_len, kmerSequence.data());
 
-			normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormEntry);
+			if (statisticsToGeneration.normalize)
+			{
+				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormEntry);
 
-			dimensionalityReduction.add(outPValuesToCorrectIdx, outNormEntry);
-			normOutputBuffer->StoreKmer(kmerSequence, outNormEntry);
+				dimensionalityReduction.add(outPValuesToCorrectIdx, outNormEntry);
+				normOutputBuffer->StoreKmer(kmerSequence, outNormEntry);
+			}
 
 			size_t outStatsIdx = 0;
 			size_t outPValuesToCorrectAlg = 0;
