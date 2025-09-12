@@ -44,52 +44,67 @@ void DimensionalityReduction::store(const std::string& fileName, const std::vect
 
 void DimensionalityReduction::runAndStoreUMAP()
 {
+	bool success = true;
 	try
 	{
 		umap->run(params.statisticsParams.nDimensionReduction);
 	}
 	catch (const std::length_error&)
 	{
-		std::cerr << "Error: Cannot run UMAP. Try to tight filtering criteria" << std::endl;
+		std::cerr << "Error: Cannot run UMAP. Try to tight filtering criteria\n";
+		success = false;
 	}
 
-	const auto& umap_res = umap->result();
-	assert(umap_res.front().size() == params.statisticsParams.nDimensionReduction);
+	if (success)
+	{
+		const auto& umap_res = umap->result();
+		assert(umap_res.front().size() == params.statisticsParams.nDimensionReduction);
 
-	store(params.mkmcParams.outputFileUMAP, "UMAP", umap_res);
+		store(params.mkmcParams.outputFileUMAP, "UMAP", umap_res);
+	}
+	else
+		std::cerr << "Info: Despite the UMAP failure, MKMC will continue, but no UMAP results will be created\n" << std::endl;
 }
 
 
 void DimensionalityReduction::runAndStorePCA()
 {
+	bool success = true;
 	try
 	{
 		pca->run(params.statisticsParams.nDimensionReduction, params.statisticsParams.pca_mod);
 	}
 	catch (const std::length_error&)
 	{
-		std::cerr << "Error: Cannot run PCA. Try to tight filtering criteria" << std::endl;
+		std::cerr << "Error: Cannot run PCA. Try to tight filtering criteria\n";
+		success = false;
 	}
 	catch (...)
 	{
-		std::cerr << "Error: Unexpected error with PCA running" << std::endl;
+		std::cerr << "Error: Unexpected error with PCA running\n";
+		success = false;
 	}
 
-	const auto& pca_res = pca->result();
-	assert(pca_res.front().size() == params.statisticsParams.nDimensionReduction);
-
-	store(params.mkmcParams.outputFilePCA, "PCA", pca_res);
-
-	assert(pca->get_explained_variance().size() == pca->get_explained_variance_ratio().size());
-	std::vector<std::vector<out_kmcdb_value_type>> variances;
-	std::vector<std::string> header;
-	for (size_t i = 0; i < samplesNames.size(); ++i)
+	if (success)
 	{
-		header.push_back("D" + std::to_string(i));
-		variances.push_back({ pca->get_explained_variance()[i], pca->get_explained_variance_ratio()[i] });
+		const auto& pca_res = pca->result();
+		assert(pca_res.front().size() == params.statisticsParams.nDimensionReduction);
+
+		store(params.mkmcParams.outputFilePCA, "PCA", pca_res);
+
+		assert(pca->get_explained_variance().size() == pca->get_explained_variance_ratio().size());
+		std::vector<std::vector<out_kmcdb_value_type>> variances;
+		std::vector<std::string> header;
+		for (size_t i = 0; i < samplesNames.size(); ++i)
+		{
+			header.push_back("D" + std::to_string(i));
+			variances.push_back({ pca->get_explained_variance()[i], pca->get_explained_variance_ratio()[i] });
+		}
+
+		store(params.mkmcParams.outputFilePCAVariance, std::vector<std::string>{ "variance", "variance_ratio"}, header, variances);
 	}
-	
-	store(params.mkmcParams.outputFilePCAVariance, std::vector<std::string>{ "variance", "variance_ratio"}, header, variances);
+	else
+		std::cerr << "Info: Despite the PCA failure, MKMC will continue, but no PCA results will be created\n" << std::endl;
 }
 
 
