@@ -40,7 +40,8 @@ Options:
  
 [Option Group: correlation and normalization]
   Options:
- - `-n ENUM:value in {deseq,freq,q}` - generate normalized counts (DESeq2/frequency count/quantile normalization)
+ - `-n ENUM:value in {deseq,freq,q}` - normalize counts (DESeq2/frequency count/quantile normalization) before use
+ - `--save_n` - save normalized matrix to file
  - `--cor ENUM:value in {kendall,pearson,spearman}` ... Needs: `-n` `-p` - compute correlation cofficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a sequence of integers, one in each line)
  

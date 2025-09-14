@@ -300,7 +300,7 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 		std::unique_ptr<MatrixOutputBuffer<out_kmcdb_value_type>> normOutputBuffer;
 
 		refresh::normalization_work<cnt_value_type, out_kmcdb_value_type> normalization;
-		if (params.statisticsParams.generateNormalization)
+		if (statisticsToGeneration.normalize)
 		{
 			normalization.register_method(params.statisticsParams.normalizationMethod);
 			normalization.set_no_series(params.mkmcParams.samples.size());
@@ -308,7 +308,8 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 
 			normalization.initialize();
 
-			normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, kmer_len, num_samples);
+			if (statisticsToGeneration.saveNormalization)
+				normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, kmer_len, num_samples);
 		}
 
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
@@ -326,7 +327,9 @@ void StatisticsGenerator::processEntries(KeepNLargestCollectionGlobal<SIZE, out_
 				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormEntry);
 
 				dimensionalityReduction.add(kmer_idx, outNormEntry);
-				normOutputBuffer->StoreKmer(kmerSequence, outNormEntry);
+
+				if (statisticsToGeneration.saveNormalization)
+					normOutputBuffer->StoreKmer(kmerSequence, outNormEntry);
 			}
 
 			size_t outStatsEntryIdx = 0;
@@ -527,7 +530,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 		std::unique_ptr<MatrixOutputBuffer<out_kmcdb_value_type>> normOutputBuffer;
 
 		refresh::normalization_work<cnt_value_type, out_kmcdb_value_type> normalization;
-		if (params.statisticsParams.generateNormalization)
+		if (statisticsToGeneration.normalize)
 		{
 			normalization.register_method(params.statisticsParams.normalizationMethod);
 			normalization.set_no_series(params.mkmcParams.samples.size());
@@ -535,7 +538,8 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 
 			normalization.initialize();
 
-			normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, kmer_len, num_samples);
+			if (statisticsToGeneration.saveNormalization)
+				normOutputBuffer = std::make_unique<MatrixOutputBuffer<out_kmcdb_value_type>>(*normWriter, kmer_len, num_samples);
 		}
 
 		ProgressBarUpdater progress_bar_updater(*progress_bar, (std::max)(1ull, progress_bar->GetTotal() / 100ull));
@@ -553,7 +557,9 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 				normalization.norm_entry(params.statisticsParams.normalizationMethod, inMatrixEntry, outNormEntry);
 
 				dimensionalityReduction.add(outPValuesToCorrectIdx, outNormEntry);
-				normOutputBuffer->StoreKmer(kmerSequence, outNormEntry);
+
+				if (statisticsToGeneration.saveNormalization)
+					normOutputBuffer->StoreKmer(kmerSequence, outNormEntry);
 			}
 
 			size_t outStatsIdx = 0;

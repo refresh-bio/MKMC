@@ -99,7 +99,9 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 		statisticsParams.normalizationMethod = normalizationMethod;
 		statisticsParams.generateNormalization = true;
 	};
-	n = correlationGroup->add_option_function("-n", nCallback, "generate normalized counts (DESeq2/frequency count/quantile normalization)")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
+	n = correlationGroup->add_option_function("-n", nCallback, "normalize counts (DESeq2/frequency count/quantile normalization) before use")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
+
+	correlationGroup->add_flag("--save_n", statisticsParams.saveNormalization, "save normalized matrix to file")->needs(n);
 
 	std::map<std::string, StatisticsParams::CorrelationMethod> correlationValuesMap{ {"pearson", StatisticsParams::CorrelationMethod::Pearson }, { "spearman", StatisticsParams::CorrelationMethod::Spearman }, {"kendall", StatisticsParams::CorrelationMethod::Kendall } };
 	cor = correlationGroup->add_option("--cor", statisticsParams.correlationMethods, "compute correlation cofficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));

@@ -15,6 +15,7 @@
 struct StatisticsToGeneration
 {
 	bool normalize = false;
+	bool saveNormalization = false;
 
 	bool pearson = false;
 	bool spearman = false;

@@ -142,6 +142,7 @@ StatisticsGenerator::StatisticsGenerator(Params& params) :
 	};
 
 	statisticsToGeneration.normalize = params.statisticsParams.generateNormalization;
+	statisticsToGeneration.saveNormalization = params.statisticsParams.saveNormalization;
 
 	statisticsToGeneration.pearson = is_correlation_method(StatisticsParams::CorrelationMethod::Pearson);
 	statisticsToGeneration.spearman = is_correlation_method(StatisticsParams::CorrelationMethod::Spearman);
@@ -223,7 +224,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 	std::vector<std::string> samples_names;
 	matrixReader->GetSampleNames(samples_names);
 	assert(!samples_names.empty());
-	if (statisticsToGeneration.normalize)
+	if (statisticsToGeneration.saveNormalization)
 	{
 		normWriter = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileNorm, params.mkmcParams.nThreads > 1);
 		normWriter->StoreHeader(samples_names);

@@ -148,6 +148,7 @@ struct StatisticsParams
 
 	bool generateNormalization = false;
 	NormalizationMethod normalizationMethod = NormalizationMethod::frequency_count; // initialization due to compiler warnings
+	bool saveNormalization = false;
 	bool learnDeseq2 = false;
 	bool normalizationLearningWasSupplemented = false;
 
