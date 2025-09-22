@@ -255,7 +255,7 @@ struct Params
 
 	Params();
 	void generateTempAndOutputFilesNames();
-	bool readAdditionalParamsFromFiles();
+	bool readAdditionalDataFromFiles();
 	bool adjustKMCPerformanceParams();
 	bool adjustAnotherParams();
 	bool readPhenotypes();

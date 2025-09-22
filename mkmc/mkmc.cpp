@@ -115,7 +115,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	CLI::Option_group* diffGroup = app.add_option_group("differential k-mers analysis");
 	typedef StatisticsParams::DifferentialAnalysisMethod DAMethod;
 	std::map<std::string, DAMethod> differentialAnalysisValuesMap{ {"ttest", DAMethod::TTest }, {"snr", DAMethod::SNR }, {"wrs", DAMethod::WilcoxonRankSum }, {"dids", DAMethod::DIDS }, {"anova", DAMethod::ANOVA } };
-	differentialAnalysis = diffGroup->add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need -n; counts for T-Test are increased by 1 and logarithmized")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
+	differentialAnalysis = diffGroup->add_option("--diff", statisticsParams.classificationMethods, "perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need -n; counts for T-Test are always unnormalized, increased by 1, and logarithmized")->transform(CLI::CheckedTransformer(differentialAnalysisValuesMap));
 
 	typedef StatisticsParams::DifferentialAnalysisCorrectionMethod CorrectionMethod;
 	std::map<std::string, StatisticsParams::DifferentialAnalysisCorrectionMethod> differentialAnalysisCorrectionValuesMap{ { "b", CorrectionMethod::Bonferroni }, { "hb", CorrectionMethod::HolmBonferroni }, { "bh", CorrectionMethod::BenjaminiHochberg }, { "by", CorrectionMethod::BenjaminiYekutieli } };
@@ -353,7 +353,7 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 
 
 
-bool checkAndPrintParamsFromFilesErrors(const Params& params)
+bool checkAndPrintDataFromFilesVsParamsErrors(const Params& params)
 {
 	if ((params.statisticsParams.runPCA || params.statisticsParams.runUMAP) &&
 		(params.statisticsParams.nDimensionReduction < 1 || params.statisticsParams.nDimensionReduction >= params.mkmcParams.samples.size()))
@@ -493,10 +493,10 @@ int main(int argc, char** argv)
 	if (params.mkmcParams.verbosity_level > 0)
 		Logger::Inst().Enable();
 
-	if (!params.readAdditionalParamsFromFiles())
+	if (!params.readAdditionalDataFromFiles())
 		std::exit(1);
 
-	const bool CLIAndParamsFromFilesErrors = checkAndPrintParamsFromFilesErrors(params);
+	const bool CLIAndParamsFromFilesErrors = checkAndPrintDataFromFilesVsParamsErrors(params);
 	if (CLIAndParamsFromFilesErrors)
 		std::exit(1);
 
@@ -556,8 +556,11 @@ int main(int argc, char** argv)
 			DispatchKmerSize(params.stage1Params.GetKmerLen(), dump_runner);
 		}
 
+		bool computeStatistics = false;
 		if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
 		{
+			computeStatistics = true;
+
 			std::vector<std::string> tasks;
 			if (params.statisticsParams.generateNormalization)
 				tasks.push_back("normalizing");
@@ -598,12 +601,12 @@ int main(int argc, char** argv)
 			std::cerr << "\tEnd:   " << merger_timer.getStopTime() << "\n";
 		}
 
-		if (params.statisticsParams.generateNormalization)
+		if (computeStatistics)
 		{
 			if (params.statisticsParams.normalizationLearningWasSupplemented) // true in a case StatisticsGenerator detected, than DESeq2 learning data is missing
-				std::cerr << "DESeq2 learning, normalizing and computing correlation:\n";
+				std::cerr << "DESeq2 learning, normalizing and computing statistics:\n";
 			else
-				std::cerr << "Normalizing and computing correlation:\n";
+				std::cerr << "Normalizing and computing statistics:\n";
 			std::cerr << "\tStart: " << statistics_timer.getStartTime() << "\n";
 			std::cerr << "\tEnd:   " << statistics_timer.getStopTime() << "\n";
 		}

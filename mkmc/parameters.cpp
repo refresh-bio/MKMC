@@ -54,7 +54,7 @@ Params::Params() :
 
 
 
-bool Params::readAdditionalParamsFromFiles()
+bool Params::readAdditionalDataFromFiles()
 {
 	SamplesFileReader tasksFiller(mkmcParams);
 	return tasksFiller.readSamples(mkmcParams.samples);
