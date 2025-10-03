@@ -277,6 +277,7 @@ inline void Merger<SIZE>::fillTaskData()
 	samplesReaders.reserve(params.mkmcParams.kmcOutputFiles.size());
 
 	uint64_t totKmersAllSamples = 0;
+	std::vector<size_t> emptySamplesIndices;
 
 	for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i) // iterate on samples
 	{
@@ -294,6 +295,9 @@ inline void Merger<SIZE>::fillTaskData()
 			for (uint32_t bin_id = 0; bin_id < metadata_reader.GetConfig().num_bins; ++bin_id)
 				totKmers += reader.GetBin(bin_id)->GetBinMetadata().total_kmers;
 
+			if (totKmers == 0)
+				emptySamplesIndices.push_back(i);
+
 			totKmersAllSamples += totKmers;
 			if (totKmers > biggestSampleKmersCount)
 			{
@@ -310,9 +314,22 @@ inline void Merger<SIZE>::fillTaskData()
 		}
 	}
 
+	if (totKmersAllSamples == 0)
+	{
+		std::cerr << "Error: No k-mers present in samples; input files are empty or --ci and --cx parameters are too strict." << std::endl;
+		exit(1);
+	}
+	else
+	{
+		for (auto i : emptySamplesIndices)
+			std::cerr << "Warning: Sample " << params.mkmcParams.samples[i].name << " has no k-mers; its input files are empty or --ci and --cx parameters are too strict." << std::endl;
+		if (!emptySamplesIndices.empty())
+			std::cerr << std::endl;
+	}
+
 	if (!inputIsConsistent())
 	{
-		std::cerr << "Error: KMC databases are not consistent." << std::endl;
+		std::cerr << "Error: KMC databases are not consistent. Please contact the authors." << std::endl;
 		exit(1);
 	}
 
