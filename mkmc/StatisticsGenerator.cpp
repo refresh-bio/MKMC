@@ -236,7 +236,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 	{
 		if (!readNormalizationData())
 		{
-			std::cerr << "Error: cannot read normalization data\n";
+			std::cerr << "Error: cannot read normalization data." << std::endl;
 			exit(1);
 		}
 	}

@@ -54,10 +54,10 @@ Params::Params() :
 
 
 
-bool Params::readAdditionalDataFromFiles()
+bool Params::readAdditionalDataFromFiles(bool& warningPrinted)
 {
 	SamplesFileReader tasksFiller(mkmcParams);
-	return tasksFiller.readSamples(mkmcParams.samples);
+	return tasksFiller.readSamples(mkmcParams.samples, warningPrinted);
 }
 
 
@@ -207,7 +207,7 @@ bool Params::adjustAnotherParams()
 	size_t nCorrelationMethods = statisticsParams.correlationMethods.size();
 	std::sort(statisticsParams.correlationMethods.begin(), statisticsParams.correlationMethods.end());
 	statisticsParams.correlationMethods.erase(std::unique(statisticsParams.correlationMethods.begin(), statisticsParams.correlationMethods.end()), statisticsParams.correlationMethods.end());
-	if (nCorrelationMethods != statisticsParams.correlationMethods.size())
+	if (nCorrelationMethods != statisticsParams.correlationMethods.size() && mkmcParams.verbosity_level > 0)
 	{
 		std::cerr << "Warning: some correlation methods were given multiple times." << std::endl;
 		warningPrinted = true;
@@ -217,7 +217,7 @@ bool Params::adjustAnotherParams()
 	std::sort(mkmcParams.outputFileTypes.begin(), mkmcParams.outputFileTypes.end());
 	mkmcParams.outputFileTypes.erase(std::unique(mkmcParams.outputFileTypes.begin(), mkmcParams.outputFileTypes.end()), mkmcParams.outputFileTypes.end());
 
-	if (nOutputFileTypes != mkmcParams.outputFileTypes.size())
+	if (nOutputFileTypes != mkmcParams.outputFileTypes.size() && mkmcParams.verbosity_level > 0)
 	{
 		std::cerr << "Warning: some output files types were given multiple times." << std::endl;
 		warningPrinted = true;

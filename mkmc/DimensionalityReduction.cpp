@@ -51,7 +51,7 @@ void DimensionalityReduction::runAndStoreUMAP()
 	}
 	catch (const std::length_error&)
 	{
-		std::cerr << "Error: Cannot run UMAP. Try to tight filtering criteria\n";
+		std::cerr << "Error: Cannot run UMAP. Try to tight filtering criteria." << std::endl;
 		success = false;
 	}
 
@@ -76,12 +76,12 @@ void DimensionalityReduction::runAndStorePCA()
 	}
 	catch (const std::length_error&)
 	{
-		std::cerr << "Error: Cannot run PCA. Try to tight filtering criteria\n";
+		std::cerr << "Error: Cannot run PCA. Try to tight filtering criteria." << std::endl;
 		success = false;
 	}
 	catch (...)
 	{
-		std::cerr << "Error: Unexpected error with PCA running\n";
+		std::cerr << "Error: Unexpected error with PCA running." << std::endl;
 		success = false;
 	}
 

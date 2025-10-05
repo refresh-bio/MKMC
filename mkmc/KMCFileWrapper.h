@@ -60,7 +60,7 @@ inline void KMCFileWrapper<SIZE>::Next()
 	{
 		if (cur_kmer_no != tot_kmers)
 		{
-			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")" << std::endl;
+			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")." << std::endl;
 			exit(1);
 		}
 	}

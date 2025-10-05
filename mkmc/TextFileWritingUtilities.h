@@ -23,7 +23,7 @@ public:
 	{
 		if (!out)
 		{
-			std::cerr << "Error: cannot open file " << path << "\n";
+			std::cerr << "Error: cannot open file " << path << "." << std::endl;
 			exit(1);
 		}
 		setvbuf(out, nullptr, _IONBF, 0);
@@ -45,7 +45,7 @@ public:
 	{
 		if (fclose(out) != 0)
 		{
-			std::cerr << "Error: some error occurred when closing the output file\n";
+			std::cerr << "Error: some error occurred when closing the output file." << std::endl;
 			exit(1);
 		}
 	}

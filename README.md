@@ -23,9 +23,9 @@ To build on Linux type `make -j` (make and G++ 11 or newer are required). To bui
 ```
 
 Positionals:
-  - `input_samples_file TEXT:FILE REQUIRED` - file with a list of samples names with input files names in specified (`-f` parameter) format (gzipped or not)
+  - `input_samples_file TEXT:FILE REQUIRED` - file with a list of samples and input files in specified (`-f` parameter) format (gzipped or not)
   - `output_files_template TEXT REQUIRED` - template (prefix) of output files names
-  - `temp_dir TEXT:DIR REQUIRED` - a directory where temporary files will be stored
+  - `temp_dir TEXT:DIR REQUIRED` - directory for temporary files
 
 Options:
  - `-h,--help` - Print this help message and exit
@@ -36,13 +36,13 @@ Options:
   Options:
  - `--thr UINT:POSITIVE [1]` - filter out k-mers occuring less than specified number of times...
  - `--thr_rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
- - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only; if `-b` is not set, the k-mers are converted to canonical form
+ - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one per line) only; if `-b` is not set, the k-mers are converted to canonical form
  
 [Option Group: correlation and normalization]
   Options:
  - `-n ENUM:value in {deseq,freq,q}` - normalize counts (DESeq2/frequency count/quantile normalization) before use
  - `--save_n` - save normalized matrix to file
- - `--cor ENUM:value in {kendall,pearson,spearman}` ... Needs: `-n` `-p` - compute correlation cofficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
+ - `--cor ENUM:value in {kendall,pearson,spearman}` ... Needs: `-n` `-p` - compute correlation coefficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a sequence of integers, one in each line)
  
 [Option Group: differential k-mers analysis]
@@ -66,8 +66,8 @@ Options:
 
 [Option Group: dimentionality reduction]
   Options:
- - `--umap` Needs: `-n` - run dimentionality reduction on normalized matrix with UMAP
- - `--pca` Needs: `-n` - run dimentionality reduction on normalized matrix with PCA
+ - `--umap` Needs: `-n` - reduce dimensionality of normalized matrix with UMAP
+ - `--pca` Needs: `-n` - reduce dimensionality of normalized matrix with PCA
  - `--dimensions UINT [2]` Needs: `--umap` or `--pca` - number of output dimensions
  - `--umap-local_connectivity FLOAT [1]` Needs: `--umap` - local_connectivity parameter
  - `--umap-bandwidth FLOAT [1]` Needs: `--umap` - `bandwidth` parameter
@@ -97,15 +97,15 @@ Options:
  - `--wrk UINT [4]` - number of parallel k-mer counting tasks
  - `-t UINT [no. of logic CPU cores]` - number of threads
  - `-m UINT:INT in [2 - 1024] [16]` - max amount of RAM in GB; practically works only if `-r` is not set
- - `-r` - RAM only mode for k-mer counting
- - `-v` - verbose mode, shows progress
+ - `-r` - count k-mers in RAM only
+ - `-v` - verbose mode, shows progress and minor warnings
 
 [Option Group: debug parameters]
   Options:
  - `--keep` - keep temporary files and binary results file
  - `--reuse-db` - reuse samples and filtering databases (if possible)
  - `--learn-deseq` Needs: `--keep` - collect data for DESeq2 normalization (not necessary for `-n deseq`, but useful for further  `--reuse-db`)
- - `--on UINT:POSITIVE [512]` - number of internal bins, modify carefully
+ - `--on UINT:POSITIVE [512]` - suggested number of internal bins, modify carefully
  - `--generate_snr_for_unnormalized_data` - generate Signal to Noise ratio also for unnormalized counts
 K-mers order in output files is not specified and may vary between runnings.
 > [!warning]  

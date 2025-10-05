@@ -40,13 +40,13 @@ bool Start::verifyFiles(bool& warningPrinted)
 		}
 		else
 		{
-			//if (params.mkmcParams.verbosity_level > 0) // disabled to proper warningPrinted handling
-			//{
+			if (params.mkmcParams.verbosity_level > 0)
+			{
 				std::cerr << "Warning: the specified directory " << params.mkmcParams.tmpPath << " does not exist. It will be temporarily created." << std::endl;
 				if (params.mkmcParams.keepTmpFiles)
 					std::cerr << "Warning: as " << params.mkmcParams.tmpPath << " directory was created by MKC, some of the temporary files will not be kept (--keep parameter)." << std::endl;
 				warningPrinted = true;
-			//}
+			}
 			params.mutableParams.tmpDirCreated = true;
 		}
 	}

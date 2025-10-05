@@ -171,7 +171,7 @@ void Deseq2Learner<SIZE>::serializeNormalizationAndSave()
 
 	if (!success)
 	{
-		std::cerr << "Error: cannot read normalization data for DESeq2\n";
+		std::cerr << "Error: cannot read normalization data for DESeq2." << std::endl;
 		exit(1);
 	}
 

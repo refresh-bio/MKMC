@@ -68,9 +68,9 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	CLI::Option* p = nullptr, * n = nullptr, * cor = nullptr, * differentialAnalysis = nullptr, *pvalCorr, * c = nullptr;
 
-	app.add_option("input_samples_file", mkmcParams.inputFileName, "file with a list of samples names with input files names in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
+	app.add_option("input_samples_file", mkmcParams.inputFileName, "file with a list of samples and input files in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
 	app.add_option("output_files_template", mkmcParams.outputFilesTemplate, "template (prefix) of output files names")->required();
-	app.add_option("temp_dir", mkmcParams.tmpPath, "a directory where temporary files will be stored")->required();
+	app.add_option("temp_dir", mkmcParams.tmpPath, "directory for temporary files")->required();
 
 	std::function<void(const uint32_t&)> kCallback = [&](const uint32_t& k)
 	{
@@ -89,7 +89,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 		filterParams.inputKmersSequencesToFilterOut = fileName;
 		filterParams.filterKmersSequences = true;
 	};
-	filteringGroup->add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one in each line) only; if -b is not set, the k-mers are converted to canonical form")->check(CLI::ExistingFile);
+	filteringGroup->add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one per line) only; if -b is not set, the k-mers are converted to canonical form")->check(CLI::ExistingFile);
 
 	CLI::Option_group* correlationGroup = app.add_option_group("correlation and normalization");
 
@@ -104,7 +104,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	correlationGroup->add_flag("--save_n", statisticsParams.saveNormalization, "save normalized matrix to file")->needs(n);
 
 	std::map<std::string, StatisticsParams::CorrelationMethod> correlationValuesMap{ {"pearson", StatisticsParams::CorrelationMethod::Pearson }, { "spearman", StatisticsParams::CorrelationMethod::Spearman }, {"kendall", StatisticsParams::CorrelationMethod::Kendall } };
-	cor = correlationGroup->add_option("--cor", statisticsParams.correlationMethods, "compute correlation cofficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
+	cor = correlationGroup->add_option("--cor", statisticsParams.correlationMethods, "compute correlation coefficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
 
 	std::function<void(const std::string&)> pCallback = [&](const std::string& fileName)
 	{
@@ -168,8 +168,8 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	
 	CLI::Option_group* dimReductionGroup = app.add_option_group("dimentionality reduction");
 
-	auto umap = dimReductionGroup->add_flag("--umap", statisticsParams.runUMAP, "run dimentionality reduction on normalized matrix with UMAP")->needs(n);
-	auto pca = dimReductionGroup->add_flag("--pca", statisticsParams.runPCA, "run dimentionality reduction on normalized matrix with PCA")->needs(n);
+	auto umap = dimReductionGroup->add_flag("--umap", statisticsParams.runUMAP, "reduce dimensionality of normalized matrix with UMAP")->needs(n);
+	auto pca = dimReductionGroup->add_flag("--pca", statisticsParams.runPCA, "reduce dimensionality of normalized matrix with PCA")->needs(n);
 
 	std::function<void(const decltype(statisticsParams.nDimensionReduction)&)> dimensionsCallback = [&](const decltype(statisticsParams.nDimensionReduction)& dimensions)
 	{
@@ -258,20 +258,20 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	{
 		stage1Params.SetRamOnlyMode(true);
 	};
-	optionalGroup->add_flag_callback("-r", rCallback, "RAM only mode for k-mer counting");
+	optionalGroup->add_flag_callback("-r", rCallback, "count k-mers in RAM only");
 
 	std::function<void()> vCallback = [&]()
 	{
 		mkmcParams.verbosity_level++;
 	};
-	optionalGroup->add_flag_callback("-v", vCallback, "verbose mode, shows progress");
+	optionalGroup->add_flag_callback("-v", vCallback, "verbose mode, shows progress and minor warnings");
 
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
 	auto keep = debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
 	debugGroup->add_flag("--reuse-db", mkmcParams.reuseDBFiles, "reuse samples and filtering databases (if possible)");
 	debugGroup->add_flag("--learn-deseq", statisticsParams.learnDeseq2, "collect data for DESeq2 normalization (not necessary for -n deseq, but useful for further --reuse-db)")->needs(keep);
 
-	debugGroup->add_option("--on", mkmcParams.nKMCBins, "number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
+	debugGroup->add_option("--on", mkmcParams.nKMCBins, "suggested number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 
 	debugGroup->add_flag("--generate_snr_for_unnormalized_data", mkmcParams.generateForNonNormalized, "generate Signal to Noise ratio also for unnormalized counts");
 
@@ -305,14 +305,14 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 		(statisticsParams.classificationMethods.size() > 1 ||
 			(statisticsParams.classificationMethods.size() == 1 && statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest)))
 	{
-		std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)\n";
+		std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)." << std::endl;
 		return true;
 	}
 
 	if (statisticsParams.nDimensionReductionUserDefined &&
 		!(statisticsParams.runPCA || statisticsParams.runUMAP))
 	{
-		std::cerr << "Error: Number of dimensions (--dimensions) requires dimensionality reduction algorithm (--umap or --pca)\n";
+		std::cerr << "Error: Number of dimensions (--dimensions) requires dimensionality reduction algorithm (--umap or --pca)." << std::endl;
 		return true;
 	}
 
@@ -321,13 +321,13 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::TTest) &&
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum))
 	{
-		std::cerr << "Error: --pval_corr requires differential k-mers analysis with ANOVA, T-Test, or Wilcoxon-rank sum (Mann-Whitney U test) (--diff)";
+		std::cerr << "Error: --pval_corr requires differential k-mers analysis with ANOVA, T-Test, or Wilcoxon-rank sum (Mann-Whitney U test) (--diff)." << std::endl;
 		return true;
 	}
 
 	if (statisticsParams.didsModeUserDefined && !isDAMethod(StatisticsParams::DifferentialAnalysisMethod::DIDS))
 	{
-		std::cerr << "Error: --dids-mode requires differential k-mers analysis with DIDS (--diff)";
+		std::cerr << "Error: --dids-mode requires differential k-mers analysis with DIDS (--diff)." << std::endl;
 		return true;
 	}
 
@@ -337,14 +337,14 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::SNR) &&
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::DIDS))
 	{
-		std::cerr << "Error: --n_top requires correlation (--cor) or entropy (--entropy) or differential k-mers analysis with SNR or DIDS (--diff)";
+		std::cerr << "Error: --n_top requires correlation (--cor) or entropy (--entropy) or differential k-mers analysis with SNR or DIDS (--diff)." << std::endl;
 		return true;
 	}
 
 	if (statisticsParams.nTopUserDefined &&
 		statisticsParams.nTop < 1)
 	{
-		std::cerr << "Error: --n_top has to be at least 1";
+		std::cerr << "Error: --n_top has to be at least 1." << std::endl;
 		return true;
 	}
 
@@ -358,14 +358,14 @@ bool checkAndPrintDataFromFilesVsParamsErrors(const Params& params)
 	if ((params.statisticsParams.runPCA || params.statisticsParams.runUMAP) &&
 		(params.statisticsParams.nDimensionReduction < 1 || params.statisticsParams.nDimensionReduction >= params.mkmcParams.samples.size()))
 	{
-		std::cerr << "Error: Number of dimensions (--dimensions) must be at least 1 and lower than number of samples\n";
+		std::cerr << "Error: Number of dimensions (--dimensions) must be at least 1 and lower than number of samples." << std::endl;
 		return true;
 	}
 
 	if (params.statisticsParams.cvParams.cv)
 		if (params.statisticsParams.cvParams.p == 0 || params.statisticsParams.cvParams.p >= params.mkmcParams.samples.size() || params.mkmcParams.samples.size() % params.statisticsParams.cvParams.p != 0)
 		{
-			std::cerr << "Error: Number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples.\n";
+			std::cerr << "Error: Number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples." << std::endl;
 			return true;
 		}
 	return false;
@@ -374,22 +374,25 @@ bool checkAndPrintDataFromFilesVsParamsErrors(const Params& params)
 
 bool checkAndPrintArgumentsWarnings(const Params& params)
 {
+	if (params.mkmcParams.verbosity_level == 0)
+		return false;
+
 	bool result = false;
 	if (params.mkmcParams.samples.size() <= 8 && std::find(params.statisticsParams.classificationMethods.begin(), params.statisticsParams.classificationMethods.end(), StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum) != params.statisticsParams.classificationMethods.end())
 	{
-		std::cerr << "Warning: Wilcoxon-rank sum (Mann-Whitney U test) uses approximate algorithm, thus for less than 9 samples its results may be slightly different than in e.g. SciPy.\n";
+		std::cerr << "Warning: Wilcoxon-rank sum (Mann-Whitney U test) uses approximate algorithm, thus for less than 9 samples its results may be slightly different than in e.g. SciPy." << std::endl;
 		result = true;
 	}
 
 	if (params.statisticsParams.cvParams.seedUserDefined && params.statisticsParams.cvParams.p == 1)
 	{
-		std::cerr << "Warning: as --leave parameter is set to 1, LOOCV will be performed, which does not need randomness (--cv-seed parameter will be ignored).\n";
+		std::cerr << "Warning: as --leave parameter is set to 1, LOOCV will be performed, which does not need randomness (--cv-seed parameter will be ignored)." << std::endl;
 		result = true;
 	}
 
 	if (params.statisticsParams.learnDeseq2 && params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
 	{
-		std::cerr << "Warning: --learn-deseq is not necessary, when DESeq2 normalization is performed (-n deseq is set).\n";
+		std::cerr << "Warning: --learn-deseq is not necessary, when DESeq2 normalization is performed (-n deseq is set)." << std::endl;
 		result = true;
 	}
 
@@ -481,7 +484,7 @@ int main(int argc, char** argv)
 			size_t startPos = helpText.find("[OPTIONS]");
 			if (startPos != std::string::npos)
 				helpText.replace(startPos, std::string("[OPTIONS]").length(), "[OPTIONS] --");
-			std::cout << helpText;
+			std::cout << helpText; // Print to cout, as it is CLI11 default behaviour.
 			return e.get_exit_code();
 		}
 
@@ -493,14 +496,16 @@ int main(int argc, char** argv)
 	if (params.mkmcParams.verbosity_level > 0)
 		Logger::Inst().Enable();
 
-	if (!params.readAdditionalDataFromFiles())
+	bool warningPrinted = false;
+
+	if (!params.readAdditionalDataFromFiles(warningPrinted))
 		std::exit(1);
 
 	const bool CLIAndParamsFromFilesErrors = checkAndPrintDataFromFilesVsParamsErrors(params);
 	if (CLIAndParamsFromFilesErrors)
 		std::exit(1);
 
-	bool warningPrinted = checkAndPrintArgumentsWarnings(params);
+	warningPrinted |= checkAndPrintArgumentsWarnings(params);
 
 	params.generateTempAndOutputFilesNames();
 	warningPrinted |= params.adjustKMCPerformanceParams();

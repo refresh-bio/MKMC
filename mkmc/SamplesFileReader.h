@@ -22,5 +22,5 @@ public:
 		mkmcParams(mkmcParams)
 	{}
 
-	bool readSamples(std::vector<Sample>& oSamples);
+	bool readSamples(std::vector<Sample>& oSamples, bool& warningPrinted);
 };

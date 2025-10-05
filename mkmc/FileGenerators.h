@@ -64,7 +64,7 @@ public:
 			}
 			catch (const std::exception& ex)
 			{
-				std::cerr << "Error: " << ex.what() << "\n";
+				std::cerr << "Error: " << ex.what() << std::endl;
 				exit(1);
 			}
 			writerWasOpened = true;
