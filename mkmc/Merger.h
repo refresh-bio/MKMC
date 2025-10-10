@@ -309,27 +309,27 @@ inline void Merger<SIZE>::fillTaskData()
 		}
 		catch (const std::runtime_error& ex)
 		{
-			std::cerr << "Error: " << ex.what() << std::endl;
+			Logger::Inst().Log(std::string("Error: ") + ex.what());
 			exit(1);
 		}
 	}
 
 	if (totKmersAllSamples == 0)
 	{
-		std::cerr << "Error: No k-mers present in samples; input files are empty or --ci and --cx parameters are too strict." << std::endl;
+		Logger::Inst().Log("Error: No k-mers present in samples; input files are empty or --ci and --cx parameters are too strict.");
 		exit(1);
 	}
 	else
 	{
 		for (auto i : emptySamplesIndices)
-			std::cerr << "Warning: Sample " << params.mkmcParams.samples[i].name << " has no k-mers; its input files are empty or --ci and --cx parameters are too strict." << std::endl;
+			Logger::Inst().Log("Warning: Sample " + params.mkmcParams.samples[i].name + " has no k-mers; its input files are empty or --ci and --cx parameters are too strict.");
 		if (!emptySamplesIndices.empty())
-			std::cerr << std::endl;
+			Logger::Inst().Log("");
 	}
 
 	if (!inputIsConsistent())
 	{
-		std::cerr << "Error: KMC databases are not consistent. Please contact the authors." << std::endl;
+		Logger::Inst().Log("Error: KMC databases are not consistent. Please contact the authors.");
 		exit(1);
 	}
 

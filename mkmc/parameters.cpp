@@ -1,6 +1,7 @@
 #include "parameters.h"
 #include "SamplesFileReader.h"
 #include "refresh/deterministic_random/lib/deterministic_random.h"
+#include "Logger.h"
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
@@ -179,9 +180,9 @@ bool Params::adjustKMCPerformanceParams()
 		mKMCWorkersReduced = true;
 	}
 
-	if (mkmcParams.nKMCWorkersUserSet && mKMCWorkersReduced && mkmcParams.verbosity_level > 0)
+	if (mkmcParams.nKMCWorkersUserSet && mKMCWorkersReduced)
 	{
-		std::cerr << "Warning: number of workers is too huge, reduced to " << mkmcParams.nKMCWorkers << "." << std::endl;
+		Logger::Inst().Log("Warning: number of workers is too huge, reduced to " + std::to_string(mkmcParams.nKMCWorkers) + ".", 1);
 		warningPrinted = true;
 	}
 
@@ -198,18 +199,18 @@ bool Params::adjustKMCPerformanceParams()
 bool Params::adjustAnotherParams()
 {
 	bool warningPrinted = false;
-	if (mkmcParams.maxRamGBUserDefined && stage1Params.GetRamOnlyMode() && mkmcParams.verbosity_level > 0)
+	if (mkmcParams.maxRamGBUserDefined && stage1Params.GetRamOnlyMode())
 	{
-		std::cerr << "Warning: when -r parameter is given, the limit specified with -m may be exceeded." << std::endl;
+		Logger::Inst().Log("Warning: when -r parameter is given, the limit specified with -m may be exceeded.", 1);
 		warningPrinted = true;
 	}
 
 	size_t nCorrelationMethods = statisticsParams.correlationMethods.size();
 	std::sort(statisticsParams.correlationMethods.begin(), statisticsParams.correlationMethods.end());
 	statisticsParams.correlationMethods.erase(std::unique(statisticsParams.correlationMethods.begin(), statisticsParams.correlationMethods.end()), statisticsParams.correlationMethods.end());
-	if (nCorrelationMethods != statisticsParams.correlationMethods.size() && mkmcParams.verbosity_level > 0)
+	if (nCorrelationMethods != statisticsParams.correlationMethods.size())
 	{
-		std::cerr << "Warning: some correlation methods were given multiple times." << std::endl;
+		Logger::Inst().Log("Warning: some correlation methods were given multiple times.", 1);
 		warningPrinted = true;
 	}
 
@@ -217,9 +218,9 @@ bool Params::adjustAnotherParams()
 	std::sort(mkmcParams.outputFileTypes.begin(), mkmcParams.outputFileTypes.end());
 	mkmcParams.outputFileTypes.erase(std::unique(mkmcParams.outputFileTypes.begin(), mkmcParams.outputFileTypes.end()), mkmcParams.outputFileTypes.end());
 
-	if (nOutputFileTypes != mkmcParams.outputFileTypes.size() && mkmcParams.verbosity_level > 0)
+	if (nOutputFileTypes != mkmcParams.outputFileTypes.size())
 	{
-		std::cerr << "Warning: some output files types were given multiple times." << std::endl;
+		Logger::Inst().Log("Warning: some output files types were given multiple times.", 1);
 		warningPrinted = true;
 	}
 
@@ -249,17 +250,17 @@ bool Params::readPhenotypes()
 		{
 			if (method == StatisticsParams::DifferentialAnalysisMethod::TTest && phenotypes.differentialAnalysisPhenotype.getClassesNumber() > 2)
 			{
-				std::cerr << "Error: number of distinct classes in a file " << phenotypes.differentialAnalysisPhenotype.getFileName() << " for T-Test must equal to 2." << std::endl;
+				Logger::Inst().Log("Error: number of distinct classes in a file " + phenotypes.differentialAnalysisPhenotype.getFileName() + " for T-Test must equal to 2.");
 				return false;
 			}
 			else if (method == StatisticsParams::DifferentialAnalysisMethod::SNR && phenotypes.differentialAnalysisPhenotype.getClassesNumber() > 2)
 			{
-				std::cerr << "Error: number of distinct classes in a file " << phenotypes.differentialAnalysisPhenotype.getFileName() << " for Signal to Noise ratio determination must equal to 2." << std::endl;
+				Logger::Inst().Log("Error: number of distinct classes in a file " + phenotypes.differentialAnalysisPhenotype.getFileName() + " for Signal to Noise ratio determination must equal to 2.");
 				return false;
 			}
 			else if (method == StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum && phenotypes.differentialAnalysisPhenotype.getClassesNumber() > 2)
 			{
-				std::cerr << "Error: number of distinct classes in a file " << phenotypes.differentialAnalysisPhenotype.getFileName() << " for Wilcoxon-rank sum determination must equal to 2." << std::endl;
+				Logger::Inst().Log("Error: number of distinct classes in a file " + phenotypes.differentialAnalysisPhenotype.getFileName() + " for Wilcoxon-rank sum determination must equal to 2.");
 				return false;
 			}
 		}

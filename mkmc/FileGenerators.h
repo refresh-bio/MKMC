@@ -9,6 +9,7 @@
 #include "kmc_dump/nc_utils.h"
 #include "KmersSamplesStruct.h"
 #include "parameters.h"
+#include "Logger.h"
 #include "kmcdb/kmcdb.h"
 #include "kmcdb/bin_writers.h"
 #include "TextFileWritingUtilities.h"
@@ -64,7 +65,7 @@ public:
 			}
 			catch (const std::exception& ex)
 			{
-				std::cerr << "Error: " << ex.what() << std::endl;
+				Logger::Inst().Log(std::string("Error: ") + ex.what());
 				exit(1);
 			}
 			writerWasOpened = true;

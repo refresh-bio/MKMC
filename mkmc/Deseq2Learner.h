@@ -1,6 +1,7 @@
 #pragma once
 
 #include "parameters.h"
+#include "Logger.h"
 #include "TextFileWritingUtilities.h"
 #include <thread>
 
@@ -64,7 +65,7 @@ public:
 	template<unsigned SIZE>
 	void Run()
 	{
-		std::cerr << "\nStarting learning for DESeq2 normalization\n";
+		Logger::Inst().Log("\nStarting learning for DESeq2 normalization");
 
 		Deseq2Learner<SIZE> deseq2LearnRunner(params);
 		deseq2LearnRunner.learnDeseq2Parallel();
@@ -104,7 +105,7 @@ void Deseq2Learner<SIZE>::openReaders()
 	}
 	catch (const std::runtime_error& ex)
 	{
-		std::cerr << "Error: " << ex.what() << std::endl;
+		Logger::Inst().Log(std::string("Error: ") + ex.what());
 		exit(1);
 	}
 }
@@ -171,7 +172,7 @@ void Deseq2Learner<SIZE>::serializeNormalizationAndSave()
 
 	if (!success)
 	{
-		std::cerr << "Error: cannot read normalization data for DESeq2." << std::endl;
+		Logger::Inst().Log("Error: cannot read normalization data for DESeq2.");
 		exit(1);
 	}
 

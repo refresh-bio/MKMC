@@ -1,5 +1,6 @@
 #include "DimensionalityReduction.h"
 #include "TextFileWritingUtilities.h"
+#include "Logger.h"
 
 #include <iostream>
 
@@ -51,7 +52,7 @@ void DimensionalityReduction::runAndStoreUMAP()
 	}
 	catch (const std::length_error&)
 	{
-		std::cerr << "Error: Cannot run UMAP. Try to tight filtering criteria." << std::endl;
+		Logger::Inst().Log("Error: Cannot run UMAP. Try to tight filtering criteria.");
 		success = false;
 	}
 
@@ -63,7 +64,7 @@ void DimensionalityReduction::runAndStoreUMAP()
 		store(params.mkmcParams.outputFileUMAP, "UMAP", umap_res);
 	}
 	else
-		std::cerr << "Info: Despite the UMAP failure, MKMC will continue, but no UMAP results will be created\n" << std::endl;
+		Logger::Inst().Log("Info: Despite the UMAP failure, MKMC will continue, but no UMAP results will be created\n");
 }
 
 
@@ -76,12 +77,12 @@ void DimensionalityReduction::runAndStorePCA()
 	}
 	catch (const std::length_error&)
 	{
-		std::cerr << "Error: Cannot run PCA. Try to tight filtering criteria." << std::endl;
+		Logger::Inst().Log("Error: Cannot run PCA. Try to tight filtering criteria.");
 		success = false;
 	}
 	catch (...)
 	{
-		std::cerr << "Error: Unexpected error with PCA running." << std::endl;
+		Logger::Inst().Log("Error: Unexpected error with PCA running.");
 		success = false;
 	}
 
@@ -104,7 +105,7 @@ void DimensionalityReduction::runAndStorePCA()
 		store(params.mkmcParams.outputFilePCAVariance, std::vector<std::string>{ "variance", "variance_ratio"}, header, variances);
 	}
 	else
-		std::cerr << "Info: Despite the PCA failure, MKMC will continue, but no PCA results will be created\n" << std::endl;
+		Logger::Inst().Log("Info: Despite the PCA failure, MKMC will continue, but no PCA results will be created\n");
 }
 
 

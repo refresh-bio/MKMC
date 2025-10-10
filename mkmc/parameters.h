@@ -24,14 +24,18 @@ struct Sample
 struct MKMCParams
 {
 	std::string inputFileName;
+	std::string outputFilesTemplate;
 	std::string tmpPath;
+
+	std::string getLogFileName() const {
+		return outputFilesTemplate + ".log";
+	}
+
 	std::vector<Sample> samples;
 
 	KMC::InputFileType inputFileType = KMC::InputFileType::FASTQ; // also default "fq" value in input parameters
 	std::vector<std::string> kmcOutputFiles;
 	std::vector<std::string> kmcTmpDirs;
-
-	std::string outputFilesTemplate;
 
 	std::string outputMatrixBinFile;
 	std::string outputFASTAFile;

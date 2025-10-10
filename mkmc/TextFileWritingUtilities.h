@@ -6,6 +6,7 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include "Logger.h"
 #include "kmcdb/kmcdb.h"
 
 
@@ -23,7 +24,7 @@ public:
 	{
 		if (!out)
 		{
-			std::cerr << "Error: cannot open file " << path << "." << std::endl;
+			Logger::Inst().Log("Error: cannot open file " + path + ".");
 			exit(1);
 		}
 		setvbuf(out, nullptr, _IONBF, 0);
@@ -45,7 +46,7 @@ public:
 	{
 		if (fclose(out) != 0)
 		{
-			std::cerr << "Error: some error occurred when closing the output file." << std::endl;
+			Logger::Inst().Log("Error: some error occurred when closing the output file.");
 			exit(1);
 		}
 	}

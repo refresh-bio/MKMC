@@ -3,6 +3,7 @@
 #include <string>
 #include <cstdint>
 #include <iostream>
+#include "Logger.h"
 #include "kmcdb/bin_readers.h"
 
 
@@ -60,7 +61,7 @@ inline void KMCFileWrapper<SIZE>::Next()
 	{
 		if (cur_kmer_no != tot_kmers)
 		{
-			std::cerr << "Error: critical, this should not happen, details: " << __FILE__ << "(" << __LINE__ << ")." << std::endl;
+			Logger::Inst().Log(std::string("Error: critical, this should not happen, details: ") + __FILE__ + "(" + std::to_string(__LINE__) + ").");
 			exit(1);
 		}
 	}

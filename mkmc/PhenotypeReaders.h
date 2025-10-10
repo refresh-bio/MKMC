@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <sstream>
 #include <cstdint>
+#include "logger.h"
 
 
 struct Params;
@@ -82,7 +83,7 @@ bool PhenotypeReader<Phenotype_T>::readPhenotype()
 	std::ifstream phenotypeFile(fileName);
 	if (!phenotypeFile.is_open())
 	{
-		std::cerr << "Error: cannot open " << fileName << "." << std::endl;
+		Logger::Inst().Log("Error: cannot open " + fileName + ".");
 		return false;
 	}
 
@@ -92,14 +93,14 @@ bool PhenotypeReader<Phenotype_T>::readPhenotype()
 
 	if (phenotypeFile.fail() && !phenotypeFile.eof())
 	{
-		std::cerr << "Error: wrong value in a file " << fileName << "." << std::endl;
+		Logger::Inst().Log("Error: wrong value in a file " + fileName + ".");
 		return false;
 	}
 
 	auto no_samples = PhenotypeReaderHelpers::get_no_samples(params);
 	if (phenotype.size() != no_samples)
 	{
-		std::cerr << "Error: number of a phenotype values in a file " << fileName << " (" << phenotype.size() << ") is different than number of samples (" << no_samples << ")." << std::endl;
+		Logger::Inst().Log("Error: number of a phenotype values in a file " + fileName + " (" + std::to_string(phenotype.size()) + ") is different than number of samples (" + std::to_string(no_samples) + ").");
 		return false;
 	}
 

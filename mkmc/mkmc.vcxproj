@@ -155,6 +155,7 @@
   <ItemGroup>
     <ClCompile Include="..\3rd_party\kmc\kmc_dump\nc_utils.cpp" />
     <ClCompile Include="DimensionalityReduction.cpp" />
+    <ClCompile Include="Logger.cpp" />
     <ClCompile Include="TextFileWritingUtilities.cpp" />
     <ClCompile Include="FileGenerators.cpp" />
     <ClCompile Include="Finish.cpp" />

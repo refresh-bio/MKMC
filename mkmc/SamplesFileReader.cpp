@@ -1,4 +1,5 @@
 #include "SamplesFileReader.h"
+#include "Logger.h"
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -16,7 +17,7 @@ bool SamplesFileReader::parseLine(const std::string& line, uint32_t lineNo, bool
 
 	if (samplesNames.find(sampleName) != samplesNames.end())
 	{
-		std::cerr << "Error: Sample " << sampleName << " is given multiple times in " << mkmcParams.inputFileName << "." << std::endl;
+		Logger::Inst().Log("Error: Sample " + sampleName + " is given multiple times in " + mkmcParams.inputFileName + ".");
 		return false;
 	}
 	samplesNames.insert(sampleName);
@@ -56,7 +57,7 @@ bool SamplesFileReader::canOpenFile(const std::string& fileName, uint32_t lineNo
 	std::ifstream inFile(fileName);
 	if (!inFile.is_open())
 	{
-		std::cerr << "Error: Cannot open " << fileName << " (" << mkmcParams.inputFileName << ", line " << lineNo << ")." << std::endl;
+		Logger::Inst().Log("Error: Cannot open " + fileName + " (" + mkmcParams.inputFileName + ", line " + std::to_string(lineNo) + ").");
 		return false;
 	}
 	return true;
@@ -69,7 +70,7 @@ bool SamplesFileReader::readSamples(std::vector<Sample>& oSamples, bool& warning
 	std::ifstream in(mkmcParams.inputFileName);
 	if (!in.good())
 	{
-		std::cerr << "Error: No " << mkmcParams.inputFileName << " file." << std::endl;
+		Logger::Inst().Log("Error: No " + mkmcParams.inputFileName + " file.");
 		return false;
 	}
 
@@ -85,14 +86,14 @@ bool SamplesFileReader::readSamples(std::vector<Sample>& oSamples, bool& warning
 
 	if (samples.empty())
 	{
-		std::cerr << "Error: No samples specified in a " << mkmcParams.inputFileName << " file." << std::endl;
+		Logger::Inst().Log("Error: No samples specified in a " + mkmcParams.inputFileName + " file.");
 		return false;
 	}
 
 
-	if (singleWordLines && mkmcParams.verbosity_level > 0)
+	if (singleWordLines)
 	{
-		std::cerr << "Warning: some of lines in input file " << mkmcParams.inputFileName << " contain just one word, they will be treated both as samples names and files names." << std::endl;
+		Logger::Inst().Log("Warning: some of lines in input file " + mkmcParams.inputFileName + " contain just one word, they will be treated both as samples names and files names.", 1);
 		warningPrinted = true;
 	}
 

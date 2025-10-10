@@ -40,7 +40,7 @@ public:
 		if (std::find(outputFileTypes.begin(), outputFileTypes.end(), OutputFileType::FASTA) != outputFileTypes.end())
 			tasks.push_back(params.mkmcParams.outputFASTAFile);
 
-		std::cerr << "Starting merging samples and dumping to " << (tasks.size() > 1 ? "files " : "file ") << MessagesUtilities::generateStartingSentence(tasks) << "..." << std::endl << std::endl;
+		Logger::Inst().Log(std::string("Starting merging samples and dumping to ") + (tasks.size() > 1 ? "files " : "file ") + MessagesUtilities::generateStartingSentence(tasks) + "...\n");
 
 		Merger<SIZE> merger(params);
 		merger_timer.startTimer();
@@ -260,11 +260,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	optionalGroup->add_flag_callback("-r", rCallback, "count k-mers in RAM only");
 
-	std::function<void()> vCallback = [&]()
-	{
-		mkmcParams.verbosity_level++;
-	};
-	optionalGroup->add_flag_callback("-v", vCallback, "verbose mode, shows progress and minor warnings");
+	optionalGroup->add_flag("-v", mkmcParams.verbosity_level, "verbose mode, shows progress and minor warnings");
 
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
 	auto keep = debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
@@ -305,14 +301,14 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 		(statisticsParams.classificationMethods.size() > 1 ||
 			(statisticsParams.classificationMethods.size() == 1 && statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest)))
 	{
-		std::cerr << "Error: Differential analysis methods (except T-Test) require normalization (-n)." << std::endl;
+		Logger::Inst().Log("Error: Differential analysis methods (except T-Test) require normalization (-n).");
 		return true;
 	}
 
 	if (statisticsParams.nDimensionReductionUserDefined &&
 		!(statisticsParams.runPCA || statisticsParams.runUMAP))
 	{
-		std::cerr << "Error: Number of dimensions (--dimensions) requires dimensionality reduction algorithm (--umap or --pca)." << std::endl;
+		Logger::Inst().Log("Error: Number of dimensions (--dimensions) requires dimensionality reduction algorithm (--umap or --pca).");
 		return true;
 	}
 
@@ -321,13 +317,13 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::TTest) &&
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum))
 	{
-		std::cerr << "Error: --pval_corr requires differential k-mers analysis with ANOVA, T-Test, or Wilcoxon-rank sum (Mann-Whitney U test) (--diff)." << std::endl;
+		Logger::Inst().Log("Error: --pval_corr requires differential k-mers analysis with ANOVA, T-Test, or Wilcoxon-rank sum (Mann-Whitney U test) (--diff).");
 		return true;
 	}
 
 	if (statisticsParams.didsModeUserDefined && !isDAMethod(StatisticsParams::DifferentialAnalysisMethod::DIDS))
 	{
-		std::cerr << "Error: --dids-mode requires differential k-mers analysis with DIDS (--diff)." << std::endl;
+		Logger::Inst().Log("Error: --dids-mode requires differential k-mers analysis with DIDS (--diff).");
 		return true;
 	}
 
@@ -337,14 +333,14 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::SNR) &&
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::DIDS))
 	{
-		std::cerr << "Error: --n_top requires correlation (--cor) or entropy (--entropy) or differential k-mers analysis with SNR or DIDS (--diff)." << std::endl;
+		Logger::Inst().Log("Error: --n_top requires correlation (--cor) or entropy (--entropy) or differential k-mers analysis with SNR or DIDS (--diff).");
 		return true;
 	}
 
 	if (statisticsParams.nTopUserDefined &&
 		statisticsParams.nTop < 1)
 	{
-		std::cerr << "Error: --n_top has to be at least 1." << std::endl;
+		Logger::Inst().Log("Error: --n_top has to be at least 1.");
 		return true;
 	}
 
@@ -358,14 +354,14 @@ bool checkAndPrintDataFromFilesVsParamsErrors(const Params& params)
 	if ((params.statisticsParams.runPCA || params.statisticsParams.runUMAP) &&
 		(params.statisticsParams.nDimensionReduction < 1 || params.statisticsParams.nDimensionReduction >= params.mkmcParams.samples.size()))
 	{
-		std::cerr << "Error: Number of dimensions (--dimensions) must be at least 1 and lower than number of samples." << std::endl;
+		Logger::Inst().Log("Error: Number of dimensions (--dimensions) must be at least 1 and lower than number of samples.");
 		return true;
 	}
 
 	if (params.statisticsParams.cvParams.cv)
 		if (params.statisticsParams.cvParams.p == 0 || params.statisticsParams.cvParams.p >= params.mkmcParams.samples.size() || params.mkmcParams.samples.size() % params.statisticsParams.cvParams.p != 0)
 		{
-			std::cerr << "Error: Number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples." << std::endl;
+			Logger::Inst().Log("Error: Number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples.");
 			return true;
 		}
 	return false;
@@ -374,25 +370,22 @@ bool checkAndPrintDataFromFilesVsParamsErrors(const Params& params)
 
 bool checkAndPrintArgumentsWarnings(const Params& params)
 {
-	if (params.mkmcParams.verbosity_level == 0)
-		return false;
-
 	bool result = false;
 	if (params.mkmcParams.samples.size() <= 8 && std::find(params.statisticsParams.classificationMethods.begin(), params.statisticsParams.classificationMethods.end(), StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum) != params.statisticsParams.classificationMethods.end())
 	{
-		std::cerr << "Warning: Wilcoxon-rank sum (Mann-Whitney U test) uses approximate algorithm, thus for less than 9 samples its results may be slightly different than in e.g. SciPy." << std::endl;
+		Logger::Inst().Log("Warning: Wilcoxon-rank sum (Mann-Whitney U test) uses approximate algorithm, thus for less than 9 samples its results may be slightly different than in e.g. SciPy.", 1);
 		result = true;
 	}
 
 	if (params.statisticsParams.cvParams.seedUserDefined && params.statisticsParams.cvParams.p == 1)
 	{
-		std::cerr << "Warning: as --leave parameter is set to 1, LOOCV will be performed, which does not need randomness (--cv-seed parameter will be ignored)." << std::endl;
+		Logger::Inst().Log("Warning: as --leave parameter is set to 1, LOOCV will be performed, which does not need randomness (--cv-seed parameter will be ignored).", 1);
 		result = true;
 	}
 
 	if (params.statisticsParams.learnDeseq2 && params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
 	{
-		std::cerr << "Warning: --learn-deseq is not necessary, when DESeq2 normalization is performed (-n deseq is set)." << std::endl;
+		Logger::Inst().Log("Warning: --learn-deseq is not necessary, when DESeq2 normalization is performed (-n deseq is set).", 1);
 		result = true;
 	}
 
@@ -493,8 +486,7 @@ int main(int argc, char** argv)
 			std::exit(1);
 	}
 
-	if (params.mkmcParams.verbosity_level > 0)
-		Logger::Inst().Enable();
+	Logger::Inst().Enable(params.mkmcParams.verbosity_level, params.mkmcParams.getLogFileName());
 
 	bool warningPrinted = false;
 
@@ -531,7 +523,7 @@ int main(int argc, char** argv)
 		warningPrinted |= wp;
 
 		if (warningPrinted) // any warning printed; insert distance before start stages
-			std::cerr << std::endl;
+			Logger::Inst().Log("", 1);
 
 		if (params.filterParams.filterKmersSequences)
 		{
@@ -541,13 +533,13 @@ int main(int argc, char** argv)
 
 		bool dbsReusable = false;
 		if (!params.mkmcParams.reuseDBFiles)
-			std::cerr << "Starting k-mer counting..." << std::endl << std::endl;
+			Logger::Inst().Log("Starting k-mer counting...\n");
 		else {
 			dbsReusable = verifyDBsReusability(params);
 			if (!dbsReusable)
-				std::cerr << "Samples databases does not exist or are not possible to reuse. Starting k-mer counting..." << std::endl << std::endl;
+				Logger::Inst().Log("Samples databases does not exist or are not possible to reuse. Starting k-mer counting...\n");
 			else
-				std::cerr << "Samples databases exist and outwardly seem to be possible to reuse." << std::endl << std::endl;
+				Logger::Inst().Log("Samples databases exist and outwardly seem to be possible to reuse.\n");
 		}
 
 		if (!dbsReusable)
@@ -580,7 +572,7 @@ int main(int argc, char** argv)
 			if (params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
 				tasks.push_back("reducing number of dimensions");
 
-			std::cerr << "Starting " << MessagesUtilities::generateStartingSentence(tasks) << "..." << std::endl << std::endl;
+			Logger::Inst().Log("Starting " + MessagesUtilities::generateStartingSentence(tasks) + "...\n");
 
 			StatisticsGenerator statisticsGenerator(params);
 			statistics_timer.startTimer();
@@ -594,26 +586,26 @@ int main(int argc, char** argv)
 		{
 			if (params.mutableParams.createdFastaFile)
 			{
-				std::cerr << "Preparing temporary FASTA file for sequences filtering out:\n";
-				std::cerr << "\tStart: " << sequence_filter_init.getStartTime() << "\n";
-				std::cerr << "\tEnd:   " << sequence_filter_init.getStopTime() << "\n";
+				Logger::Inst().Log("Preparing temporary FASTA file for sequences filtering out:");
+				Logger::Inst().Log("\tStart: " + sequence_filter_init.getStartTime());
+				Logger::Inst().Log("\tEnd:   " + sequence_filter_init.getStopTime());
 			}
-			std::cerr << "k-mer counting:\n";
-			std::cerr << "\tStart: " << kmc_timer.getStartTime() << "\n";
-			std::cerr << "\tEnd:   " << kmc_timer.getStopTime() << "\n";
-			std::cerr << "Merging and dumping:\n";
-			std::cerr << "\tStart: " << merger_timer.getStartTime() << "\n";
-			std::cerr << "\tEnd:   " << merger_timer.getStopTime() << "\n";
+			Logger::Inst().Log("k-mer counting:");
+			Logger::Inst().Log("\tStart: " + kmc_timer.getStartTime());
+			Logger::Inst().Log("\tEnd:   " + kmc_timer.getStopTime());
+			Logger::Inst().Log("Merging and dumping:");
+			Logger::Inst().Log("\tStart: " + merger_timer.getStartTime());
+			Logger::Inst().Log("\tEnd:   " + merger_timer.getStopTime());
 		}
 
 		if (computeStatistics)
 		{
 			if (params.statisticsParams.normalizationLearningWasSupplemented) // true in a case StatisticsGenerator detected, than DESeq2 learning data is missing
-				std::cerr << "DESeq2 learning, normalizing and computing statistics:\n";
+				Logger::Inst().Log("DESeq2 learning, normalizing and computing statistics:");
 			else
-				std::cerr << "Normalizing and computing statistics:\n";
-			std::cerr << "\tStart: " << statistics_timer.getStartTime() << "\n";
-			std::cerr << "\tEnd:   " << statistics_timer.getStopTime() << "\n";
+				Logger::Inst().Log("Normalizing and computing statistics:");
+			Logger::Inst().Log("\tStart: " + statistics_timer.getStartTime());
+			Logger::Inst().Log("\tEnd:   " + statistics_timer.getStopTime());
 		}
 	}
 	catch (const std::exception& e)

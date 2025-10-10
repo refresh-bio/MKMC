@@ -16,7 +16,7 @@ void StatisticsGenerator::openReaders()
 	}
 	catch (const std::runtime_error& ex)
 	{
-		std::cerr << "Error: " << ex.what() << std::endl;
+		Logger::Inst().Log(std::string("Error: ") + ex.what());
 		exit(1);
 	}
 }
@@ -81,10 +81,10 @@ bool StatisticsGenerator::readNormalizationData()
 				// do nothing, because missing file is not a problem symptom
 			}
 			if (success) {
-				std::cerr << "Info: previously supplemented learning data for DESeq2 properly opened\n";
+				Logger::Inst().Log("Info: previously supplemented learning data for DESeq2 properly opened.");
 			}
 			else { // learn also for DESeq2, if not learned eariler; will be useful after modularization
-				std::cerr << "Info: DESeq2 learning data is missing; it will be supplemented\n";
+				Logger::Inst().Log("Info: DESeq2 learning data is missing; it will be supplemented.");
 				params.statisticsParams.normalizationLearningWasSupplemented = true;
 
 				Deseq2LearnerRunner deseq2LearnerRunner(params);
@@ -236,7 +236,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 	{
 		if (!readNormalizationData())
 		{
-			std::cerr << "Error: cannot read normalization data." << std::endl;
+			Logger::Inst().Log("Error: cannot read normalization data.");
 			exit(1);
 		}
 	}
