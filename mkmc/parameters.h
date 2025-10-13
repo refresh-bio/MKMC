@@ -270,5 +270,5 @@ struct Params
 class MessagesUtilities
 {
 public:
-	static std::string generateStartingSentence(const std::vector<std::string>& tasks);
+	static std::string generateSentence(const std::vector<std::string>& tasks, bool capitalize = false);
 };

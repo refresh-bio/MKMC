@@ -48,15 +48,6 @@ void StatisticsGenerator::fillTaskData()
 		binsOffsets[it] = binsOffsets[it - 1] + nOutputKmersPerBin[it - 1]; // increase previous index by a size of the next bin
 	}
 
-	uint64_t progressBarTicks = params.mkmcParams.verbosity_level == 0 ? 0 : std::accumulate(nOutputKmersPerBin.begin(), nOutputKmersPerBin.end(), 0ull);
-	if (params.statisticsParams.correctPvalues)
-		progressBarTicks *= 2;
-	progress_bar = std::make_unique<ProgressBar>(
-		progressBarTicks,
-		"Computing statistics",
-		std::cerr,
-		params.mkmcParams.verbosity_level == 0);
-
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return nOutputKmersPerBin[a.binId] > nOutputKmersPerBin[b.binId]; });
 	// correctTasksData does not need to be sorted
 }
@@ -81,10 +72,10 @@ bool StatisticsGenerator::readNormalizationData()
 				// do nothing, because missing file is not a problem symptom
 			}
 			if (success) {
-				Logger::Inst().Log("Info: previously supplemented learning data for DESeq2 properly opened.");
+				Logger::Inst().Log("Info: previously supplemented learning data for DESeq2 opened properly.", 1);
 			}
 			else { // learn also for DESeq2, if not learned eariler; will be useful after modularization
-				Logger::Inst().Log("Info: DESeq2 learning data is missing; it will be supplemented.");
+				Logger::Inst().Log("Info: DESeq2 learning data is missing; it will be supplemented.", 1);
 				params.statisticsParams.normalizationLearningWasSupplemented = true;
 
 				Deseq2LearnerRunner deseq2LearnerRunner(params);
@@ -240,6 +231,15 @@ void StatisticsGenerator::generateStatisticsParallel()
 			exit(1);
 		}
 	}
+
+	uint64_t progressBarTicks = params.mkmcParams.verbosity_level == 0 ? 0 : std::accumulate(nOutputKmersPerBin.begin(), nOutputKmersPerBin.end(), 0ull);
+	if (params.statisticsParams.correctPvalues)
+		progressBarTicks *= 2;
+	progress_bar = std::make_unique<ProgressBar>(
+		progressBarTicks,
+		"Computing statistics",
+		std::cerr,
+		params.mkmcParams.verbosity_level == 0);
 
 	if (params.statisticsParams.correctPvalues)
 	{

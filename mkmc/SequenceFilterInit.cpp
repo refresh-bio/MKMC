@@ -98,20 +98,22 @@ void SequenceFilterInit::convertTxtToFasta()
 
 
 
-void SequenceFilterInit::prepareKmersSequencesToFilter()
+bool SequenceFilterInit::prepareKmersSequencesToFilter()
 {
 	if (!isFastaOrMultiFasta())
 	{
-		Logger::Inst().Log("Starting preparing k-mers for filtering...\n");
+		Logger::Inst().Log("Starting preparing k-mers for filtering...");
 
 		sequence_filter_init.startTimer();
 		convertTxtToFasta();
 		sequence_filter_init.stopTimer();
 
 		params.mutableParams.createdFastaFile = true;
+		return true;
 	}
 	else
 	{
 		params.mutableParams.kmersSequencesToFilterOut = params.filterParams.inputKmersSequencesToFilterOut;
+		return false;
 	}
 }

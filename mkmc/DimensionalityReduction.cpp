@@ -64,7 +64,7 @@ void DimensionalityReduction::runAndStoreUMAP()
 		store(params.mkmcParams.outputFileUMAP, "UMAP", umap_res);
 	}
 	else
-		Logger::Inst().Log("Info: Despite the UMAP failure, MKMC will continue, but no UMAP results will be created\n");
+		Logger::Inst().Log("Info: Despite the UMAP failure, MKMC will continue, but no UMAP results will be created.");
 }
 
 
@@ -105,7 +105,7 @@ void DimensionalityReduction::runAndStorePCA()
 		store(params.mkmcParams.outputFilePCAVariance, std::vector<std::string>{ "variance", "variance_ratio"}, header, variances);
 	}
 	else
-		Logger::Inst().Log("Info: Despite the PCA failure, MKMC will continue, but no PCA results will be created\n");
+		Logger::Inst().Log("Info: Despite the PCA failure, MKMC will continue, but no PCA results will be created.");
 }
 
 

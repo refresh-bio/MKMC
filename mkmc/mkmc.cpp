@@ -40,7 +40,7 @@ public:
 		if (std::find(outputFileTypes.begin(), outputFileTypes.end(), OutputFileType::FASTA) != outputFileTypes.end())
 			tasks.push_back(params.mkmcParams.outputFASTAFile);
 
-		Logger::Inst().Log(std::string("Starting merging samples and dumping to ") + (tasks.size() > 1 ? "files " : "file ") + MessagesUtilities::generateStartingSentence(tasks) + "...\n");
+		Logger::Inst().Log(std::string("\nStarting merging samples and dumping to ") + (tasks.size() > 1 ? "files " : "file ") + MessagesUtilities::generateSentence(tasks) + "...");
 
 		Merger<SIZE> merger(params);
 		merger_timer.startTimer();
@@ -489,6 +489,7 @@ int main(int argc, char** argv)
 	Logger::Inst().Enable(params.mkmcParams.verbosity_level, params.mkmcParams.getLogFileName());
 
 	bool warningPrinted = false;
+	bool filterMsgPrinted = false;
 
 	if (!params.readAdditionalDataFromFiles(warningPrinted))
 		std::exit(1);
@@ -522,24 +523,43 @@ int main(int argc, char** argv)
 		}
 		warningPrinted |= wp;
 
-		if (warningPrinted) // any warning printed; insert distance before start stages
-			Logger::Inst().Log("", 1);
-
 		if (params.filterParams.filterKmersSequences)
 		{
+			if (warningPrinted) // any warning printed; insert distance before start stages
+			{
+				Logger::Inst().Log("", 1);
+				warningPrinted = false;
+			}
+
 			SequenceFilterInit kmersFilter(params, sequence_filter_init);
-			kmersFilter.prepareKmersSequencesToFilter();
+			filterMsgPrinted = kmersFilter.prepareKmersSequencesToFilter();
 		}
 
 		bool dbsReusable = false;
 		if (!params.mkmcParams.reuseDBFiles)
-			Logger::Inst().Log("Starting k-mer counting...\n");
+		{
+			// any msg printed; insert distance before start stages
+			if (filterMsgPrinted)
+				Logger::Inst().Log("");
+			else if (warningPrinted)
+				Logger::Inst().Log("", 1);
+			
+			Logger::Inst().Log("Starting k-mer counting...");
+		}
 		else {
 			dbsReusable = verifyDBsReusability(params);
+			// any filter msg printed; insert distance after that stage
+			if (filterMsgPrinted)
+				Logger::Inst().Log("");
 			if (!dbsReusable)
-				Logger::Inst().Log("Samples databases does not exist or are not possible to reuse. Starting k-mer counting...\n");
+			{
+				// any warning printed; insert distance before start stages
+				if (!filterMsgPrinted && warningPrinted)
+					Logger::Inst().Log("", 1);
+				Logger::Inst().Log("Samples databases does not exist or are not possible to reuse. Starting k-mer counting...");
+			}
 			else
-				Logger::Inst().Log("Samples databases exist and outwardly seem to be possible to reuse.\n");
+				Logger::Inst().Log("Info: Samples databases exist and outwardly seem to be possible to reuse.");
 		}
 
 		if (!dbsReusable)
@@ -572,7 +592,7 @@ int main(int argc, char** argv)
 			if (params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
 				tasks.push_back("reducing number of dimensions");
 
-			Logger::Inst().Log("Starting " + MessagesUtilities::generateStartingSentence(tasks) + "...\n");
+			Logger::Inst().Log("\nStarting " + MessagesUtilities::generateSentence(tasks) + "...");
 
 			StatisticsGenerator statisticsGenerator(params);
 			statistics_timer.startTimer();
@@ -582,11 +602,12 @@ int main(int argc, char** argv)
 
 		finish.finishProcessing();
 
+		Logger::Inst().Log("");
 		if (!dbsReusable)
 		{
 			if (params.mutableParams.createdFastaFile)
 			{
-				Logger::Inst().Log("Preparing temporary FASTA file for sequences filtering out:");
+				Logger::Inst().Log("Preparing k-mers for filtering:");
 				Logger::Inst().Log("\tStart: " + sequence_filter_init.getStartTime());
 				Logger::Inst().Log("\tEnd:   " + sequence_filter_init.getStopTime());
 			}
@@ -601,9 +622,23 @@ int main(int argc, char** argv)
 		if (computeStatistics)
 		{
 			if (params.statisticsParams.normalizationLearningWasSupplemented) // true in a case StatisticsGenerator detected, than DESeq2 learning data is missing
-				Logger::Inst().Log("DESeq2 learning, normalizing and computing statistics:");
+			{
+				std::vector<std::string> tasks{ "DESeq2 learning" };
+				if (params.statisticsParams.generateNormalization)
+					tasks.push_back("normalizing");
+				if (!params.statisticsParams.correlationMethods.empty() || !params.statisticsParams.classificationMethods.empty() || params.statisticsParams.generateEntropy || params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
+					tasks.push_back("computing statistics");
+				Logger::Inst().Log(MessagesUtilities::generateSentence(tasks) + ":");
+			}
 			else
-				Logger::Inst().Log("Normalizing and computing statistics:");
+			{
+				std::vector<std::string> tasks;
+				if (params.statisticsParams.generateNormalization)
+					tasks.push_back("normalizing");
+				if (!params.statisticsParams.correlationMethods.empty() || !params.statisticsParams.classificationMethods.empty() || params.statisticsParams.generateEntropy || params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
+					tasks.push_back("computing statistics");
+				Logger::Inst().Log(MessagesUtilities::generateSentence(tasks, true) + ":");
+			}
 			Logger::Inst().Log("\tStart: " + statistics_timer.getStartTime());
 			Logger::Inst().Log("\tEnd:   " + statistics_timer.getStopTime());
 		}

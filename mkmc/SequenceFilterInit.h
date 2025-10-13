@@ -25,5 +25,5 @@ public:
 		sequence_filter_init(sequence_filter_init)
 	{}
 
-	void prepareKmersSequencesToFilter();
+	bool prepareKmersSequencesToFilter();
 };

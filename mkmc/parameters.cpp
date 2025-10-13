@@ -271,7 +271,7 @@ bool Params::readPhenotypes()
 
 
 
-std::string MessagesUtilities::generateStartingSentence(const std::vector<std::string>& tasks)
+std::string MessagesUtilities::generateSentence(const std::vector<std::string>& tasks, bool capitalize/* = false*/)
 {
 	std::string result;
 	if (tasks.size() == 1)
@@ -289,6 +289,8 @@ std::string MessagesUtilities::generateStartingSentence(const std::vector<std::s
 			result += tasks[i];
 		}
 	}
+	if (capitalize)
+		result.front() = std::toupper(result.front());
 	return result;
 }
 

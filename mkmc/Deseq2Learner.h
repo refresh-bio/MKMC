@@ -65,8 +65,6 @@ public:
 	template<unsigned SIZE>
 	void Run()
 	{
-		Logger::Inst().Log("\nStarting learning for DESeq2 normalization");
-
 		Deseq2Learner<SIZE> deseq2LearnRunner(params);
 		deseq2LearnRunner.learnDeseq2Parallel();
 	}

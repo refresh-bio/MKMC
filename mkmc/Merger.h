@@ -323,8 +323,6 @@ inline void Merger<SIZE>::fillTaskData()
 	{
 		for (auto i : emptySamplesIndices)
 			Logger::Inst().Log("Warning: Sample " + params.mkmcParams.samples[i].name + " has no k-mers; its input files are empty or --ci and --cx parameters are too strict.");
-		if (!emptySamplesIndices.empty())
-			Logger::Inst().Log("");
 	}
 
 	if (!inputIsConsistent())
