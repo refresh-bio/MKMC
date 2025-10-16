@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <string>
-#include <thread>
 #include <cstdint>
 #include "PhenotypeReaders.h"
 #include "kmc_core/kmc_runner.h"
@@ -107,7 +106,7 @@ struct MKMCParams
 	bool totCntGeneration = false;
 	std::string outputFileTotCnt;
 
-	uint32_t nThreads = (std::min)(16U, std::thread::hardware_concurrency());
+	uint32_t nThreads; // initialized in constructor
 	uint32_t nKMCWorkers = 4;
 	uint32_t maxRamGB = 16;
 	bool maxRamGBUserDefined = false;
@@ -122,6 +121,8 @@ struct MKMCParams
 	bool generateForNonNormalized = false;
 
 	int verbosity_level = 0;
+
+	MKMCParams();
 };
 
 struct FilterParams

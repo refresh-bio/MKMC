@@ -5,6 +5,13 @@
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
+#include <thread>
+
+
+
+MKMCParams::MKMCParams() :
+	nThreads((std::min)(16U, std::thread::hardware_concurrency()))
+{}
 
 
 

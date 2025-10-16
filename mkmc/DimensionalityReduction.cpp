@@ -60,6 +60,7 @@ void DimensionalityReduction::runAndStoreUMAP()
 	{
 		const auto& umap_res = umap->result();
 		assert(umap_res.front().size() == params.statisticsParams.nDimensionReduction);
+		assert(umap_res.size() == params.mkmcParams.samples.size());
 
 		store(params.mkmcParams.outputFileUMAP, "UMAP", umap_res);
 	}
@@ -90,10 +91,11 @@ void DimensionalityReduction::runAndStorePCA()
 	{
 		const auto& pca_res = pca->result();
 		assert(pca_res.front().size() == params.statisticsParams.nDimensionReduction);
+		assert(pca_res.size() == params.mkmcParams.samples.size());
+		assert(pca->get_explained_variance().size() == pca->get_explained_variance_ratio().size());
 
 		store(params.mkmcParams.outputFilePCA, "PCA", pca_res);
 
-		assert(pca->get_explained_variance().size() == pca->get_explained_variance_ratio().size());
 		std::vector<std::vector<out_kmcdb_value_type>> variances;
 		std::vector<std::string> header;
 		for (size_t i = 0; i < samplesNames.size(); ++i)
