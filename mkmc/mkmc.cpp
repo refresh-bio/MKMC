@@ -101,7 +101,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	n = correlationGroup->add_option_function("-n", nCallback, "normalize counts (DESeq2/frequency count/quantile normalization) before use")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
 
-	correlationGroup->add_flag("--save_n", statisticsParams.saveNormalization, "save normalized matrix to file")->needs(n);
+	correlationGroup->add_flag("--save_n", statisticsParams.saveNormalization, "save matrix with normalized counts to file")->needs(n);
 
 	std::map<std::string, StatisticsParams::CorrelationMethod> correlationValuesMap{ {"pearson", StatisticsParams::CorrelationMethod::Pearson }, { "spearman", StatisticsParams::CorrelationMethod::Spearman }, {"kendall", StatisticsParams::CorrelationMethod::Kendall } };
 	cor = correlationGroup->add_option("--cor", statisticsParams.correlationMethods, "compute correlation coefficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
@@ -213,7 +213,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	optionalGroup->add_option("-f", mkmcParams.inputFileType, "input format (FASTA, FASTQ or multi-FASTA); mixing files formats is not supported")->transform(CLI::CheckedTransformer(inputValuesMap, CLI::ignore_case))->default_val(mkmcParams.inputFileType)->default_str("fq");
 
 	std::map<std::string, OutputFileType> outputValuesMap{ {"fa", OutputFileType::FASTA }, {"matrix", OutputFileType::Matrix } };
-	optionalGroup->add_option("-o", mkmcParams.outputFileTypes, "output format (FASTA or matrix)")->transform(CLI::CheckedTransformer(outputValuesMap, CLI::ignore_case));
+	optionalGroup->add_option("-o", mkmcParams.outputFileTypes, "save k-mers (FASTA or matrix with unnormalized counts) to file")->transform(CLI::CheckedTransformer(outputValuesMap, CLI::ignore_case));
 
 	std::function<void()> bCallback = [&]()
 	{
@@ -380,6 +380,12 @@ bool checkAndPrintArgumentsWarnings(const Params& params)
 	if (params.statisticsParams.cvParams.seedUserDefined && params.statisticsParams.cvParams.p == 1)
 	{
 		Logger::Inst().Log("Warning: as --leave parameter is set to 1, LOOCV will be performed, which does not need randomness (--cv-seed parameter will be ignored).", 1);
+		result = true;
+	}
+
+	if (params.mkmcParams.reuseDBFiles && !params.mkmcParams.outputFileTypes.empty())
+	{
+		Logger::Inst().Log("Warning: when database reuse is possible (--reuse--db) FASTA or matrix with unnormalized counts (-o) will not be generated.", 1);
 		result = true;
 	}
 

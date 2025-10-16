@@ -41,7 +41,7 @@ Options:
 [Option Group: correlation and normalization]
   Options:
  - `-n ENUM:value in {deseq,freq,q}` - normalize counts (DESeq2/frequency count/quantile normalization) before use
- - `--save_n` - save normalized matrix to file
+ - `--save_n` - save matrix with normalized counts to file
  - `--cor ENUM:value in {kendall,pearson,spearman}` ... Needs: `-n` `-p` - compute correlation coefficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a sequence of integers, one in each line)
  
@@ -89,7 +89,7 @@ Options:
 [Option Group: additional parameters]
   Options:
  - `-f ENUM:value in {fa,fq,mf} [fq]` - input format (FASTA, FASTQ or multi-FASTA); mixing files formats is not supported
- - `-o ENUM:value in {fa,matrix} [matrix]  ...` - output format (FASTA or matrix)
+ - `-o ENUM:value in {fa,matrix} [matrix]  ...` - save k-mers (FASTA or matrix with unnormalized counts) to file
  - `-b` - turn off transformation of k-mers into canonical form; applies both for input sequences and k-mers passed by `--flt`
  - `--ci UINT:POSITIVE [1]` - exclude k-mers occurring less than specified number of times (if k-mer occurs less than --ci times in a sample, it gets counter 0, but for this sample only)
  - `--cx UINT:POSITIVE [4000000000]` - exclude counting k-mers occurring more than specified number of times (if k-mer occurs more than --cx times in a sample, it gets counter 0, but for this sample only)
