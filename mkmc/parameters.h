@@ -233,7 +233,7 @@ struct DefaultKMCParams
 {
 	const uint32_t k = 25;
 	const uint64_t ci = 1;
-	const uint64_t cx = static_cast<uint32_t>(4e9);
+	const uint64_t cx = static_cast<uint64_t>(4e9);
 	const uint64_t cs = 65535;
 };
 

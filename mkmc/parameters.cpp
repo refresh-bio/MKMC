@@ -50,9 +50,11 @@ Params::Params() :
 
 	stage1Params.SetSignatureSelectionScheme(KMC::SignatureSelectionScheme::min_hash);
 
-	stage1Params.SetCutoffMin(1);
-	stage1Params.SetCutoffMax(static_cast<uint64_t>(4E9));
-	stage1Params.SetCounterMax(65535);
+	// set KMC defaults
+	stage1Params.SetCutoffMin(defaultKMCParams.ci);
+	stage1Params.SetCutoffMax(defaultKMCParams.cx);
+	stage1Params.SetCounterMax(defaultKMCParams.cs);
+	stage1Params.SetKmerLen(defaultKMCParams.k);
 
 	static KMC::NullPercentProgressObserver nullPercentProgressObserver;
 	static KMC::NullProgressObserver nullProgressObserver;

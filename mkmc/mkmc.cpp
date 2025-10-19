@@ -60,16 +60,13 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	StatisticsParams& statisticsParams = params.statisticsParams;
 	Phenotypes& phenotypes = params.phenotypes;
 
-	// set KMC defaults
-	stage1Params.SetKmerLen(defaultKMCParams.k);
-	stage1Params.SetCutoffMin(defaultKMCParams.ci);
-	stage1Params.SetCutoffMax(defaultKMCParams.cx);
-	stage1Params.SetCounterMax(defaultKMCParams.cs);
+	app.get_formatter()->column_width(33);
+	app.get_formatter()->label("REQUIRED", "REQD");
 
 	CLI::Option* p = nullptr, * n = nullptr, * cor = nullptr, * differentialAnalysis = nullptr, *pvalCorr, * c = nullptr;
 
-	app.add_option("input_samples_file", mkmcParams.inputFileName, "file with a list of samples and input files in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
-	app.add_option("output_files_template", mkmcParams.outputFilesTemplate, "template (prefix) of output files names")->required();
+	app.add_option("input_samples", mkmcParams.inputFileName, "file with a list of samples and input files in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
+	app.add_option("output_files_prefix", mkmcParams.outputFilesTemplate, "template (prefix) of output files names")->required();
 	app.add_option("temp_dir", mkmcParams.tmpPath, "directory for temporary files")->required();
 
 	std::function<void(const uint32_t&)> kCallback = [&](const uint32_t& k)
@@ -89,7 +86,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 		filterParams.inputKmersSequencesToFilterOut = fileName;
 		filterParams.filterKmersSequences = true;
 	};
-	filteringGroup->add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one per line) only; if -b is not set, the k-mers are converted to canonical form")->check(CLI::ExistingFile);
+	filteringGroup->add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one per line) only; -b is used accordingly")->check(CLI::ExistingFile);
 
 	CLI::Option_group* correlationGroup = app.add_option_group("correlation and normalization");
 
@@ -275,14 +272,17 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	differentialAnalysis->needs(c);
 
 	app.footer("Warning: k-mers order in output files is not specified and may vary between runnings.\n\n"
-		"Example: to run MKMC, type:\n"
+		"Example: to obtain statistics use i.a. one or many of the parameters: -n, --cor, --diff, --cv, --entropy, --umap, --pca. "
+		"Statistics will be computed basing on counts matrix, which may be generated as follows:\n"
 		"    ./mkmc -k 20 --thr_rat 0.5 input_files_list.txt output tmp\n"
 		"It will generate a matrix of 20-mers occurring in at least a half of the input files.\n"
 		"    ./mkmc -k 20 --thr 2 --thr_rat 0.5 input_files_list.txt output tmp\n"
-		"It will generate a matrix of 20-mers occurring at least twice in at least a half of the input files.\n\n"
+		"It will generate a matrix of 20-mers occurring at least twice in at least a half of the input files.\n"
+		"To save the matrix to a text file use -o matrix.\n\n"
 		"input_files_list.txt example:\n"
 		"    killifishretina1 kfA_1.fastq.gz kfA_2.fastq.gz\n"
-		"    killifishretina2 kfB.fastq.gz");
+		"    killifishretina2 kfB.fastq.gz"
+	);
 }
 
 

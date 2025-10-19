@@ -4,11 +4,13 @@
 
 
 MKMC is a software utilizing KMC to count k-mers in each of the predefined input samples.
-Then it combines multiple KMC databases into one single file binary .kmcdb file and, optionally, a text matrix.
-The latter file is a matrix with k-mers as rows and samples as columns. The values are counts of k-mers in samples.
+Then it combines multiple KMC databases into one single matrix, which optionally is saved into binary .kmcdb file and a text file.
+The latter file contains k-mers as rows and samples as columns. The values are counts of k-mers in samples.
 FASTA output files, containg k-mers sequences only, are also supported.
 
-### Building
+The matrix may be utilized to compute many of statistics (normalization, correlation, differential k-mers analysis, cross-validation, entropy, UMAP, PCA).
+
+## Building
 The easiest way to get the program is to download the most recent version from the [**release page**](https://github.com/refresh-bio/MKMC/releases).
 
 To build own binary clone the repository with the command:
@@ -17,15 +19,15 @@ git clone --recurse-submodules https://github.com/refresh-bio/MKMC-dev.git
 ```
 To build on Linux type `make -j` (make and G++ 11 or newer are required). To build on Windows use Visual Studio 2022 or newer.
 
-### General usage
+## Usage
 ```
-./mkmc [OPTIONS] -- input_samples_file output_files_template temp_dir
+./mkmc [OPTIONS] -- input_samples output_files_prefix temp_dir
 ```
 
 Positionals:
-  - `input_samples_file TEXT:FILE REQUIRED` - file with a list of samples and input files in specified (`-f` parameter) format (gzipped or not)
-  - `output_files_template TEXT REQUIRED` - template (prefix) of output files names
-  - `temp_dir TEXT:DIR REQUIRED` - directory for temporary files
+  - `input_samples TEXT:FILE REQD` - file with a list of samples and input files in specified (`-f` parameter) format (gzipped or not)
+  - `output_files_prefix TEXT REQD` - template (prefix) of output files names
+  - `temp_dir TEXT:DIR REQD` - directory for temporary files
 
 Options:
  - `-h,--help` - Print this help message and exit
@@ -36,7 +38,7 @@ Options:
   Options:
  - `--thr UINT:POSITIVE [1]` - filter out k-mers occuring less than specified number of times...
  - `--thr_rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
- - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one per line) only; if `-b` is not set, the k-mers are converted to canonical form
+ - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one per line) only; `-b` is used accordingly
  
 [Option Group: correlation and normalization]
   Options:
@@ -111,23 +113,25 @@ K-mers order in output files is not specified and may vary between runnings.
 > [!warning]  
 **K-mers order in output files is not specified and may vary between runnings.**
 
-### Example
-To run MKMC, type:
+## Examples
+To obtain the statistics use i.a. one or many of the parameters: `-n`, `--cor`, `--diff`, `--cv`, `--entropy`, `--umap`, `--pca`. Statistics will be computed basing on counts matrix, which may be generated as follows.
+
+### Generating matrix examples
 ```
 ./mkmc -k 20 --thr_rat 0.5 -- input_files_list.txt output tmp
 ```
-It will generate a binary matrix file `output.kmcdb` of 20-mers occurring in at least a half of the input files.
-
-To obtain also a text matrix dump, type:
-```
-./mkmc -k 20 --thr_rat 0.5 -o matrix -- input_files_list.txt output tmp
-```
-It will generate also a file `output_matrix`.
+It will generate a matrix (if `--keep` given, stored in a binary file `output.kmcdb`) of 20-mers occurring in at least a half of the input files.
 
 ```
 ./mkmc -k 20 --thr 2 --thr_rat 0.5 -- input_files_list.txt output tmp
 ```
 It will generate a matrix of 20-mers occurring at least twice in at least a half of the input files.
+
+To save the matrix to a text file use `-o matrix`:
+```
+./mkmc -k 20 --thr_rat 0.5 -o matrix -- input_files_list.txt output tmp
+```
+It will generate a file `output_matrix`.
 
 `input_files_list.txt` example:
 ```
@@ -135,8 +139,8 @@ killifishretina1 kfA_1.fastq.gz kfA_2.fastq.gz
 killifishretina2 kfB.fastq.gz`
 ```
 
-### Results example
-Let's assume following FASTQ files:
+### Results examples
+The matrix is generated accordingly to the following. Let's assume FASTQ files contents:
  - `1_1.fq`:
 ```
 @Common k-mers
@@ -190,7 +194,7 @@ To have k-mers that were present in each input sample one may use:
 ```
 ./mkmc -k25 -f fq --thr_rat 1 -- files.txt present-in-all tmp
 ```
-The output (binary `present-in-all.kmcdb`; see `Example` section to see, how to obtain also a text matrix dump) is then:
+The output matrix (refer `Generating matrix examples` section to see, how to obtain a text matrix file) is then:
 ```
 k-mer	sample1	sample2	sample3	
 ACCCCTGGGTTTTAACCCACGTACG	1	1	1
@@ -200,7 +204,7 @@ To have k-mers that were present in at least half of the samples one may use the
 ```
 ./mkmc -k 25 -f fq --thr_rat 0.5 -- files.txt present-in-at-least-half-files tmp
 ```
-The output (`present-in-at-least-half-files.kmcdb`) is then:
+The output matrix is then:
 ```
 k-mer	sample1	sample2	sample3	
 AAAACACACAAACAGATAAACAGAT	1	1	0
@@ -213,7 +217,7 @@ To have k-mers that were present in any of the samples one may use the following
 ```
 ./mkmc -k 25 -f fq --thr_rat 0 -- files.txt present-in-any tmp
 ```
-The output (`present-in-any.kmcdb`) is then:
+The output matrix is then:
 ```
 k-mer	sample1	sample2	sample3	
 AAAACACACAAACAGATAAACAGAT	1	1	0
@@ -223,10 +227,3 @@ ACGTACGTGGGTTAAAACCCAGGGG	1	1	1
 ACGTAGGTGGGTTAATTCCCAGGGG	0	0	1
 TAAAACACACAAACAGATAAACAGA	1	1	0
 ```
-
-### Current performance
-This is an initial version of code with limited optimizations and parallelism.
-
-We have obtained the following benchmarks (on a computer equipped with AMD Ryzen Threadripper 3990X 64-Core processor) for 0.0.1 version:
- - for all the 201 files ca. 3,5h of computation, 66GB of RAM, and 800GB of HDD for temporary files required, the output file (for `-thr_rat0.5`) size was 23GB
- - for a subset of 36 files ca. 50min. of computation, 50GB of RAM required
