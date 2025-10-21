@@ -1,3 +1,3 @@
 #pragma once
 
-#define MKMC_VER "0.21.0"
+#define MKMC_VER "0.22.0"
