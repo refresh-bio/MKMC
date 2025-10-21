@@ -180,53 +180,109 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 	void flush(const Params& params, const std::vector<std::string>& cnt_matrix_output_header)
 	{
 		if (pearson)
+		{
 			flush_for(*pearson,
 				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 				params.mkmcParams.outputFilePearsonTop, { "pearson" },
 				params.mkmcParams.outputFilePearsonTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFilePearsonTopFasta);
+			Logger::Inst().Log("Info: generating Pearson top results to " + params.mkmcParams.outputFilePearsonTop + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers with correlation values.", 2);
+			Logger::Inst().Log("Info: generating Pearson top results to " + params.mkmcParams.outputFilePearsonTopCntMatrix + ".", 2);
+			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: generating Pearson top results to " + params.mkmcParams.outputFilePearsonTopFasta + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+		}
 
 		if (spearman)
+		{
 			flush_for(*spearman,
 				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 				params.mkmcParams.outputFileSpearmanTop, { "spearman" },
 				params.mkmcParams.outputFileSpearmanTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileSpearmanTopFasta);
+			Logger::Inst().Log("Info: generating Spearman top results to " + params.mkmcParams.outputFileSpearmanTop + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers with correlation values.", 2);
+			Logger::Inst().Log("Info: generating Spearman top results to " + params.mkmcParams.outputFileSpearmanTopCntMatrix + ".", 2);
+			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: generating Spearman top results to " + params.mkmcParams.outputFileSpearmanTopFasta + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+		}
 
 		if (kendall)
+		{
 			flush_for(*kendall,
 				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 				params.mkmcParams.outputFileKendallTop, { "kendall" },
 				params.mkmcParams.outputFileKendallTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileKendallTopFasta);
+			Logger::Inst().Log("Info: generating Kendall Tau top results to " + params.mkmcParams.outputFileKendallTop + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers with correlation values.", 2);
+			Logger::Inst().Log("Info: generating Kendall Tau top results to " + params.mkmcParams.outputFileKendallTopCntMatrix + ".", 2);
+			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: generating Kendall Tau top results to " + params.mkmcParams.outputFileKendallTopFasta + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+		}
 
 		if (entropy)
+		{
 			flush_for(*entropy,
 				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 				params.mkmcParams.outputFileEntropyTop, { "entropy" },
 				params.mkmcParams.outputFileEntropyTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileEntropyTopFasta);
+			Logger::Inst().Log("Info: generating entropy top results to " + params.mkmcParams.outputFileEntropyTop + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers with entropy values.", 2);
+			Logger::Inst().Log("Info: generating entropy top results to " + params.mkmcParams.outputFileEntropyTopCntMatrix + ".", 2);
+			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: generating entropy top results to " + params.mkmcParams.outputFileEntropyTopFasta + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+		}
 
 		if (snr)
+		{
 			flush_for(*snr,
 				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 				params.mkmcParams.outputFileSNRTop, { "snr" },
 				params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileSNRTopFasta);
+			Logger::Inst().Log("Info: generating signal to noise ratio top results to " + params.mkmcParams.outputFileSNRTop + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers with SNR results.", 2);
+			Logger::Inst().Log("Info: generating signal to noise ratio top results to " + params.mkmcParams.outputFileSNRTopCntMatrix + ".", 2);
+			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: generating signal to noise ratio top results to " + params.mkmcParams.outputFileSNRTopFasta + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+		}
 
 		if (unnormalizedSnr)
+		{
 			flush_for(*unnormalizedSnr,
 				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 				params.mkmcParams.outputFileUnnormalizedSNRTop, { "snr_for_unnormalized" },
 				params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileUnnormalizedSNRTopFasta);
+			Logger::Inst().Log("Info: generating unnormalized signal to noise ratio top results to " + params.mkmcParams.outputFileUnnormalizedSNRTop + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers with SNR results.", 2);
+			Logger::Inst().Log("Info: generating unnormalized signal to noise ratio top results to " + params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix + ".", 2);
+			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: generating unnormalized signal to noise ratio top results to " + params.mkmcParams.outputFileUnnormalizedSNRTopFasta + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+		}
 
 		if (dids)
+		{
 			flush_for(*dids,
 				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
 				params.mkmcParams.outputFileDIDSTop, { "dids" },
 				params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileDIDSTopFasta);
+			Logger::Inst().Log("Info: generating DIDS top results to " + params.mkmcParams.outputFileDIDSTop + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers with DIDS results.", 2);
+			Logger::Inst().Log("Info: generating DIDS top results to " + params.mkmcParams.outputFileDIDSTopCntMatrix + ".", 2);
+			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: generating DIDS top results to " + params.mkmcParams.outputFileDIDSTopFasta + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+		}
 	}
 
 public:
@@ -407,36 +463,79 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 		for (size_t i = 0; i < nInputsPerTest; ++i)
 			matrixHeader[i] = whole_cnt_matrix_output_header[samplesToExcludeOrder[i + p]];
 
+		std::string removedSamplesText;
+		for (size_t i = 0; i < p; ++i)
+		{
+			removedSamplesText += whole_cnt_matrix_output_header[samplesToExcludeOrder[i]];
+			if (i != p - 1)
+				removedSamplesText += ", ";
+		}
+
 		for (size_t iTest = 0; iTest < nTests; ++iTest)
 		{
 			if (!pearson.empty())
 			{
+				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Pearson, nSamples, iTest, pearson.size());
+				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Pearson, nSamples, iTest, pearson.size());
+				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Pearson, nSamples, iTest, pearson.size());
 				flush_for(*pearson[iTest],
 					params.stage1Params.GetKmerLen(), nCols,
-					params.statisticsParams.cvParams.getOuputFileNameTop(Pearson, nSamples, iTest, pearson.size()), { "pearson" },
-					params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Pearson, nSamples, iTest, pearson.size()), matrixHeader,
-					params.statisticsParams.cvParams.getOuputFileNameTopFasta(Pearson, nSamples, iTest, pearson.size()));
+					top, { "pearson" },
+					topCntMatrix, matrixHeader,
+					topFasta);
+					Logger::Inst().Log("Info: generating Pearson cross-validation results to " + top + ".", 2);
+					Logger::Inst().Log("Info: The file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
+					Logger::Inst().Log("Info: generating Pearson cross-validation results to " + topCntMatrix + ".", 2);
+					Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+					Logger::Inst().Log("Info: generating Pearson cross-validation results to " + topFasta + ".", 2);
+					Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
 			}
 			if (!spearman.empty())
 			{
+				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Spearman, nSamples, iTest, pearson.size());
+				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Spearman, nSamples, iTest, pearson.size());
+				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Spearman, nSamples, iTest, pearson.size());
 				flush_for(*spearman[iTest],
 					params.stage1Params.GetKmerLen(), nCols,
-					params.statisticsParams.cvParams.getOuputFileNameTop(Spearman, nSamples, iTest, pearson.size()), { "spearman" },
-					params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Spearman, nSamples, iTest, pearson.size()), matrixHeader,
-					params.statisticsParams.cvParams.getOuputFileNameTopFasta(Spearman, nSamples, iTest, pearson.size()));
+					top, { "spearman" },
+					topCntMatrix, matrixHeader,
+					topFasta);
+					Logger::Inst().Log("Info: generating Spearman cross-validation results to " + top + ".", 2);
+					Logger::Inst().Log("Info: The file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
+					Logger::Inst().Log("Info: generating Spearman cross-validation results to " + topCntMatrix + ".", 2);
+					Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+					Logger::Inst().Log("Info: generating Spearman cross-validation results to " + topFasta + ".", 2);
+					Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
 			}
 			if (!kendall.empty())
 			{
+				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Kendall, nSamples, iTest, pearson.size());
+				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Kendall, nSamples, iTest, pearson.size());
+				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Kendall, nSamples, iTest, pearson.size());
 				flush_for(*kendall[iTest],
 					params.stage1Params.GetKmerLen(), nCols,
-					params.statisticsParams.cvParams.getOuputFileNameTop(Kendall, nSamples, iTest, pearson.size()), { "kendall" },
-					params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Kendall, nSamples, iTest, pearson.size()), matrixHeader,
-					params.statisticsParams.cvParams.getOuputFileNameTopFasta(Kendall, nSamples, iTest, pearson.size()));
+					top, { "kendall" },
+					topCntMatrix, matrixHeader,
+					topFasta);
+					Logger::Inst().Log("Info: generating Kendall Tau cross-validation results to " + top + ".", 2);
+					Logger::Inst().Log("Info: The file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
+					Logger::Inst().Log("Info: generating Kendall Tau cross-validation results to " + topCntMatrix + ".", 2);
+					Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+					Logger::Inst().Log("Info: generating Kendall Tau cross-validation results to " + topFasta + ".", 2);
+					Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
 			}
 
 			if (iTest != nTests - 1)
+			{
+				removedSamplesText.clear();
 				for (size_t i = 0; i < p; ++i)
+				{
 					matrixHeader[iTest * p + i] = whole_cnt_matrix_output_header[samplesToExcludeOrder[iTest * p + i]];
+					removedSamplesText += whole_cnt_matrix_output_header[samplesToExcludeOrder[(iTest + 1) * p + i]];
+					if (i != p - 1)
+						removedSamplesText += ", ";
+				}
+			}
 		}
 	}
 

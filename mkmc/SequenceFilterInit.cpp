@@ -103,6 +103,7 @@ bool SequenceFilterInit::prepareKmersSequencesToFilter()
 	if (!isFastaOrMultiFasta())
 	{
 		Logger::Inst().Log("Starting preparing k-mers for filtering...");
+		Logger::Inst().Log("Info: raw k-mers from " + params.filterParams.inputKmersSequencesToFilterOut + " file will be converted to a temporary FASTA file " + params.mutableParams.kmersSequencesToFilterOut + ".", 2);
 
 		sequence_filter_init.startTimer();
 		convertTxtToFasta();

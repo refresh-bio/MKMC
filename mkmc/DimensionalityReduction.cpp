@@ -63,6 +63,8 @@ void DimensionalityReduction::runAndStoreUMAP()
 		assert(umap_res.size() == params.mkmcParams.samples.size());
 
 		store(params.mkmcParams.outputFileUMAP, "UMAP", umap_res);
+		Logger::Inst().Log("Info: generating UMAP results to " + params.mkmcParams.outputFileUMAP + ".", 2);
+		Logger::Inst().Log("Info: The file contains matrix with samples as columns and dimensions as rows.", 2);
 	}
 	else
 		Logger::Inst().Log("Info: Despite the UMAP failure, MKMC will continue, but no UMAP results will be created.");
@@ -95,6 +97,8 @@ void DimensionalityReduction::runAndStorePCA()
 		assert(pca->get_explained_variance().size() == pca->get_explained_variance_ratio().size());
 
 		store(params.mkmcParams.outputFilePCA, "PCA", pca_res);
+		Logger::Inst().Log("Info: generating PCA results to " + params.mkmcParams.outputFilePCA + ".", 2);
+		Logger::Inst().Log("Info: The file contains matrix with samples as columns and dimensions as rows.", 2);
 
 		std::vector<std::vector<out_kmcdb_value_type>> variances;
 		std::vector<std::string> header;
@@ -105,6 +109,8 @@ void DimensionalityReduction::runAndStorePCA()
 		}
 
 		store(params.mkmcParams.outputFilePCAVariance, std::vector<std::string>{ "variance", "variance_ratio"}, header, variances);
+		Logger::Inst().Log("Info: generating PCA variance results to " + params.mkmcParams.outputFilePCAVariance + ".", 2);
+		Logger::Inst().Log("Info: The file contains matrix with samples as columns and two rows: variance and variance ratio.", 2);
 	}
 	else
 		Logger::Inst().Log("Info: Despite the PCA failure, MKMC will continue, but no PCA results will be created.");

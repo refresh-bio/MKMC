@@ -42,6 +42,11 @@ public:
 
 		Logger::Inst().Log(std::string("\nStarting merging samples and dumping to ") + (tasks.size() > 1 ? "files " : "file ") + MessagesUtilities::generateSentence(tasks) + "...");
 
+		if (params.statisticsParams.generateNormalization)
+			Logger::Inst().Log("Info: creating temporary " + params.mkmcParams.normLearningBinFile + " file for perform further normalization.", 2);
+		if (params.mkmcParams.totCntGeneration)
+			Logger::Inst().Log("Info: creating " + params.mkmcParams.outputFileTotCnt + " file with total k-mers counts in samples.", 2);
+
 		Merger<SIZE> merger(params);
 		merger_timer.startTimer();
 		merger.mergeParallel();
@@ -257,7 +262,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	optionalGroup->add_flag_callback("-r", rCallback, "count k-mers in RAM only");
 
-	optionalGroup->add_flag("-v", mkmcParams.verbosity_level, "verbose mode, shows progress and minor warnings");
+	optionalGroup->add_flag("-v", mkmcParams.verbosity_level, "verbose mode, shows progress and minor warnings, may be given up to 2 times");
 
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
 	auto keep = debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
@@ -389,6 +394,12 @@ bool checkAndPrintArgumentsWarnings(const Params& params)
 		result = true;
 	}
 
+	if (params.mkmcParams.verbosity_level > 2)
+	{
+		Logger::Inst().Log("Warning: MKMC supports verbosity level up to 2 (-v).", 1);
+		result = true;
+	}
+
 	if (params.statisticsParams.learnDeseq2 && params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2)
 	{
 		Logger::Inst().Log("Warning: --learn-deseq is not necessary, when DESeq2 normalization is performed (-n deseq is set).", 1);
@@ -404,34 +415,51 @@ bool verifyDBsReusability(const Params& params)
 {
 	if (params.filterParams.filterKmersSequences)
 	{
+		bool result = true;
 		try
 		{
 			kmcdb::MetadataReader sequencesToFilterMetadataReader(params.filterParams.kmersSequencesToFilterOutDB, false);
 			if (params.stage1Params.GetKmerLen() != sequencesToFilterMetadataReader.GetConfig().kmer_len)
-				return false;
+				result = false;
 		}
 		catch (const std::runtime_error&)
 		{
+			result = false;
+		}
+		if (result)
+			Logger::Inst().Log("Info: database with k-mers to be filtered out " + params.filterParams.kmersSequencesToFilterOutDB + " exists.", 2);
+		else
+		{
+			Logger::Inst().Log("Info: database with k-mers to be filtered out " + params.filterParams.kmersSequencesToFilterOutDB + " does not exist or is created for different k-mer length.", 2);
 			return false;
 		}
 	}
 
+	bool result = true;
 	try
 	{
 		kmcdb::MetadataReader matrixMetadataReader(params.mkmcParams.outputMatrixBinFile, false);
 		if (params.stage1Params.GetKmerLen() != matrixMetadataReader.GetConfig().kmer_len)
-			return false;
+			result = false;
 
 		if (matrixMetadataReader.GetConfig().num_samples != params.mkmcParams.samples.size())
-			return false;
+			result = false;
 	}
 	catch (const std::runtime_error&)
 	{
+		result = false;
+	}
+	if (result)
+		Logger::Inst().Log("Info: binary matrix file " + params.mkmcParams.outputMatrixBinFile + " exists.", 2);
+	else
+	{
+		Logger::Inst().Log("Info: binary matrix file " + params.mkmcParams.outputMatrixBinFile + " does not exist or is created for different k-mer length, or contains other number of samples.", 2);
 		return false;
 	}
 
 	if (params.statisticsParams.generateNormalization)
 	{
+		bool result = true;
 		try
 		{
 			MatrixStatsReader statsReader(params.mkmcParams.normLearningBinFile);
@@ -439,13 +467,22 @@ bool verifyDBsReusability(const Params& params)
 			// For DESeq2 there is possibility to supplement required learning data later, but here we verify reusability, thus data should be consistent (the more, --learn-deseq is available).
 			// For another methods the learning data should always be present, if file exists.
 			if (!statsReader.Get(StatisticsParams::getNormalizationMethodStreamName(params.statisticsParams.normalizationMethod), tmp))
-				return false;
+				result = false;
 		}
 		catch (const std::runtime_error&)
 		{
+			result = false;
+		}
+		if (result)
+			Logger::Inst().Log("Info: file with data for normalization " + params.mkmcParams.normLearningBinFile + " exists.", 2);
+		else
+		{
+			Logger::Inst().Log("Info: file with data for normalization " + params.mkmcParams.normLearningBinFile + " does not exist or does not contain data for the specified normalization.", 2);
 			return false;
 		}
 	}
+
+	Logger::Inst().Log("Info: MKMC is not able to verify --thr and --thr_rat consistency, thus we assume it.", 2);
 
 	// Actually, values of old --thr and --thr_rat parameters should be equal to current,
 	// however currently it is impossible to compare them.
@@ -551,8 +588,10 @@ int main(int argc, char** argv)
 				Logger::Inst().Log("", 1);
 			
 			Logger::Inst().Log("Starting k-mer counting...");
+			Logger::Inst().Log("Info: generating temporary KMC databases to " + params.mkmcParams.tmpPath + " directory.", 2);
 		}
 		else {
+			Logger::Inst().Log("Info: --reuse-db flag given, verifying, if previously created k-mers databases exist.", 2);
 			dbsReusable = verifyDBsReusability(params);
 			// any filter msg printed; insert distance after that stage
 			if (filterMsgPrinted)
@@ -563,6 +602,9 @@ int main(int argc, char** argv)
 				if (!filterMsgPrinted && warningPrinted)
 					Logger::Inst().Log("", 1);
 				Logger::Inst().Log("Samples databases does not exist or are not possible to reuse. Starting k-mer counting...");
+				Logger::Inst().Log("Info: generating temporary KMC databases to " + params.mkmcParams.tmpPath + " directory.", 2);
+				if (params.filterParams.filterKmersSequences)
+					Logger::Inst().Log("Info: generating temporary KMC database " + params.filterParams.kmersSequencesToFilterOutDB + " of k-mers to be filtered out.", 2);
 			}
 			else
 				Logger::Inst().Log("Info: Samples databases exist and outwardly seem to be possible to reuse.");

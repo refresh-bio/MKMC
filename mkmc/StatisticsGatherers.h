@@ -382,21 +382,29 @@ void WritingGatherer<Statistics_T, VALUE_T>::initWriting(
 	{
 		writers.pearson = std::make_unique<TextFileWriter>(params.mkmcParams.outputFilePearson, multiThreadedGeneration);
 		writers.pearson->StoreHeader({ "pearson" });
+		Logger::Inst().Log("Info: generating Pearson correlation to " + params.mkmcParams.outputFilePearson + ".", 2);
+		Logger::Inst().Log("Info: The file contains k-mers with the correlation values.", 2);
 	}
 	if (statisticsToGeneration.spearman)
 	{
 		writers.spearman = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileSpearman, multiThreadedGeneration);
 		writers.spearman->StoreHeader({ "spearman" });
+		Logger::Inst().Log("Info: generating Spearman correlation to " + params.mkmcParams.outputFileSpearman + ".", 2);
+		Logger::Inst().Log("Info: The file contains k-mers with the correlation values.", 2);
 	}
 	if (statisticsToGeneration.kendall)
 	{
 		writers.kendall = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileKendall, multiThreadedGeneration);
 		writers.kendall->StoreHeader({ "kendall" });
+		Logger::Inst().Log("Info: generating Kendall Tau correlation to " + params.mkmcParams.outputFileKendall + ".", 2);
+		Logger::Inst().Log("Info: The file contains k-mers with the correlation values.", 2);
 	}
 	if (statisticsToGeneration.entropy)
 	{
 		writers.entropy = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileEntropy, multiThreadedGeneration);
 		writers.entropy->StoreHeader({ "entropy" });
+		Logger::Inst().Log("Info: generating entropy to " + params.mkmcParams.outputFileEntropy + ".", 2);
+		Logger::Inst().Log("Info: The file contains k-mers with the entropy values.", 2);
 	}
 	if (statisticsToGeneration.tTest)
 	{
@@ -404,30 +412,44 @@ void WritingGatherer<Statistics_T, VALUE_T>::initWriting(
 		{
 			writers.tTest = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileTTestCor, multiThreadedGeneration);
 			writers.tTest->StoreHeader({ "ttest_p_val_corrected", "ttest_df", "ttest_statistic" });
+			Logger::Inst().Log("Info: generating corrected T-Test results to " + params.mkmcParams.outputFileTTestCor + ".", 2);
+			Logger::Inst().Log("Info: The file contains k-mers with T-Test corrected p-values, df statistics, and T-Test values.", 2);
 
 			writers.tTestSignificant = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileTTestCorSignificant, multiThreadedGeneration);
 			writers.tTestSignificant->StoreHeader({ "ttest_p_val_corrected", "ttest_df", "ttest_statistic" });
+			Logger::Inst().Log("Info: generating corrected T-Test results to " + params.mkmcParams.outputFileTTestCorSignificant + ".", 2);
+			Logger::Inst().Log("Info: The file contains statistically significant k-mers with T-Test corrected p-values, df statistics, and T-Test values.", 2);
 
 			writers.tTestSignificantCntMatrix = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileTTestCorSignificantCntMatrix, multiThreadedGeneration);
 			writers.tTestSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
+			Logger::Inst().Log("Info: generating matrix of statistically significant k-mers obtainted by corrected T-Test results to " + params.mkmcParams.outputFileTTestCorSignificantCntMatrix + ".", 2);
+			Logger::Inst().Log("Info: The file contains counts matrix of statistically significant k-mers.", 2);
 
 			writers.tTestSignificantFasta = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileTTestCorSignificantFasta, multiThreadedGeneration);
+			Logger::Inst().Log("Info: generating k-mers obtainted by corrected T-Test results to " + params.mkmcParams.outputFileTTestCorSignificantFasta + ".", 2);
+			Logger::Inst().Log("Info: The file contains statistically significant k-mers in FASTA format.", 2);
 		}
 		else
 		{
 			writers.tTest = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileTTest, multiThreadedGeneration);
 			writers.tTest->StoreHeader({ "ttest_p_val", "ttest_df", "ttest_statistic" });
+			Logger::Inst().Log("Info: generating T-Test results to " + params.mkmcParams.outputFileTTest + ".", 2);
+			Logger::Inst().Log("Info: The file contains k-mers with T-Test p-values, df statistics, and T-Test values.", 2);
 		}
 	}
 	if (statisticsToGeneration.snr)
 	{
 		writers.snr = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileSNR, multiThreadedGeneration);
 		writers.snr->StoreHeader({ "snr" });
+		Logger::Inst().Log("Info: generating signal to noise ratio results to " + params.mkmcParams.outputFileSNR + ".", 2);
+		Logger::Inst().Log("Info: The file contains k-mers with SNR results.", 2);
 	}
 	if (statisticsToGeneration.unnormalizedSnr)
 	{
 		writers.unnormalizedSnr = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileUnnormalizedSNR, multiThreadedGeneration);
 		writers.unnormalizedSnr->StoreHeader({ "snr_for_unnormalized" });
+		Logger::Inst().Log("Info: generating unnormalized signal to noise ratio results to " + params.mkmcParams.outputFileUnnormalizedSNR + ".", 2);
+		Logger::Inst().Log("Info: The file contains k-mers with SNR results.", 2);
 	}
 	if (statisticsToGeneration.wrs)
 	{
@@ -435,25 +457,37 @@ void WritingGatherer<Statistics_T, VALUE_T>::initWriting(
 		{
 			writers.wrs = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileWilcoxonRankSumCor, multiThreadedGeneration);
 			writers.wrs->StoreHeader({ "wrs_p_val_corrected", "wrs_U1_statistic", "wrs_U2_statistic" });
+			Logger::Inst().Log("Info: generating corrected Wilcoxon-rank sum (Mann-Whitney U test) results to " + params.mkmcParams.outputFileWilcoxonRankSumCor + ".", 2);
+			Logger::Inst().Log("Info: The file contains k-mers with WRS corrected p-values, U1, and U2 statistics.", 2);
 
 			writers.wrsSignificant = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificant, multiThreadedGeneration);
 			writers.wrsSignificant->StoreHeader({ "wrs_p_val_corrected", "wrs_U1_statistic", "wrs_U2_statistic" });
+			Logger::Inst().Log("Info: generating corrected Wilcoxon-rank sum (Mann-Whitney U test) results to " + params.mkmcParams.outputFileWilcoxonRankSumCorSignificant + ".", 2);
+			Logger::Inst().Log("Info: The file contains statistically significant k-mers with WRS corrected p-values, U1, and U2 statistics.", 2);
 
 			writers.wrsSignificantCntMatrix = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificantCntMatrix, multiThreadedGeneration);
 			writers.wrsSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
+			Logger::Inst().Log("Info: generating matrix of k-mers obtainted by corrected Wilcoxon-rank sum (Mann-Whitney U test) results to " + params.mkmcParams.outputFileWilcoxonRankSumCorSignificantCntMatrix + ".", 2);
+			Logger::Inst().Log("Info: The file contains counts matrix of statistically significant k-mers.", 2);
 
 			writers.wrsSignificantFasta = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileWilcoxonRankSumCorSignificantFasta, multiThreadedGeneration);
+			Logger::Inst().Log("Info: generating k-mers obtainted by corrected Wilcoxon-rank sum (Mann-Whitney U test) results to " + params.mkmcParams.outputFileWilcoxonRankSumCorSignificantFasta + ".", 2);
+			Logger::Inst().Log("Info: The file contains statistically significant k-mers in FASTA format.", 2);
 		}
 		else
 		{
 			writers.wrs = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileWilcoxonRankSum, multiThreadedGeneration);
 			writers.wrs->StoreHeader({ "wrs_p_val", "wrs_U1_statistic", "wrs_U2_statistic" });
+			Logger::Inst().Log("Info: generating Wilcoxon-rank sum (Mann-Whitney U test) results to " + params.mkmcParams.outputFileWilcoxonRankSum + ".", 2);
+			Logger::Inst().Log("Info: The file contains k-mers with WRS p-values, U1, and U2 statistics.", 2);
 		}
 	}
 	if (statisticsToGeneration.dids)
 	{
 		writers.dids = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileDIDS, multiThreadedGeneration);
 		writers.dids->StoreHeader({ "dids" });
+		Logger::Inst().Log("Info: generating DIDS results to " + params.mkmcParams.outputFileDIDS + ".", 2);
+		Logger::Inst().Log("Info: The file contains k-mers with DIDS results.", 2);
 	}
 	if (statisticsToGeneration.anova)
 	{
@@ -461,19 +495,29 @@ void WritingGatherer<Statistics_T, VALUE_T>::initWriting(
 		{
 			writers.anova = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileANOVACor, multiThreadedGeneration);
 			writers.anova->StoreHeader({ "anova_p_val_corrected", "anova_statistic" });
+			Logger::Inst().Log("Info: generating corrected ANOVA results to " + params.mkmcParams.outputFileANOVACor + ".", 2);
+			Logger::Inst().Log("Info: The file contains k-mers with ANOVA p-values and statistic results.", 2);
 
 			writers.anovaSignificant = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileANOVACorSignificant, multiThreadedGeneration);
 			writers.anovaSignificant->StoreHeader({ "anova_p_val_corrected", "anova_statistic" });
+			Logger::Inst().Log("Info: generating corrected ANOVA results to " + params.mkmcParams.outputFileANOVACorSignificant + ".", 2);
+			Logger::Inst().Log("Info: The file contains statistically significant k-mers with ANOVA corrected p-values and statistic results.", 2);
 
 			writers.anovaSignificantCntMatrix = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileANOVACorSignificantCntMatrix, multiThreadedGeneration);
 			writers.anovaSignificantCntMatrix->StoreHeader(cnt_matrix_output_header);
+			Logger::Inst().Log("Info: generating matrix of k-mers obtainted by corrected ANOVA results to " + params.mkmcParams.outputFileANOVACorSignificantCntMatrix + ".", 2);
+			Logger::Inst().Log("Info: The file contains counts matrix of statistically significant k-mers.", 2);
 
 			writers.anovaSignificantFasta = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileANOVACorSignificantFasta, multiThreadedGeneration);
+			Logger::Inst().Log("Info: generating k-mers obtainted by corrected ANOVA results to " + params.mkmcParams.outputFileANOVACorSignificantFasta + ".", 2);
+			Logger::Inst().Log("Info: The file contains statistically significant k-mers in FASTA format.", 2);
 		}
 		else
 		{
 			writers.anova = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileANOVA, multiThreadedGeneration);
 			writers.anova->StoreHeader({ "anova_p_val", "anova_statistic" });
+			Logger::Inst().Log("Info: generating ANOVA results to " + params.mkmcParams.outputFileANOVA + ".", 2);
+			Logger::Inst().Log("Info: The file contains top k-mers with ANOVA p-values and statistic results.", 2);
 		}
 	}
 }

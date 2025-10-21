@@ -219,6 +219,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 	{
 		normWriter = std::make_unique<TextFileWriter>(params.mkmcParams.outputFileNorm, params.mkmcParams.nThreads > 1);
 		normWriter->StoreHeader(samples_names);
+		Logger::Inst().Log("Info: generating matrix with normalized counts to " + params.mkmcParams.outputFileNorm + ".", 2);
 	} // otherwise: no normalization in output
 
 	gatherer.initWriting(matrixMetadataReader, samples_names);

@@ -100,7 +100,7 @@ Options:
  - `-t UINT [no. of logic CPU cores]` - number of threads
  - `-m UINT:INT in [2 - 1024] [16]` - max amount of RAM in GB; practically works only if `-r` is not set
  - `-r` - count k-mers in RAM only
- - `-v` - verbose mode, shows progress and minor warnings
+ - `-v` - verbose mode, shows progress and minor warnings, may be given up to 2 times
 
 [Option Group: debug parameters]
   Options:

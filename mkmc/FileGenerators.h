@@ -62,6 +62,8 @@ public:
 					params.mkmcParams.outputMatrixBinFile,
 					"",
 					sample_names);
+				Logger::Inst().Log("Info: generating temporary binary matrix file " + params.mkmcParams.outputMatrixBinFile + ".", 2);
+				Logger::Inst().Log("Info: The file contains counts matrix of k-mers.", 2);
 			}
 			catch (const std::exception& ex)
 			{
@@ -114,6 +116,8 @@ public:
 
 			dumpWriter = new TextFileWriter(params.mkmcParams.outputMatrixFile, (params.mkmcParams.nThreads > 1));
 			dumpWriter->StoreHeader(sampleNames);
+			Logger::Inst().Log("Info: generating matrix text file " + params.mkmcParams.outputMatrixFile + ".", 2);
+			Logger::Inst().Log("Info: The file contains k-mers as rows and samples as columns. The values are counts of k-mers in samples.", 2);
 			writerWasOpened = true;
 		}
 	}
@@ -158,6 +162,8 @@ public:
 		if (dumpWriter == nullptr)
 		{
 			dumpWriter = new TextFileWriter(params.mkmcParams.outputFASTAFile, (params.mkmcParams.nThreads > 1));
+			Logger::Inst().Log("Info: generating k-mers FASTA file " + params.mkmcParams.outputFASTAFile + ".", 2);
+			Logger::Inst().Log("Info: The file contains all the k-mers fulfilling counting and filtering limits.", 2);
 			writerWasOpened = true;
 		}
 	}

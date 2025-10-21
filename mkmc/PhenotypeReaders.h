@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <sstream>
 #include <cstdint>
-#include "logger.h"
+#include "Logger.h"
 
 
 struct Params;

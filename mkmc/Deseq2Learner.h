@@ -174,6 +174,7 @@ void Deseq2Learner<SIZE>::serializeNormalizationAndSave()
 		exit(1);
 	}
 
+	Logger::Inst().Log("Info: generating temporary file with data for normalization " + params.mkmcParams.normLearningBinFileSupplemented + ", supplemented with DESeq2 data.", 2);
 	MatrixStatsWriter stats_writer(params.mkmcParams.normLearningBinFileSupplemented);
 	stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::deseq2), deseq2NormalizationData);
 	stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::frequency_count), freqNormalizationData);
