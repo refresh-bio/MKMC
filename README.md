@@ -1,14 +1,12 @@
 # MKMC (multi-KMC)
-> [!warning]  
-**!!! Currently, this repository contains work in progress and should probably not be used in production !!!**
-
-
 MKMC is a software utilizing KMC to count k-mers in each of the predefined input samples.
 Then it combines multiple KMC databases into one single matrix, which optionally is saved into binary .kmcdb file and a text file.
 The latter file contains k-mers as rows and samples as columns. The values are counts of k-mers in samples.
 FASTA output files, containg k-mers sequences only, are also supported.
 
 The matrix may be utilized to compute many of statistics (normalization, correlation, differential k-mers analysis, cross-validation, entropy, UMAP, PCA).
+
+This software distributed under GNU GPL 3 licence.
 
 ## Building
 The easiest way to get the program is to download the most recent version from the [**release page**](https://github.com/refresh-bio/MKMC/releases).
