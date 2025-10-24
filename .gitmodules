@@ -4,9 +4,6 @@
 [submodule "3rd_party/mimalloc"]
 	path = 3rd_party/mimalloc
 	url = https://github.com/refresh-bio-dependencies/mimalloc
-[submodule "3rd_party/zlib-ng-compat"]
-	path = 3rd_party/zlib-ng-compat
-	url = https://github.com/refresh-bio-dependencies/zlib-ng
 [submodule "3rd_party/refresh_prebuild"]
 	path = 3rd_party/refresh_prebuild
 	url = https://github.com/refresh-bio-dependencies/refresh_prebuild
@@ -46,3 +43,6 @@
 [submodule "3rd_party/umappp"]
 	path = 3rd_party/umappp
 	url = https://github.com/refresh-bio-dependencies/umappp
+[submodule "3rd_party/zlib-ng-compat"]
+	path = 3rd_party/zlib-ng-compat
+	url = https://github.com/refresh-bio-dependencies/zlib-ng
