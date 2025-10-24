@@ -1,39 +1,6 @@
 [submodule "kmc"]
 	path = 3rd_party/kmc
 	url = https://github.com/refresh-bio/kmc
-[submodule "3rd_party/CLI11"]
-	path = 3rd_party/CLI11
-	url = https://github.com/CLIUtils/CLI11.git
-[submodule "3rd_party/stats"]
-	path = 3rd_party/stats
-	url = https://github.com/refresh-bio-dependencies/stats
-[submodule "3rd_party/gcem"]
-	path = 3rd_party/gcem
-	url = https://github.com/refresh-bio-dependencies/gcem
-[submodule "3rd_party/annoy"]
-	path = 3rd_party/annoy
-	url = https://github.com/refresh-bio-dependencies/annoy
-[submodule "3rd_party/hnswlib"]
-	path = 3rd_party/hnswlib
-	url = https://github.com/refresh-bio-dependencies/hnswlib
-[submodule "3rd_party/umappp"]
-	path = 3rd_party/umappp
-	url = https://github.com/refresh-bio-dependencies/umappp
-[submodule "3rd_party/CppIrlba"]
-	path = 3rd_party/CppIrlba
-	url = https://github.com/refresh-bio-dependencies/CppIrlba
-[submodule "3rd_party/CppKmeans"]
-	path = 3rd_party/CppKmeans
-	url = https://github.com/refresh-bio-dependencies/CppKmeans
-[submodule "3rd_party/powerit"]
-	path = 3rd_party/powerit
-	url = https://github.com/refresh-bio-dependencies/powerit
-[submodule "3rd_party/knncolle"]
-	path = 3rd_party/knncolle
-	url = https://github.com/refresh-bio-dependencies/knncolle
-[submodule "3rd_party/eigen"]
-	path = 3rd_party/eigen
-	url = https://gitlab.com/libeigen/eigen.git
 [submodule "3rd_party/mimalloc"]
 	path = 3rd_party/mimalloc
 	url = https://github.com/refresh-bio-dependencies/mimalloc
@@ -43,3 +10,39 @@
 [submodule "3rd_party/refresh_prebuild"]
 	path = 3rd_party/refresh_prebuild
 	url = https://github.com/refresh-bio-dependencies/refresh_prebuild
+[submodule "3rd_party/aarand"]
+	path = 3rd_party/aarand
+	url = https://github.com/refresh-bio-dependencies/aarand
+[submodule "3rd_party/annoy"]
+	path = 3rd_party/annoy
+	url = https://github.com/refresh-bio-dependencies/annoy
+[submodule "3rd_party/CLI11"]
+	path = 3rd_party/CLI11
+	url = https://github.com/refresh-bio-dependencies/CLI11
+[submodule "3rd_party/CppIrlba"]
+	path = 3rd_party/CppIrlba
+	url = https://github.com/refresh-bio-dependencies/CppIrlba
+[submodule "3rd_party/CppKmeans"]
+	path = 3rd_party/CppKmeans
+	url = https://github.com/refresh-bio-dependencies/CppKmeans
+[submodule "3rd_party/eigen"]
+	path = 3rd_party/eigen
+	url = https://gitlab.com/libeigen/eigen
+[submodule "3rd_party/gcem"]
+	path = 3rd_party/gcem
+	url = https://github.com/refresh-bio-dependencies/gcem
+[submodule "3rd_party/hnswlib"]
+	path = 3rd_party/hnswlib
+	url = https://github.com/refresh-bio-dependencies/hnswlib
+[submodule "3rd_party/knncolle"]
+	path = 3rd_party/knncolle
+	url = https://github.com/refresh-bio-dependencies/knncolle
+[submodule "3rd_party/powerit"]
+	path = 3rd_party/powerit
+	url = https://github.com/refresh-bio-dependencies/powerit
+[submodule "3rd_party/stats"]
+	path = 3rd_party/stats
+	url = https://github.com/refresh-bio-dependencies/stats
+[submodule "3rd_party/umappp"]
+	path = 3rd_party/umappp
+	url = https://github.com/refresh-bio-dependencies/umappp
