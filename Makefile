@@ -1,139 +1,68 @@
 all: mkmc
 
+# *** REFRESH makefile utils
+include refresh.mk
 
-dummy := $(shell git submodule update --init --recursive)
+$(call INIT_SUBMODULES)
+$(call INIT_GLOBALS)
+$(call CHECK_OS_ARCH, $(PLATFORM))
 
+# *** Project directories
+$(call SET_SRC_OBJ_BIN,mkmc,obj,bin)
+3RD_PARTY_DIR := ./3rd_party
 
-MKMC_MAIN_DIR = mkmc
-OUT_BIN_DIR = bin
+# *** Project configuration
+#$(call CHECK_NASM)
+$(call ADD_KMC_LIB, $(3RD_PARTY_DIR)/kmc)
+$(call ADD_ZLIB_NG_AS_ZLIB, $(3RD_PARTY_DIR)/zlib-ng-compat)
+#$(call PROPOSE_ISAL, $(3RD_PARTY_DIR)/isa-l)
+$(call ADD_MIMALLOC, $(3RD_PARTY_DIR)/mimalloc)
+#$(call CHOOSE_GZIP_DECOMPRESSION)
+$(call ADD_REFRESH_LIB, $(3RD_PARTY_DIR))
+$(call ADD_STATS_LIB, $(3RD_PARTY_DIR)/stats)
+$(call ADD_ANNOY_LIB, $(3RD_PARTY_DIR)/annoy)
+$(call ADD_HNSWLIB_LIB, $(3RD_PARTY_DIR)/hnswlib)
+$(call ADD_UMAPPP_LIB, $(3RD_PARTY_DIR)/umappp)
+$(call ADD_CPPIRLBA_LIB, $(3RD_PARTY_DIR)/CppIrlba)
+$(call ADD_CPPKMEANS_LIB, $(3RD_PARTY_DIR)/CppKmeans)
+$(call ADD_AARAND_LIB, $(3RD_PARTY_DIR)/aarand)
+$(call ADD_KNNCOLLE_LIB, $(3RD_PARTY_DIR)/knncolle)
+$(call ADD_EIGEN_LIB, $(3RD_PARTY_DIR)/eigen)
 
-KMC_DIR = 3rd_party/kmc
-KMC_ZLIB_DIR = $(KMC_DIR)/3rd_party/cloudflare
+$(call SET_STATIC, $(STATIC_LINK))
+$(call SET_C_CPP_STANDARDS, c11, c++20)
+$(call SET_GIT_COMMIT)
 
-KMC_LIB_ZLIB = $(KMC_ZLIB_DIR)/libz.a
-LIB_KMC = $(KMC_DIR)/bin/libkmc_core.a
+$(call SET_FLAGS, $(TYPE))
 
-KMC_LIB_NC_UTILS = $(KMC_DIR)/kmc_dump/nc_utils.o
+$(call SET_COMPILER_VERSION_ALLOWED, GCC, Linux_x86_64, 10, 20)
+$(call SET_COMPILER_VERSION_ALLOWED, GCC, Linux_aarch64, 11, 20)
+$(call SET_COMPILER_VERSION_ALLOWED, GCC, Darwin_x86_64, 11, 13)
+$(call SET_COMPILER_VERSION_ALLOWED, GCC, Darwin_arm64, 11, 13)
 
-
-LIBS=-I$(MKMC_MAIN_DIR)/lib \
-     -I$(MKMC_MAIN_DIR)/lib/stats/include \
-     -I$(MKMC_MAIN_DIR)/lib/annoy/include \
-     -I$(MKMC_MAIN_DIR)/lib/hnswlib \
-     -I$(MKMC_MAIN_DIR)/lib/umappp/include \
-     -I$(MKMC_MAIN_DIR)/lib/CppIrlba/include \
-     -I$(MKMC_MAIN_DIR)/lib/CppKmeans/include \
-     -I$(MKMC_MAIN_DIR)/lib/aarand/include \
-     -I$(MKMC_MAIN_DIR)/lib/knncolle/include \
-     -I$(MKMC_MAIN_DIR)/lib/eigen
-
-
-ifdef MSVC     # Avoid the MingW/Cygwin sections
-    UNAME_S := Windows
-else                          # If uname not available => 'not'
-    UNAME_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
-    UNAME_M := $(shell uname -m)
+ifneq ($(MAKECMDGOALS),clean)
+$(call CHECK_COMPILER_VERSION)
 endif
 
-D_OS =
-D_ARCH =
+# *** Source files and rules
+$(eval $(call PREPARE_DEFAULT_COMPILE_RULE,MAIN,))
+$(eval $(call PREPARE_DEFAULT_COMPILE_RULE,KMC_API,kmc_api))
 
-ifeq ($(UNAME_S),Darwin)
-	D_OS=MACOS
-	ifeq ($(UNAME_M),arm64)
-		D_ARCH=ARM64
-	else
-		D_ARCH=X64
-	endif
-else
-	D_OS=LINUX
-	D_ARCH=X64
-	ifeq ($(UNAME_M),arm64)
-		D_ARCH=ARM64
-	endif
-	ifeq ($(UNAME_M),aarch64)
-		D_ARCH=ARM64
-	endif
-endif
+# *** Targets
+mkmc: $(OUT_BIN_DIR)/mkmc
+$(OUT_BIN_DIR)/mkmc: zlib-ng libkmc mimalloc_obj \
+	$(OBJ_MAIN) $(OBJ_KMC_API)
+	-mkdir -p $(OUT_BIN_DIR)	
+	$(CXX) -o $@  \
+	$(MIMALLOC_OBJ) \
+	$(OBJ_MAIN) $(OBJ_KMC_API) \
+	$(LIBRARY_FILES) $(LINKER_FLAGS) $(LINKER_DIRS)
 
-CPU_FLAGS =
-STATIC_LFLAGS =
-PLATFORM_SPECIFIC_FLAGS =
+# *** Cleaning
+.PHONY: clean init
+clean: clean-zlib-ng clean-mimalloc_obj
+	-rm -r $(OBJ_DIR)
+	-rm -r $(OUT_BIN_DIR)
 
-#in some cases we can have different results on ARM
-#I guess this is exactly the same as here: https://bugs.mysql.com/bug.php?id=82760
-ifeq ($(D_ARCH),ARM64)
-	PLATFORM_SPECIFIC_FLAGS = -ffp-contract=off
-endif
-
-ifeq ($(D_OS),MACOS)
-	CC = g++-11
-
-	ifeq ($(D_ARCH),ARM64)
-		CPU_FLAGS = -march=armv8.4-a
-	else
-		CPU_FLAGS = -m64
-	endif
-	STATIC_LFLAGS = -static-libgcc -static-libstdc++ -pthread
-else
-	CC 	= g++
-
-	ifeq ($(D_ARCH),ARM64)
-		CPU_FLAGS = -march=armv8-a
-		STATIC_LFLAGS = -static-libgcc -static-libstdc++ -lpthread
-	else
-		CPU_FLAGS = -m64
-		STATIC_LFLAGS = -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
-	endif
-endif
-
-CLINK_FABI_VERSION = 
-ifeq ($(UNAME_S),Linux)
-	CLINK_FABI_VERSION = -fabi-version=6
-endif
-
-
-CFLAGS = -fPIC -Wall -O3 $(PLATFORM_SPECIFIC_FLAGS) $(CPU_FLAGS) -std=c++20 -pthread $(LIBS) -I $(KMC_DIR) -fpermissive
-CLINK = -lm -lpthread
-
-release: CFLAGS += -DNDEBUG
-release: CLINK += $(STATIC_LFLAGS)
-release: all
-
-debug: CFLAGS = -fPIC -Wall -O0 -g $(PLATFORM_SPECIFIC_FLAGS) $(CPU_FLAGS) -std=c++20 -pthread $(LIBS) -I $(KMC_DIR) -fpermissive
-debug: all
-
-CLINK += $(CLINK_FABI_VERSION)
-
-
-MKMC_SRCS = $(wildcard $(MKMC_MAIN_DIR)/*.cpp)	
-MKMC_OBJS = $(MKMC_SRCS:.cpp=.o)
-
-$(MKMC_OBJS): %.o : %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(LIB_KMC):
-	cd $(KMC_DIR); $(MAKE) bin/libkmc_core.a
-
-$(KMC_LIB_NC_UTILS): %.o : %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(KMC_LIB_ZLIB):
-	cd $(KMC_ZLIB_DIR); ./configure; $(MAKE) libz.a
-
-mkmc: $(MKMC_OBJS) $(LIB_KMC) $(KMC_LIB_NC_UTILS) $(KMC_LIB_ZLIB)
-	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) $(CLINK) $(MKMC_OBJS) $(LIB_KMC) $(KMC_LIB_NC_UTILS) $(KMC_LIB_ZLIB) -o $(OUT_BIN_DIR)/$@
-
-install: all
-	install bin/* /usr/local/bin
-
-uninstall:
-	-rm -f /usr/local/bin/mkmc
-
-clean:
-	-rm -rf $(OUT_BIN_DIR)
-	-rm -rf $(KMC_LIB_NC_UTILS)
-	-rm -rf $(MKMC_OBJS)
-	cd $(KMC_ZLIB_DIR) && $(MAKE) clean
-	cd $(KMC_DIR) && $(MAKE) clean
+init:
+	$(call INIT_SUBMODULES)
