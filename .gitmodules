@@ -25,9 +25,6 @@
 [submodule "3rd_party/CppKmeans"]
 	path = 3rd_party/CppKmeans
 	url = https://github.com/refresh-bio-dependencies/CppKmeans
-[submodule "3rd_party/aarand"]
-	path = 3rd_party/aarand
-	url = https://github.com/refresh-bio-dependencies/aarand
 [submodule "3rd_party/powerit"]
 	path = 3rd_party/powerit
 	url = https://github.com/refresh-bio-dependencies/powerit
@@ -40,8 +37,8 @@
 [submodule "3rd_party/mimalloc"]
 	path = 3rd_party/mimalloc
 	url = https://github.com/refresh-bio-dependencies/mimalloc
-[submodule "3rd_party/zlib-ng"]
-	path = 3rd_party/zlib-ng
+[submodule "3rd_party/zlib-ng-compat"]
+	path = 3rd_party/zlib-ng-compat
 	url = https://github.com/refresh-bio-dependencies/zlib-ng
 [submodule "3rd_party/refresh_prebuild"]
 	path = 3rd_party/refresh_prebuild
