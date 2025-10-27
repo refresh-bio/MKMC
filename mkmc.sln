@@ -8,11 +8,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mkmc", "mkmc\mkmc.vcxproj",
 		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E} = {A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_core", "3rd_party\kmc\kmc_core\kmc_core.vcxproj", "{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}"
-	ProjectSection(ProjectDependencies) = postProject
-		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E} = {A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "refresh_prebuild", "3rd_party\refresh_prebuild\refresh_prebuild.vcxproj", "{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}"
 EndProject
 Global
@@ -31,14 +26,6 @@ Global
 		{D9FB1092-0060-4D31-B56F-A7DB77612A8E}.Release|x64.Build.0 = Release|x64
 		{D9FB1092-0060-4D31-B56F-A7DB77612A8E}.RelWithDebInfo|x64.ActiveCfg = Release|x64
 		{D9FB1092-0060-4D31-B56F-A7DB77612A8E}.RelWithDebInfo|x64.Build.0 = Release|x64
-		{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}.Debug|x64.ActiveCfg = Debug|x64
-		{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}.Debug|x64.Build.0 = Debug|x64
-		{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}.MinSizeRel|x64.ActiveCfg = Debug|x64
-		{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}.MinSizeRel|x64.Build.0 = Debug|x64
-		{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}.Release|x64.ActiveCfg = Release|x64
-		{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}.Release|x64.Build.0 = Release|x64
-		{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}.RelWithDebInfo|x64.ActiveCfg = Release|x64
-		{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}.RelWithDebInfo|x64.Build.0 = Release|x64
 		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Debug|x64.ActiveCfg = Debug|x64
 		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Debug|x64.Build.0 = Debug|x64
 		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.MinSizeRel|x64.ActiveCfg = Release|x64
