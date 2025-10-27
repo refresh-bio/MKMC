@@ -1,4 +1,5 @@
-[submodule "kmc"]
+[submodule "3rd_party/kmc"]
+	branch = experimental/stbm
 	path = 3rd_party/kmc
 	url = https://github.com/refresh-bio/kmc
 [submodule "3rd_party/mimalloc"]
