@@ -43,3 +43,7 @@
 [submodule "3rd_party/zlib-ng-compat"]
 	path = 3rd_party/zlib-ng-compat
 	url = https://github.com/refresh-bio-dependencies/zlib-ng
+[submodule "3rd_party/kmc"]
+	path = 3rd_party/kmc
+	url = https://github.com/refresh-bio/kmc
+	branch = experimental/stbm
