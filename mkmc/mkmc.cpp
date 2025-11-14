@@ -223,11 +223,8 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	optionalGroup->add_flag_callback("-b", bCallback, "turn off transformation of k-mers into canonical form; applies both for input sequences and k-mers passed by --flt");
 
-	std::function<void(const uint32_t&)> ciCallback = [&](const uint32_t& ci) // currently 32 bits
-	{
-		stage1Params.SetCutoffMin(static_cast<uint64_t>(ci));
-	};
-	optionalGroup->add_option_function("--ci", ciCallback, "exclude k-mers occurring less than specified number of times (if k-mer occurs less than --ci times in a sample, it gets counter 0, but for this sample only)")->check(CLI::PositiveNumber)->default_val(defaultKMCParams.ci);
+	optionalGroup->add_option("--ci", params.ci, "exclude k-mers occurring less than specified number of times (if k-mer occurs less than --ci times in a sample, it gets counter 0, but for this sample only)")->check(CLI::PositiveNumber)->default_val(params.ci); // currently 32 bits
+
 	std::function<void(const uint32_t&)> cxCallback = [&](const uint32_t& cx) // currently 32 bits
 	{
 		stage1Params.SetCutoffMax(static_cast<uint64_t>(cx));

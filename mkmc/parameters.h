@@ -248,10 +248,11 @@ struct Params
 	MKMCParams mkmcParams;
 	mutable MutableParams mutableParams;
 
-	DefaultKMCParams defaultKMCParams;
+	static inline DefaultKMCParams defaultKMCParams;
 
 	KMC::Stage1Params stage1Params;
 	KMC::Stage2Params stage2Params;
+	uint32_t ci = static_cast<uint32_t>(defaultKMCParams.ci); // cx and cs are set by CLI11 in KMC params; as filtering is sensitive for ci, we treat it differently
 
 	FilterParams filterParams;
 	StatisticsParams statisticsParams = mkmcParams.outputFilesTemplate;
