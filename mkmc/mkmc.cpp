@@ -520,13 +520,16 @@ int main(int argc, char** argv)
 			std::cout << helpText; // Print to cout, as it is CLI11 default behaviour.
 			return e.get_exit_code();
 		}
+	}
 
+	Logger::Inst().Enable(params.mkmcParams.verbosity_level, params.mkmcParams.getLogFileName());
+
+	// CLI arguments handling
+	{
 		const bool CLIErrors = checkAndPrintArgumentsErrors(params);
 		if (CLIErrors)
 			std::exit(1);
 	}
-
-	Logger::Inst().Enable(params.mkmcParams.verbosity_level, params.mkmcParams.getLogFileName());
 
 	bool warningPrinted = false;
 	bool filterMsgPrinted = false;
