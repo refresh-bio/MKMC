@@ -134,7 +134,7 @@ It will generate a file `output_matrix`.
 `input_files_list.txt` example:
 ```
 killifishretina1 kfA_1.fastq.gz kfA_2.fastq.gz
-killifishretina2 kfB.fastq.gz`
+killifishretina2 kfB.fastq.gz
 ```
 
 ### Results examples
