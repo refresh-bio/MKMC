@@ -192,7 +192,7 @@ To have k-mers that were present in each input sample one may use:
 ```
 ./mkmc -k25 -f fq --thr_rat 1 -- files.txt present-in-all tmp
 ```
-The output matrix (refer `Generating matrix examples` section to see, how to obtain a text matrix file) is then:
+The output matrix (in a text form if also `-o matrix` parameter given, refer `Generating matrix examples` section) is then:
 ```
 k-mer	sample1	sample2	sample3	
 ACCCCTGGGTTTTAACCCACGTACG	1	1	1

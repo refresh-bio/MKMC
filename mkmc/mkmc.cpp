@@ -373,9 +373,26 @@ bool checkAndPrintDataFromFilesVsParamsErrors(const Params& params)
 bool checkAndPrintArgumentsWarnings(const Params& params)
 {
 	bool result = false;
+
+	if (params.filterParams.minCountThreshold > 1 && params.filterParams.minKmersAboveThresholdRatio == 0.0)
+	{
+		Logger::Inst().Log("Warning: filtering out k-mers occuring less than --thr times will not be performed if the ratio --thr_rat equals 0.", 1);
+		result = true;
+	}
+
+	if (params.statisticsParams.generateNormalization &&
+		!params.mkmcParams.keepTmpFiles &&
+		(params.statisticsParams.correlationMethods.empty() &&
+			(params.statisticsParams.classificationMethods.empty() || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() == StatisticsParams::DifferentialAnalysisMethod::TTest) &&
+			!params.statisticsParams.saveNormalization))
+	{
+		Logger::Inst().Log("Warning: The specified parameters will cause counts normalization (-n), but will not use them; use --save_n, --diff (for something other than T-Test), --cor, or --keep.", 1);
+		result = true;
+	}
+
 	if (params.mkmcParams.samples.size() <= 8 && std::find(params.statisticsParams.classificationMethods.begin(), params.statisticsParams.classificationMethods.end(), StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum) != params.statisticsParams.classificationMethods.end())
 	{
-		Logger::Inst().Log("Warning: Wilcoxon-rank sum (Mann-Whitney U test) uses approximate algorithm, thus for less than 9 samples its results may be slightly different than in e.g. SciPy.", 1);
+		Logger::Inst().Log("Warning: Wilcoxon-rank sum (Mann-Whitney U test) uses an approximate algorithm, thus for less than 9 samples its results may be slightly different than in e.g. SciPy.", 1);
 		result = true;
 	}
 
@@ -650,7 +667,9 @@ int main(int argc, char** argv)
 
 		finish.finishProcessing();
 
-		Logger::Inst().Log("");
+		if (!dbsReusable || computeStatistics)
+			Logger::Inst().Log("");
+
 		if (!dbsReusable)
 		{
 			if (params.mutableParams.createdFastaFile)

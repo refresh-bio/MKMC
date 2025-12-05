@@ -73,11 +73,11 @@ class Merger
 	std::unique_ptr<ProgressBar> progress_bar;
 
 	bool inputIsConsistent();
-	void fillTaskData();
+	uint64_t fillTaskData();
 	void serializeNormalizationAndSave();
 
 	template<typename PerformGenerate_T>
-	void callThreads(const kmcdb::Config& config, std::vector<std::vector<uint64_t>>& tot_cnts);
+	void callThreads(const kmcdb::Config& config, std::vector<std::vector<uint64_t>>& tot_cnts, uint64_t totKmersAllSamples);
 
 	template<unsigned I = static_cast<unsigned>(OutputFileType::_N), typename... Generators_T>
 	class GeneratorVecToTemplate {
@@ -267,7 +267,7 @@ bool Merger<SIZE>::inputIsConsistent()
 }
 
 template<unsigned SIZE>
-inline void Merger<SIZE>::fillTaskData()
+inline uint64_t Merger<SIZE>::fillTaskData()
 {
 	uint64_t biggestSampleKmersCount = 0;
 
@@ -331,8 +331,6 @@ inline void Merger<SIZE>::fillTaskData()
 		exit(1);
 	}
 
-	progress_bar = std::make_unique<ProgressBar>(params.mkmcParams.verbosity_level == 0 ? 0 : totKmersAllSamples, "Merging", std::cerr, params.mkmcParams.verbosity_level == 0);
-
 	tasksData.reserve(samplesMetadata.front()->GetConfig().num_bins);
 	for (uint32_t i = 0; i < samplesMetadata.front()->GetConfig().num_bins; ++i)
 	{
@@ -341,6 +339,8 @@ inline void Merger<SIZE>::fillTaskData()
 
 	// sorting is performed in the following manner: first biggest bins are dumped, then smaller; but the sorting is performed basing on the biggest sample only
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return samplesBeginSize[a.binId] > samplesBeginSize[b.binId]; });
+
+	return totKmersAllSamples;
 }
 
 template<unsigned SIZE>
@@ -364,11 +364,13 @@ void Merger<SIZE>::serializeNormalizationAndSave()
 
 template<unsigned SIZE>
 template<typename PerformGenerate_T>
-void Merger<SIZE>::callThreads(const kmcdb::Config& config, std::vector<std::vector<uint64_t>>& tot_cnts)
+void Merger<SIZE>::callThreads(const kmcdb::Config& config, std::vector<std::vector<uint64_t>>& tot_cnts, uint64_t totKmersAllSamples)
 {
 	std::vector<std::thread> threads(params.mkmcParams.nThreads);
 
 	PerformGenerate_T::initWriters(params, config);
+	progress_bar = std::make_unique<ProgressBar>(params.mkmcParams.verbosity_level == 0 ? 0 : totKmersAllSamples, "Merging", std::cerr, params.mkmcParams.verbosity_level == 0);
+
 	for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 		threads[i_thred] = std::thread([this, &tot_cnts_thread = tot_cnts[i_thred]]
 			{ this->operator() < PerformGenerate_T > (tot_cnts_thread); });
@@ -382,7 +384,7 @@ void Merger<SIZE>::callThreads(const kmcdb::Config& config, std::vector<std::vec
 template<unsigned SIZE>
 void Merger<SIZE>::mergeParallel()
 {
-	fillTaskData();
+	uint64_t totKmersAllSamples = fillTaskData();
 
 	if (params.filterParams.filterKmersSequences)
 	{
@@ -415,7 +417,7 @@ void Merger<SIZE>::mergeParallel()
 	auto doCallThreads = [&]<typename... Generators_T>() -> void
 	{
 		using PerformGenerate_T = PerformGenerate<BinFileGenerator, Generators_T...>;
-		callThreads<PerformGenerate_T>(config, tot_cnts);
+		callThreads<PerformGenerate_T>(config, tot_cnts, totKmersAllSamples);
 	};
 
 	GeneratorVecToTemplate<>::callTemplateFunction(params.mkmcParams.outputFileTypes, doCallThreads);
