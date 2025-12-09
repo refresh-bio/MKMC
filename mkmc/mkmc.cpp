@@ -23,6 +23,9 @@ class MergerRunner
 {
 	Params& params;
 	Timer& merger_timer;
+
+	bool result = false;
+	bool done = false;
 public:
 	MergerRunner(Params& params, Timer& merger_timer):
 		params(params),
@@ -49,8 +52,15 @@ public:
 
 		Merger<SIZE> merger(params);
 		merger_timer.startTimer();
-		merger.mergeParallel();
+		result = merger.mergeParallel();
 		merger_timer.stopTimer();
+		done = true;
+	}
+
+	bool getResult()
+	{
+		assert(done);
+		return result;
 	}
 };
 
@@ -627,6 +637,7 @@ int main(int argc, char** argv)
 				Logger::Inst().Log("Info: Samples databases exist and outwardly seem to be possible to reuse.");
 		}
 
+		bool matrixNotEmpty = true;
 		if (!dbsReusable)
 		{
 			KMCRunner kmcRunner(params);
@@ -636,34 +647,37 @@ int main(int argc, char** argv)
 
 			MergerRunner dump_runner(params, merger_timer);
 			DispatchKmerSize(params.stage1Params.GetKmerLen(), dump_runner);
+			matrixNotEmpty = dump_runner.getResult();
 		}
 
 		bool computeStatistics = false;
-		if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
-		{
-			computeStatistics = true;
 
-			std::vector<std::string> tasks;
-			if (params.statisticsParams.generateNormalization)
-				tasks.push_back("normalizing");
-			if (!params.statisticsParams.correlationMethods.empty())
-				tasks.push_back("computing correlation");
-			if (params.statisticsParams.cvParams.cv)
-				tasks.push_back("performing cross-validation");
-			if (!params.statisticsParams.classificationMethods.empty())
-				tasks.push_back("performing differential k-mers analysis");
-			if (params.statisticsParams.generateEntropy)
-				tasks.push_back("generating entropy");
-			if (params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
-				tasks.push_back("reducing number of dimensions");
+		if (matrixNotEmpty)
+			if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
+			{
+				computeStatistics = true;
 
-			Logger::Inst().Log("\nStarting " + MessagesUtilities::generateSentence(tasks) + "...");
+				std::vector<std::string> tasks;
+				if (params.statisticsParams.generateNormalization)
+					tasks.push_back("normalizing");
+				if (!params.statisticsParams.correlationMethods.empty())
+					tasks.push_back("computing correlation");
+				if (params.statisticsParams.cvParams.cv)
+					tasks.push_back("performing cross-validation");
+				if (!params.statisticsParams.classificationMethods.empty())
+					tasks.push_back("performing differential k-mers analysis");
+				if (params.statisticsParams.generateEntropy)
+					tasks.push_back("generating entropy");
+				if (params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
+					tasks.push_back("reducing number of dimensions");
 
-			StatisticsGenerator statisticsGenerator(params);
-			statistics_timer.startTimer();
-			statisticsGenerator.generateStatisticsParallel();
-			statistics_timer.stopTimer();
-		}
+				Logger::Inst().Log("\nStarting " + MessagesUtilities::generateSentence(tasks) + "...");
+
+				StatisticsGenerator statisticsGenerator(params);
+				statistics_timer.startTimer();
+				statisticsGenerator.generateStatisticsParallel();
+				statistics_timer.stopTimer();
+			}
 
 		finish.finishProcessing();
 

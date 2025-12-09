@@ -51,6 +51,8 @@ class Merger
 	StatisticsParams::NormalizationLearning normalizationLearning;
 	std::mutex normalizationLearningMutex;
 
+	bool matrixNotEmpty = false;
+
 	struct TaskData
 	{
 		uint32_t binId;
@@ -110,7 +112,7 @@ class Merger
 	};
 
 	template<typename PerformGenerate_T, typename Filters_T>
-	void mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& currentBinNormalizationLearning, PerformGenerate_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
+	bool mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& currentBinNormalizationLearning, PerformGenerate_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin);
 
 public:
 	Merger(const Params& params) :
@@ -124,7 +126,7 @@ public:
 		normalizationLearning.initialize();
 	}
 
-	void mergeParallel();
+	bool mergeParallel();
 
 	template<typename PerformGenerate_T>
 	void operator()(std::vector<uint64_t>& tot_cnts);
@@ -134,7 +136,7 @@ public:
 
 template<unsigned SIZE>
 template<typename PerformGenerate_T, typename Filters_T>
-void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& currentBinNormalizationLearning, PerformGenerate_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
+bool Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_cnts, StatisticsParams::NormalizationLearning& currentBinNormalizationLearning, PerformGenerate_T& fileGenerators, kmcdb::BinReaderSortedWithLUTForListing<uint64_t>* bin)
 {
 	std::vector<KMCFileWrapper<SIZE>> samples;
 	for (size_t sample_id = 0; sample_id < params.mkmcParams.kmcOutputFiles.size(); ++sample_id)
@@ -191,7 +193,7 @@ void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_
 	BinaryHeapMergeStreams<size_t, HeapComp> heap(streams_to_merge, do_with_elem_if_exists_init, HeapComp(samples));
 
 	if (heap.Empty())
-		return;
+		return false;
 
 	uint64_t outputKmerId = 0;
 	kmcdb::CKmer<SIZE> minKmer;
@@ -234,8 +236,10 @@ void Merger<SIZE>::mergeToGenerators(uint32_t binId, std::vector<uint64_t>& tot_
 			tot_cnts[i] += kMersCounts[i];
 
 		fileGenerators.writeKmer(KmersSamplesStruct<SIZE>{ minKmer, kMersCounts }, outputKmerId);
+		++outputKmerId;
 		currentBinNormalizationLearning.add_entry(kMersCounts);
 	}
+	return outputKmerId != 0;
 }
 
 
@@ -382,7 +386,7 @@ void Merger<SIZE>::callThreads(const kmcdb::Config& config, std::vector<std::vec
 }
 
 template<unsigned SIZE>
-void Merger<SIZE>::mergeParallel()
+bool Merger<SIZE>::mergeParallel()
 {
 	uint64_t totKmersAllSamples = fillTaskData();
 
@@ -425,7 +429,25 @@ void Merger<SIZE>::mergeParallel()
 	if (params.mkmcParams.totCntGeneration)
 		StoreTotCnt(tot_cnts, sampleNames, params);
 
+	if (!matrixNotEmpty)
+	{
+		if (params.filterParams.filterKmersSequences)
+			Logger::Inst().Log("Error: Output matrix is empty; try to relax --ci, --cx, --thr, or --thr_rat parameters, --flt file contains too few k-mers, or some samples are too small.");
+		else
+			Logger::Inst().Log("Error: Output matrix is empty; try to relax --ci, --cx, --thr, or --thr_rat parameters, or some samples are too small.");
+
+		Logger::Inst().Log("Info: Removing unnecessary output files.", 2);
+		// keep params.mkmcParams.outputFileTotCnt, as its contents are reasonable
+		std::filesystem::remove(params.mkmcParams.normLearningBinFile);
+		std::filesystem::remove(params.mkmcParams.outputMatrixBinFile);
+		std::filesystem::remove(params.mkmcParams.outputMatrixFile);
+		std::filesystem::remove(params.mkmcParams.outputFASTAFile);
+
+		return false;
+	}
+
 	serializeNormalizationAndSave();
+	return true;
 }
 
 
@@ -449,19 +471,21 @@ void Merger<SIZE>::operator()(std::vector<uint64_t>& tot_cnts)
 
 		performGenerate.setBinId(taskData.binId);
 
+		bool matrixNotEmptyInBin = false;
 		if (params.filterParams.filterKmersSequences)
 		{
 			assert(sequencesToFilterReader);
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>, FilterSequences<ParameterizedKmersSamplesStruct>>;
-			mergeToGenerators<PerformGenerate_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearning, performGenerate, sequencesToFilterReader->GetBin(taskData.binId));
+			matrixNotEmptyInBin = mergeToGenerators<PerformGenerate_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearning, performGenerate, sequencesToFilterReader->GetBin(taskData.binId));
 		}
 		else
 		{
 			using Filters = PerformFilter<FilterCountThreshold<ParameterizedKmersSamplesStruct>>;
-			mergeToGenerators<PerformGenerate_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearning, performGenerate, nullptr);
+			matrixNotEmptyInBin = mergeToGenerators<PerformGenerate_T, Filters>(taskData.binId, tot_cnts, currentBinNormalizationLearning, performGenerate, nullptr);
 		}
 		normalizationLearningMutex.lock();
 		normalizationLearning.merge_with(&currentBinNormalizationLearning, &currentBinNormalizationLearning + 1);
+		matrixNotEmpty |= matrixNotEmptyInBin;
 		normalizationLearningMutex.unlock();
 	}
 }
