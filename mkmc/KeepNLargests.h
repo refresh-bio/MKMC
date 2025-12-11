@@ -187,11 +187,11 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 				params.mkmcParams.outputFilePearsonTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFilePearsonTopFasta);
 			Logger::Inst().Log("Info: generating Pearson top results to " + params.mkmcParams.outputFilePearsonTop + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers with correlation values.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers with correlation values.", 2);
 			Logger::Inst().Log("Info: generating Pearson top results to " + params.mkmcParams.outputFilePearsonTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
 			Logger::Inst().Log("Info: generating Pearson top results to " + params.mkmcParams.outputFilePearsonTopFasta + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 		}
 
 		if (spearman)
@@ -202,11 +202,11 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 				params.mkmcParams.outputFileSpearmanTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileSpearmanTopFasta);
 			Logger::Inst().Log("Info: generating Spearman top results to " + params.mkmcParams.outputFileSpearmanTop + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers with correlation values.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers with correlation values.", 2);
 			Logger::Inst().Log("Info: generating Spearman top results to " + params.mkmcParams.outputFileSpearmanTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
 			Logger::Inst().Log("Info: generating Spearman top results to " + params.mkmcParams.outputFileSpearmanTopFasta + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 		}
 
 		if (kendall)
@@ -217,11 +217,11 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 				params.mkmcParams.outputFileKendallTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileKendallTopFasta);
 			Logger::Inst().Log("Info: generating Kendall Tau top results to " + params.mkmcParams.outputFileKendallTop + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers with correlation values.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers with correlation values.", 2);
 			Logger::Inst().Log("Info: generating Kendall Tau top results to " + params.mkmcParams.outputFileKendallTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
 			Logger::Inst().Log("Info: generating Kendall Tau top results to " + params.mkmcParams.outputFileKendallTopFasta + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 		}
 
 		if (entropy)
@@ -232,11 +232,11 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 				params.mkmcParams.outputFileEntropyTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileEntropyTopFasta);
 			Logger::Inst().Log("Info: generating entropy top results to " + params.mkmcParams.outputFileEntropyTop + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers with entropy values.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers with entropy values.", 2);
 			Logger::Inst().Log("Info: generating entropy top results to " + params.mkmcParams.outputFileEntropyTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
 			Logger::Inst().Log("Info: generating entropy top results to " + params.mkmcParams.outputFileEntropyTopFasta + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 		}
 
 		if (snr)
@@ -247,11 +247,11 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 				params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileSNRTopFasta);
 			Logger::Inst().Log("Info: generating signal to noise ratio top results to " + params.mkmcParams.outputFileSNRTop + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers with SNR results.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers with SNR results.", 2);
 			Logger::Inst().Log("Info: generating signal to noise ratio top results to " + params.mkmcParams.outputFileSNRTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
 			Logger::Inst().Log("Info: generating signal to noise ratio top results to " + params.mkmcParams.outputFileSNRTopFasta + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 		}
 
 		if (unnormalizedSnr)
@@ -262,11 +262,11 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 				params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileUnnormalizedSNRTopFasta);
 			Logger::Inst().Log("Info: generating unnormalized signal to noise ratio top results to " + params.mkmcParams.outputFileUnnormalizedSNRTop + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers with SNR results.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers with SNR results.", 2);
 			Logger::Inst().Log("Info: generating unnormalized signal to noise ratio top results to " + params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
 			Logger::Inst().Log("Info: generating unnormalized signal to noise ratio top results to " + params.mkmcParams.outputFileUnnormalizedSNRTopFasta + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 		}
 
 		if (dids)
@@ -277,11 +277,11 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 				params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header,
 				params.mkmcParams.outputFileDIDSTopFasta);
 			Logger::Inst().Log("Info: generating DIDS top results to " + params.mkmcParams.outputFileDIDSTop + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers with DIDS results.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers with DIDS results.", 2);
 			Logger::Inst().Log("Info: generating DIDS top results to " + params.mkmcParams.outputFileDIDSTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
 			Logger::Inst().Log("Info: generating DIDS top results to " + params.mkmcParams.outputFileDIDSTopFasta + ".", 2);
-			Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 		}
 	}
 
@@ -484,11 +484,11 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 					topCntMatrix, matrixHeader,
 					topFasta);
 					Logger::Inst().Log("Info: generating Pearson cross-validation results to " + top + ".", 2);
-					Logger::Inst().Log("Info: The file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
+					Logger::Inst().Log("Info: the file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
 					Logger::Inst().Log("Info: generating Pearson cross-validation results to " + topCntMatrix + ".", 2);
-					Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+					Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
 					Logger::Inst().Log("Info: generating Pearson cross-validation results to " + topFasta + ".", 2);
-					Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+					Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 			}
 			if (!spearman.empty())
 			{
@@ -501,11 +501,11 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 					topCntMatrix, matrixHeader,
 					topFasta);
 					Logger::Inst().Log("Info: generating Spearman cross-validation results to " + top + ".", 2);
-					Logger::Inst().Log("Info: The file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
+					Logger::Inst().Log("Info: the file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
 					Logger::Inst().Log("Info: generating Spearman cross-validation results to " + topCntMatrix + ".", 2);
-					Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+					Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
 					Logger::Inst().Log("Info: generating Spearman cross-validation results to " + topFasta + ".", 2);
-					Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+					Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 			}
 			if (!kendall.empty())
 			{
@@ -518,11 +518,11 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 					topCntMatrix, matrixHeader,
 					topFasta);
 					Logger::Inst().Log("Info: generating Kendall Tau cross-validation results to " + top + ".", 2);
-					Logger::Inst().Log("Info: The file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
+					Logger::Inst().Log("Info: the file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
 					Logger::Inst().Log("Info: generating Kendall Tau cross-validation results to " + topCntMatrix + ".", 2);
-					Logger::Inst().Log("Info: The file contains counts matrix of top k-mers.", 2);
+					Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
 					Logger::Inst().Log("Info: generating Kendall Tau cross-validation results to " + topFasta + ".", 2);
-					Logger::Inst().Log("Info: The file contains top k-mers in FASTA format.", 2);
+					Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 			}
 
 			if (iTest != nTests - 1)

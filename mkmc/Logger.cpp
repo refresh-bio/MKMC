@@ -12,7 +12,7 @@ Logger& Logger::Inst() {
 bool Logger::Enable(int _cerrVerbosityLevel, const std::string& logFileName) {
 	logStream.open(logFileName);
 	if (!logStream.is_open())
-		std::cerr << "Warning: Cannot create log file " << logFileName << ". Log will not be safed to the file." << std::endl;
+		std::cerr << "Warning: cannot create log file " << logFileName << ". Log will not be safed to the file." << std::endl;
 
 	is_enabled = true;
 	cerrVerbosityLevel = _cerrVerbosityLevel;

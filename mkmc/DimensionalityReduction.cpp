@@ -52,7 +52,7 @@ void DimensionalityReduction::runAndStoreUMAP()
 	}
 	catch (const std::length_error&)
 	{
-		Logger::Inst().Log("Error: Cannot run UMAP. Try to tight filtering criteria.");
+		Logger::Inst().Log("Error: cannot run UMAP. Try to tight filtering criteria.");
 		success = false;
 	}
 
@@ -64,10 +64,10 @@ void DimensionalityReduction::runAndStoreUMAP()
 
 		store(params.mkmcParams.outputFileUMAP, "UMAP", umap_res);
 		Logger::Inst().Log("Info: generating UMAP results to " + params.mkmcParams.outputFileUMAP + ".", 2);
-		Logger::Inst().Log("Info: The file contains matrix with samples as columns and dimensions as rows.", 2);
+		Logger::Inst().Log("Info: the file contains matrix with samples as columns and dimensions as rows.", 2);
 	}
 	else
-		Logger::Inst().Log("Info: Despite the UMAP failure, MKMC will continue, but no UMAP results will be created.");
+		Logger::Inst().Log("Info: despite the UMAP failure, MKMC will continue, but no UMAP results will be created.");
 }
 
 
@@ -80,12 +80,12 @@ void DimensionalityReduction::runAndStorePCA()
 	}
 	catch (const std::length_error&)
 	{
-		Logger::Inst().Log("Error: Cannot run PCA. Try to tight filtering criteria.");
+		Logger::Inst().Log("Error: cannot run PCA. Try to tight filtering criteria.");
 		success = false;
 	}
 	catch (...)
 	{
-		Logger::Inst().Log("Error: Unexpected error with PCA running.");
+		Logger::Inst().Log("Error: unexpected error with PCA running.");
 		success = false;
 	}
 
@@ -98,7 +98,7 @@ void DimensionalityReduction::runAndStorePCA()
 
 		store(params.mkmcParams.outputFilePCA, "PCA", pca_res);
 		Logger::Inst().Log("Info: generating PCA results to " + params.mkmcParams.outputFilePCA + ".", 2);
-		Logger::Inst().Log("Info: The file contains matrix with samples as columns and dimensions as rows.", 2);
+		Logger::Inst().Log("Info: the file contains matrix with samples as columns and dimensions as rows.", 2);
 
 		std::vector<std::vector<out_kmcdb_value_type>> variances;
 		std::vector<std::string> header;
@@ -110,10 +110,10 @@ void DimensionalityReduction::runAndStorePCA()
 
 		store(params.mkmcParams.outputFilePCAVariance, std::vector<std::string>{ "variance", "variance_ratio"}, header, variances);
 		Logger::Inst().Log("Info: generating PCA variance results to " + params.mkmcParams.outputFilePCAVariance + ".", 2);
-		Logger::Inst().Log("Info: The file contains matrix with samples as columns and two rows: variance and variance ratio.", 2);
+		Logger::Inst().Log("Info: the file contains matrix with samples as columns and two rows: variance and variance ratio.", 2);
 	}
 	else
-		Logger::Inst().Log("Info: Despite the PCA failure, MKMC will continue, but no PCA results will be created.");
+		Logger::Inst().Log("Info: despite the PCA failure, MKMC will continue, but no PCA results will be created.");
 }
 
 

@@ -17,7 +17,7 @@ bool SamplesFileReader::parseLine(const std::string& line, uint32_t lineNo, bool
 
 	if (samplesNames.find(sampleName) != samplesNames.end())
 	{
-		Logger::Inst().Log("Error: Sample " + sampleName + " is given multiple times in " + mkmcParams.inputFileName + ".");
+		Logger::Inst().Log("Error: a sample " + sampleName + " is given multiple times in " + mkmcParams.inputFileName + ".");
 		return false;
 	}
 	samplesNames.insert(sampleName);
@@ -57,7 +57,7 @@ bool SamplesFileReader::canOpenFile(const std::string& fileName, uint32_t lineNo
 	std::ifstream inFile(fileName);
 	if (!inFile.is_open())
 	{
-		Logger::Inst().Log("Error: Cannot open " + fileName + " (" + mkmcParams.inputFileName + ", line " + std::to_string(lineNo) + ").");
+		Logger::Inst().Log("Error: cannot open " + fileName + " (" + mkmcParams.inputFileName + ", line " + std::to_string(lineNo) + ").");
 		return false;
 	}
 	return true;
@@ -70,7 +70,7 @@ bool SamplesFileReader::readSamples(std::vector<Sample>& oSamples, bool& warning
 	std::ifstream in(mkmcParams.inputFileName);
 	if (!in.good())
 	{
-		Logger::Inst().Log("Error: No " + mkmcParams.inputFileName + " file.");
+		Logger::Inst().Log("Error: no " + mkmcParams.inputFileName + " file.");
 		return false;
 	}
 
@@ -86,7 +86,7 @@ bool SamplesFileReader::readSamples(std::vector<Sample>& oSamples, bool& warning
 
 	if (samples.empty())
 	{
-		Logger::Inst().Log("Error: No samples specified in a " + mkmcParams.inputFileName + " file.");
+		Logger::Inst().Log("Error: no samples specified in a " + mkmcParams.inputFileName + " file.");
 		return false;
 	}
 

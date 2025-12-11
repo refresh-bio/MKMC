@@ -320,13 +320,13 @@ inline uint64_t Merger<SIZE>::fillTaskData()
 
 	if (totKmersAllSamples == 0)
 	{
-		Logger::Inst().Log("Error: No k-mers present in samples; input files are empty or --ci and --cx parameters are too strict.");
+		Logger::Inst().Log("Error: no k-mers present in samples; input files are empty or --ci and --cx parameters are too strict.");
 		exit(1);
 	}
 	else
 	{
 		for (auto i : emptySamplesIndices)
-			Logger::Inst().Log("Warning: Sample " + params.mkmcParams.samples[i].name + " has no k-mers; its input files are empty or --ci and --cx parameters are too strict.");
+			Logger::Inst().Log("Warning: a sample " + params.mkmcParams.samples[i].name + " has no k-mers; its input files are empty or --ci and --cx parameters are too strict.");
 	}
 
 	if (!inputIsConsistent())
@@ -432,11 +432,11 @@ bool Merger<SIZE>::mergeParallel()
 	if (!matrixNotEmpty)
 	{
 		if (params.filterParams.filterKmersSequences)
-			Logger::Inst().Log("Error: Output matrix is empty; try to relax --ci, --cx, --thr, or --thr_rat parameters, --flt file contains too few k-mers, or some samples are too small.");
+			Logger::Inst().Log("Error: output matrix is empty; try to relax --ci, --cx, --thr, or --thr_rat parameters, --flt file contains too few k-mers, or some samples are too small.");
 		else
-			Logger::Inst().Log("Error: Output matrix is empty; try to relax --ci, --cx, --thr, or --thr_rat parameters, or some samples are too small.");
+			Logger::Inst().Log("Error: output matrix is empty; try to relax --ci, --cx, --thr, or --thr_rat parameters, or some samples are too small.");
 
-		Logger::Inst().Log("Info: Removing unnecessary output files.", 2);
+		Logger::Inst().Log("Info: removing unnecessary output files.", 2);
 		// keep params.mkmcParams.outputFileTotCnt, as its contents are reasonable
 		std::filesystem::remove(params.mkmcParams.normLearningBinFile);
 		std::filesystem::remove(params.mkmcParams.outputMatrixBinFile);

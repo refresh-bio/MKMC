@@ -27,7 +27,7 @@ bool Start::verifyFiles(bool& warningPrinted)
 {
 	if (!canCreateFile(params.mkmcParams.outputFilesTemplate))
 	{
-		Logger::Inst().Log("Error: Cannot create output file: " + params.mkmcParams.outputFilesTemplate + ". If " + params.mkmcParams.outputFilesTemplate + " is a path to another directory - does the directory exist?");
+		Logger::Inst().Log("Error: cannot create output file: " + params.mkmcParams.outputFilesTemplate + ". If " + params.mkmcParams.outputFilesTemplate + " is a path to another directory - does the directory exist?");
 		return false;
 	}
 
@@ -55,7 +55,7 @@ bool Start::verifyFiles(bool& warningPrinted)
 
 	if (!canCreateFileInPath(params.stage1Params.GetTmpPath()))
 	{
-		Logger::Inst().Log("Error: Cannot create file in the specified working directory: " + params.stage1Params.GetTmpPath() + ".");
+		Logger::Inst().Log("Error: cannot create file in the specified working directory: " + params.stage1Params.GetTmpPath() + ".");
 		if (params.mutableParams.tmpDirCreated)
 			std::filesystem::remove(params.mkmcParams.tmpPath);
 		return false;

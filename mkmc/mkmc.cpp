@@ -313,14 +313,14 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 		(statisticsParams.classificationMethods.size() > 1 ||
 			(statisticsParams.classificationMethods.size() == 1 && statisticsParams.classificationMethods.front() != StatisticsParams::DifferentialAnalysisMethod::TTest)))
 	{
-		Logger::Inst().Log("Error: Differential analysis methods (except T-Test) require normalization (-n).");
+		Logger::Inst().Log("Error: differential analysis methods (except T-Test) require normalization (-n).");
 		return true;
 	}
 
 	if (statisticsParams.nDimensionReductionUserDefined &&
 		!(statisticsParams.runPCA || statisticsParams.runUMAP))
 	{
-		Logger::Inst().Log("Error: Number of dimensions (--dimensions) requires dimensionality reduction algorithm (--umap or --pca).");
+		Logger::Inst().Log("Error: number of dimensions (--dimensions) requires dimensionality reduction algorithm (--umap or --pca).");
 		return true;
 	}
 
@@ -366,14 +366,14 @@ bool checkAndPrintDataFromFilesVsParamsErrors(const Params& params)
 	if ((params.statisticsParams.runPCA || params.statisticsParams.runUMAP) &&
 		(params.statisticsParams.nDimensionReduction < 1 || params.statisticsParams.nDimensionReduction >= params.mkmcParams.samples.size()))
 	{
-		Logger::Inst().Log("Error: Number of dimensions (--dimensions) must be at least 1 and lower than number of samples.");
+		Logger::Inst().Log("Error: number of dimensions (--dimensions) must be at least 1 and lower than number of samples.");
 		return true;
 	}
 
 	if (params.statisticsParams.cvParams.cv)
 		if (params.statisticsParams.cvParams.p == 0 || params.statisticsParams.cvParams.p >= params.mkmcParams.samples.size() || params.mkmcParams.samples.size() % params.statisticsParams.cvParams.p != 0)
 		{
-			Logger::Inst().Log("Error: Number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples.");
+			Logger::Inst().Log("Error: number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples.");
 			return true;
 		}
 	return false;
@@ -396,7 +396,7 @@ bool checkAndPrintArgumentsWarnings(const Params& params)
 			(params.statisticsParams.classificationMethods.empty() || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() == StatisticsParams::DifferentialAnalysisMethod::TTest) &&
 			!params.statisticsParams.saveNormalization))
 	{
-		Logger::Inst().Log("Warning: The specified parameters will cause counts normalization (-n), but will not use them; use --save_n, --diff (for something other than T-Test), --cor, or --keep.", 1);
+		Logger::Inst().Log("Warning: the specified parameters will cause counts normalization (-n), but will not use them; use --save_n, --diff (for something other than T-Test), --cor, or --keep.", 1);
 		result = true;
 	}
 
@@ -634,7 +634,7 @@ int main(int argc, char** argv)
 					Logger::Inst().Log("Info: generating temporary KMC database " + params.filterParams.kmersSequencesToFilterOutDB + " of k-mers to be filtered out.", 2);
 			}
 			else
-				Logger::Inst().Log("Info: Samples databases exist and outwardly seem to be possible to reuse.");
+				Logger::Inst().Log("Info: samples databases exist and outwardly seem to be possible to reuse.");
 		}
 
 		bool matrixNotEmpty = true;
