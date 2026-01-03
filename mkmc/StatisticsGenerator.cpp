@@ -23,29 +23,31 @@ void StatisticsGenerator::openReaders()
 
 
 
-void StatisticsGenerator::fillTaskData()
+void StatisticsGenerator::determineBinsSizes()
 {
-	tasksData.reserve(matrixMetadataReader->GetConfig().num_bins);
-	if (params.statisticsParams.correctPvalues)
-		correctTasksData.reserve(statisticsToGeneration.nStatisticsWithPValues);
-
 	nOutputKmersPerBin.reserve(matrixMetadataReader->GetConfig().num_bins);
-	
 	for (uint32_t i = 0; i < matrixMetadataReader->GetConfig().num_bins; ++i)
-	{
-		tasksData.push_back(TaskData{ i });
 		nOutputKmersPerBin.push_back(matrixReader->GetBin(i)->GetBinMetadata().total_kmers);
-	}
-
-	if (params.statisticsParams.correctPvalues)
-		for (uint32_t i = 0; i < statisticsToGeneration.nStatisticsWithPValues; ++i)
-			correctTasksData.push_back(CorrectTaskData{ i });
 
 	binsOffsets.resize(matrixMetadataReader->GetConfig().num_bins + 1);
 
 	for (size_t it = 1; it < binsOffsets.size(); ++it) // fragmentsBegins[0] = 0
-	{
 		binsOffsets[it] = binsOffsets[it - 1] + nOutputKmersPerBin[it - 1]; // increase previous index by a size of the next bin
+}
+
+
+
+void StatisticsGenerator::fillTaskData()
+{
+	tasksData.reserve(matrixMetadataReader->GetConfig().num_bins);
+	for (uint32_t i = 0; i < matrixMetadataReader->GetConfig().num_bins; ++i)
+		tasksData.push_back(TaskData{ i });
+
+	if (params.statisticsParams.correctPvalues)
+	{
+		correctTasksData.reserve(statisticsToGeneration.nStatisticsWithPValues);
+		for (uint32_t i = 0; i < statisticsToGeneration.nStatisticsWithPValues; ++i)
+			correctTasksData.push_back(CorrectTaskData{ i });
 	}
 
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return nOutputKmersPerBin[a.binId] > nOutputKmersPerBin[b.binId]; });
@@ -210,6 +212,7 @@ void StatisticsGenerator::correctPValuesEntries()
 void StatisticsGenerator::generateStatisticsParallel()
 {
 	openReaders();
+	determineBinsSizes();
 	fillTaskData();
 
 	std::vector<std::string> samples_names;

@@ -134,6 +134,7 @@ class StatisticsGenerator
 	std::unique_ptr<ProgressBar> progress_bar;
 
 	void openReaders();
+	void determineBinsSizes();
 	void fillTaskData();
 
 

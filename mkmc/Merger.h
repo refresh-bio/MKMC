@@ -75,7 +75,9 @@ class Merger
 	std::unique_ptr<ProgressBar> progress_bar;
 
 	bool inputIsConsistent();
-	uint64_t fillTaskData();
+
+	void openReadersAndVerifySamples(/* out */uint64_t& totKmersAllSamples, /* out */size_t& biggestSample);
+	void fillTaskData(const size_t biggestSample);
 	void serializeNormalizationAndSave();
 
 	template<typename PerformGenerate_T>
@@ -271,16 +273,13 @@ bool Merger<SIZE>::inputIsConsistent()
 }
 
 template<unsigned SIZE>
-inline uint64_t Merger<SIZE>::fillTaskData()
+void Merger<SIZE>::openReadersAndVerifySamples(/* out */uint64_t& totKmersAllSamples, /* out */size_t& biggestSample)
 {
-	uint64_t biggestSampleKmersCount = 0;
-
-	std::vector<uint64_t> samplesBeginSize;
-
 	samplesMetadata.reserve(params.mkmcParams.kmcOutputFiles.size());
 	samplesReaders.reserve(params.mkmcParams.kmcOutputFiles.size());
 
-	uint64_t totKmersAllSamples = 0;
+	uint64_t biggestSampleKmersCount = 0;
+
 	std::vector<size_t> emptySamplesIndices;
 
 	for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i) // iterate on samples
@@ -292,23 +291,18 @@ inline uint64_t Merger<SIZE>::fillTaskData()
 			samplesReaders.emplace_back(std::make_unique<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>(metadata_reader));
 			kmcdb::ReaderSortedWithLUTForListing<uint64_t>& reader = *samplesReaders.back();
 
-			if (i == 0) //we need to get number of bins from readers, not from config because KMC could enable small k opt and use 1 bin
-				samplesBeginSize.resize(metadata_reader.GetConfig().num_bins);
-
-			uint64_t totKmers = 0;
+			uint64_t totSampleKmers = 0;
 			for (uint32_t bin_id = 0; bin_id < metadata_reader.GetConfig().num_bins; ++bin_id)
-				totKmers += reader.GetBin(bin_id)->GetBinMetadata().total_kmers;
+				totSampleKmers += reader.GetBin(bin_id)->GetBinMetadata().total_kmers;
 
-			if (totKmers == 0)
+			if (totSampleKmers == 0)
 				emptySamplesIndices.push_back(i);
 
-			totKmersAllSamples += totKmers;
-			if (totKmers > biggestSampleKmersCount)
+			totKmersAllSamples += totSampleKmers;
+			if (totSampleKmers > biggestSampleKmersCount)
 			{
-				biggestSampleKmersCount = totKmers;
-
-				for (uint32_t bin_id = 0; bin_id < metadata_reader.GetConfig().num_bins; ++bin_id)
-					samplesBeginSize[bin_id] = reader.GetBin(bin_id)->GetBinMetadata().total_kmers;
+				biggestSampleKmersCount = totSampleKmers;
+				biggestSample = i;
 			}
 		}
 		catch (const std::runtime_error& ex)
@@ -324,27 +318,31 @@ inline uint64_t Merger<SIZE>::fillTaskData()
 		exit(1);
 	}
 	else
-	{
 		for (auto i : emptySamplesIndices)
 			Logger::Inst().Log("Warning: a sample " + params.mkmcParams.samples[i].name + " has no k-mers; its input files are empty or --ci and --cx parameters are too strict.");
-	}
 
 	if (!inputIsConsistent())
 	{
 		Logger::Inst().Log("Error: KMC databases are not consistent. Please contact the authors.");
 		exit(1);
 	}
+}
 
-	tasksData.reserve(samplesMetadata.front()->GetConfig().num_bins);
-	for (uint32_t i = 0; i < samplesMetadata.front()->GetConfig().num_bins; ++i)
-	{
+template<unsigned SIZE>
+void Merger<SIZE>::fillTaskData(const size_t biggestSample)
+{
+	const uint64_t numBins = samplesMetadata.front()->GetConfig().num_bins;
+
+	std::vector<uint64_t> samplesBeginSize(numBins);
+	for (uint32_t bin_id = 0; bin_id < numBins; ++bin_id)
+		samplesBeginSize[bin_id] = samplesReaders[biggestSample]->GetBin(bin_id)->GetBinMetadata().total_kmers;
+
+	tasksData.reserve(numBins);
+	for (uint32_t i = 0; i < numBins; ++i)
 		tasksData.push_back(TaskData{ i });
-	}
 
 	// sorting is performed in the following manner: first biggest bins are dumped, then smaller; but the sorting is performed basing on the biggest sample only
 	std::sort(tasksData.begin(), tasksData.end(), [&](const TaskData& a, const TaskData& b) { return samplesBeginSize[a.binId] > samplesBeginSize[b.binId]; });
-
-	return totKmersAllSamples;
 }
 
 template<unsigned SIZE>
@@ -388,7 +386,10 @@ void Merger<SIZE>::callThreads(const kmcdb::Config& config, std::vector<std::vec
 template<unsigned SIZE>
 bool Merger<SIZE>::mergeParallel()
 {
-	uint64_t totKmersAllSamples = fillTaskData();
+	uint64_t totKmersAllSamples = 0;
+	size_t biggestSample = 0;
+	openReadersAndVerifySamples(totKmersAllSamples, biggestSample); // out arguments
+	fillTaskData(biggestSample);
 
 	if (params.filterParams.filterKmersSequences)
 	{
