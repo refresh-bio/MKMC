@@ -4,6 +4,7 @@
 #include <limits>
 #include <map>
 #include <functional>
+#include <regex>
 #include "kmc_core/kmc_runner.h"
 #include "parameters.h"
 #include "KMCRunner.h"
@@ -544,6 +545,11 @@ int main(int argc, char** argv)
 			size_t startPos = helpText.find("[OPTIONS]");
 			if (startPos != std::string::npos)
 				helpText.replace(startPos, std::string("[OPTIONS]").length(), "[OPTIONS] --");
+
+			// Remove unnecessary mappings to enum values
+			std::regex r("(->[0-9]+)|( OR \\{(([0-9]+)|[,])+\\})");
+			helpText = std::regex_replace(helpText, r, "");
+
 			std::cout << helpText; // Print to cout, as it is CLI11 default behaviour.
 			return e.get_exit_code();
 		}
