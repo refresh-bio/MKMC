@@ -186,9 +186,6 @@ bool Params::adjustKMCPerformanceParams()
 		mKMCWorkersReduced = true;
 	}
 
-	stage1Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
-	stage2Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
-
 	if (mkmcParams.nKMCWorkers * 2 > mkmcParams.maxRamGB)
 	{
 		mkmcParams.nKMCWorkers = mkmcParams.maxRamGB / 2;
@@ -200,6 +197,9 @@ bool Params::adjustKMCPerformanceParams()
 		Logger::Inst().Log("Warning: number of workers is too huge, reduced to " + std::to_string(mkmcParams.nKMCWorkers) + ".", 1);
 		warningPrinted = true;
 	}
+
+	stage1Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
+	stage2Params.SetNThreads(mkmcParams.nThreads / mkmcParams.nKMCWorkers);
 
 	stage1Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
 	stage2Params.SetMaxRamGB(mkmcParams.maxRamGB / mkmcParams.nKMCWorkers);
