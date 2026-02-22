@@ -175,26 +175,26 @@ struct StatisticsParams
 	struct CVParams
 	{
 		bool cv = false;
-		size_t p = 2;
+		size_t nTestSamples = 2;
 
 		uint64_t seed = 1234567890;
 		bool seedUserDefined = false;
 
-		std::vector<size_t> samplesToExcludeOrder;
+		std::vector<size_t> samplesToBeTestOrder;
 
 		CVParams(const std::string& outputFilesTemplate) : outputFilesTemplate(outputFilesTemplate) {}
 
-		std::string getOuputFileNameTop(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nTests) const
+		std::string getOuputFileNameTop(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nFolds) const
 		{
-			return getOutputFileNameImpl(method, nSamples, iTest, nTests) + "_top";
+			return getOutputFileNameImpl(method, nSamples, iTest, nFolds) + "_top";
 		}
-		std::string getOuputFileNameTopCntMatrix(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nTests) const
+		std::string getOuputFileNameTopCntMatrix(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nFolds) const
 		{
-			return getOutputFileNameImpl(method, nSamples, iTest, nTests) + "_top_matrix";
+			return getOutputFileNameImpl(method, nSamples, iTest, nFolds) + "_top_matrix";
 		}
-		std::string getOuputFileNameTopFasta(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nTests) const
+		std::string getOuputFileNameTopFasta(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nFolds) const
 		{
-			return getOutputFileNameImpl(method, nSamples, iTest, nTests) + "_top.fa";
+			return getOutputFileNameImpl(method, nSamples, iTest, nFolds) + "_top.fa";
 		}
 
 		void generateSamplesToExcludeOrder(const size_t nSamples);
@@ -202,7 +202,7 @@ struct StatisticsParams
 	private:
 		const std::string& outputFilesTemplate;
 
-		std::string getOutputFileNameImpl(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nTests) const;
+		std::string getOutputFileNameImpl(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nFolds) const;
 	} cvParams;
 
 	enum class DifferentialAnalysisMethod { TTest, SNR, WilcoxonRankSum, DIDS, ANOVA };

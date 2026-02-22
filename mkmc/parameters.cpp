@@ -17,18 +17,24 @@ MKMCParams::MKMCParams() :
 
 void StatisticsParams::CVParams::generateSamplesToExcludeOrder(const size_t nSamples)
 {
-	samplesToExcludeOrder.resize(nSamples);
-	std::generate(samplesToExcludeOrder.begin(), samplesToExcludeOrder.end(), []() { static size_t n = 0; return n++; });
-	if (p != 1) // For LOOCV random order is not necessary
+	samplesToBeTestOrder.resize(nSamples);
+	std::iota(samplesToBeTestOrder.begin(), samplesToBeTestOrder.end(), 0);
+	if (nTestSamples != 1) // For LOOCV random order is not necessary
 	{
+		// We generate random order of samples to be included into the test set (excluded from the training set), ...
 		std::mt19937 gen(seed);
-		partial_shuffle(samplesToExcludeOrder.begin(), samplesToExcludeOrder.end(), samplesToExcludeOrder.end(), gen); // deterministic portable random
+		partial_shuffle(samplesToBeTestOrder.begin(), samplesToBeTestOrder.end(), samplesToBeTestOrder.end(), gen); // deterministic portable random
+
+		// ... but for every fold (every running of correlation) we warrant the samples will be in order, it will simplify samples exclusion
+		const size_t nFolds = nSamples / nTestSamples;
+		for (size_t iFold = 0; iFold < nFolds; ++iFold)
+			std::sort(samplesToBeTestOrder.begin() + iFold * nTestSamples, samplesToBeTestOrder.begin() + (iFold + 1) * nTestSamples);
 	}
 }
 
 
 
-std::string StatisticsParams::CVParams::getOutputFileNameImpl(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nTests) const
+std::string StatisticsParams::CVParams::getOutputFileNameImpl(CorrelationMethod method, size_t nSamples, size_t iTest, size_t nFolds) const
 {
 	std::string methodStr;
 	switch (method)
@@ -38,7 +44,7 @@ std::string StatisticsParams::CVParams::getOutputFileNameImpl(CorrelationMethod 
 	case CorrelationMethod::Kendall: methodStr = "kendall_tau"; break;
 	}
 
-	return outputFilesTemplate + "_cv_" + methodStr + "_" + std::to_string(iTest + 1) + "_" + std::to_string(nTests);
+	return outputFilesTemplate + "_cv_" + methodStr + "_" + std::to_string(iTest + 1) + "_" + std::to_string(nFolds);
 }
 
 

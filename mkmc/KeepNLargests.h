@@ -398,12 +398,13 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 	using typename KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::Elem;
 	using typename KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::KeepTopNLargestABS_T;
 
+	const std::vector<size_t>* const samplesToBeTestOrder;
+
 	std::vector<std::unique_ptr<KeepTopNLargestABS_T>> pearson;
 	std::vector<std::unique_ptr<KeepTopNLargestABS_T>> spearman;
 	std::vector<std::unique_ptr<KeepTopNLargestABS_T>> kendall;
 
-	KeepNLargestCollectionCV()
-	{}
+	KeepNLargestCollectionCV() : samplesToBeTestOrder(nullptr){};
 
 	template<typename PRED>
 	void add_impl(std::vector<std::unique_ptr<KeepNLargests<Elem, PRED>>>& src, std::vector<std::unique_ptr<KeepNLargests<Elem, PRED>>>& dest) const
@@ -436,132 +437,124 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 		if (!params.statisticsParams.cvParams.cv)
 			return;
 
-		const size_t p = params.statisticsParams.cvParams.p;
+		const size_t nTestSamples = params.statisticsParams.cvParams.nTestSamples;
 		const size_t nSamples = params.mkmcParams.samples.size();
-		const size_t nInputsPerTest = nSamples - p;
+		const size_t nTrainSamples = nSamples - nTestSamples;
 
-		assert(nSamples % p == 0);
-		const size_t nCols = nSamples / p;
+		assert(nSamples % nTestSamples == 0);
+		const size_t nCols = nSamples / nTestSamples;
 
-		size_t nTests = pearson.size();
+		size_t nFolds = pearson.size();
 		if (spearman.size() > 0)
 		{
-			assert(nTests == 0 || nTests == spearman.size());
-			nTests = spearman.size();
+			assert(nFolds == 0 || nFolds == spearman.size());
+			nFolds = spearman.size();
 		}
 		if (kendall.size() > 0)
 		{
-			assert(nTests == 0 || nTests == kendall.size());
-			nTests = kendall.size();
+			assert(nFolds == 0 || nFolds == kendall.size());
+			nFolds = kendall.size();
 		}
 
 		using enum StatisticsParams::CorrelationMethod;
+		const std::vector<size_t>& samplesToBeTestOrder = params.statisticsParams.cvParams.samplesToBeTestOrder;
 
-		const std::vector<size_t>& samplesToExcludeOrder = params.statisticsParams.cvParams.samplesToExcludeOrder;
+		std::vector<std::string> matrixHeader(nTrainSamples); // method of matrixHeader content generation is similar as in CVGenerator
 
-		std::vector<std::string> matrixHeader(nInputsPerTest); // method of matrixHeader content generation is similar as in CVGenerator
-		for (size_t i = 0; i < nInputsPerTest; ++i)
-			matrixHeader[i] = whole_cnt_matrix_output_header[samplesToExcludeOrder[i + p]];
-
-		std::string removedSamplesText;
-		for (size_t i = 0; i < p; ++i)
+		size_t iTestSamples = 0;
+		for (size_t iFold = 0; iFold < nFolds; ++iFold)
 		{
-			removedSamplesText += whole_cnt_matrix_output_header[samplesToExcludeOrder[i]];
-			if (i != p - 1)
-				removedSamplesText += ", ";
-		}
+			std::string trainingSamplesText;
+			size_t iCurrentFoldTestSamples = 0;
+			for (size_t iSamples = 0; iSamples < nSamples; ++iSamples)
+			{
+				if (iCurrentFoldTestSamples < nTestSamples && iSamples == samplesToBeTestOrder[iTestSamples])
+				{
+					++iTestSamples;
+					++iCurrentFoldTestSamples;
 
-		for (size_t iTest = 0; iTest < nTests; ++iTest)
-		{
+					trainingSamplesText += whole_cnt_matrix_output_header[iSamples];
+					if (iTestSamples != nTestSamples - 1)
+						trainingSamplesText += ", ";
+
+					continue;
+				}
+				matrixHeader[iSamples - iCurrentFoldTestSamples] = whole_cnt_matrix_output_header[iSamples];
+			}
+
+			auto logText = [&trainingSamplesText](const std::string& alg, auto& top, auto& topCntMatrix, auto& topFasta)
+			{
+				Logger::Inst().Log("Info: generating " + alg + " cross-validation results to " + top + ".", 2);
+				Logger::Inst().Log("Info: the file contains top k-mers with correlation values for " + trainingSamplesText + " training samples.", 2);
+				Logger::Inst().Log("Info: generating " + alg + " cross-validation results to " + topCntMatrix + ".", 2);
+				Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
+				Logger::Inst().Log("Info: generating " + alg + " cross-validation results to " + topFasta + ".", 2);
+				Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
+			};
+
 			if (!pearson.empty())
 			{
-				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Pearson, nSamples, iTest, pearson.size());
-				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Pearson, nSamples, iTest, pearson.size());
-				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Pearson, nSamples, iTest, pearson.size());
-				flush_for(*pearson[iTest],
+				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Pearson, nSamples, iFold, pearson.size());
+				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Pearson, nSamples, iFold, pearson.size());
+				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Pearson, nSamples, iFold, pearson.size());
+				flush_for(*pearson[iFold],
 					params.stage1Params.GetKmerLen(), nCols,
 					top, { "pearson" },
 					topCntMatrix, matrixHeader,
 					topFasta);
-					Logger::Inst().Log("Info: generating Pearson cross-validation results to " + top + ".", 2);
-					Logger::Inst().Log("Info: the file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
-					Logger::Inst().Log("Info: generating Pearson cross-validation results to " + topCntMatrix + ".", 2);
-					Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
-					Logger::Inst().Log("Info: generating Pearson cross-validation results to " + topFasta + ".", 2);
-					Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
+				logText("Pearson", top, topCntMatrix, topFasta);
 			}
 			if (!spearman.empty())
 			{
-				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Spearman, nSamples, iTest, pearson.size());
-				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Spearman, nSamples, iTest, pearson.size());
-				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Spearman, nSamples, iTest, pearson.size());
-				flush_for(*spearman[iTest],
+				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Spearman, nSamples, iFold, pearson.size());
+				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Spearman, nSamples, iFold, pearson.size());
+				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Spearman, nSamples, iFold, pearson.size());
+				flush_for(*spearman[iFold],
 					params.stage1Params.GetKmerLen(), nCols,
 					top, { "spearman" },
 					topCntMatrix, matrixHeader,
 					topFasta);
-					Logger::Inst().Log("Info: generating Spearman cross-validation results to " + top + ".", 2);
-					Logger::Inst().Log("Info: the file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
-					Logger::Inst().Log("Info: generating Spearman cross-validation results to " + topCntMatrix + ".", 2);
-					Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
-					Logger::Inst().Log("Info: generating Spearman cross-validation results to " + topFasta + ".", 2);
-					Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
+				logText("Spearman", top, topCntMatrix, topFasta);
 			}
 			if (!kendall.empty())
 			{
-				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Kendall, nSamples, iTest, pearson.size());
-				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Kendall, nSamples, iTest, pearson.size());
-				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Kendall, nSamples, iTest, pearson.size());
-				flush_for(*kendall[iTest],
+				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Kendall, nSamples, iFold, pearson.size());
+				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Kendall, nSamples, iFold, pearson.size());
+				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Kendall, nSamples, iFold, pearson.size());
+				flush_for(*kendall[iFold],
 					params.stage1Params.GetKmerLen(), nCols,
 					top, { "kendall" },
 					topCntMatrix, matrixHeader,
 					topFasta);
-					Logger::Inst().Log("Info: generating Kendall Tau cross-validation results to " + top + ".", 2);
-					Logger::Inst().Log("Info: the file contains top k-mers with correlation values after removal of " + removedSamplesText + " samples.", 2);
-					Logger::Inst().Log("Info: generating Kendall Tau cross-validation results to " + topCntMatrix + ".", 2);
-					Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
-					Logger::Inst().Log("Info: generating Kendall Tau cross-validation results to " + topFasta + ".", 2);
-					Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
-			}
-
-			if (iTest != nTests - 1)
-			{
-				removedSamplesText.clear();
-				for (size_t i = 0; i < p; ++i)
-				{
-					matrixHeader[iTest * p + i] = whole_cnt_matrix_output_header[samplesToExcludeOrder[iTest * p + i]];
-					removedSamplesText += whole_cnt_matrix_output_header[samplesToExcludeOrder[(iTest + 1) * p + i]];
-					if (i != p - 1)
-						removedSamplesText += ", ";
-				}
+				logText("Kendall Tau", top, topCntMatrix, topFasta);
 			}
 		}
 	}
 
 public:
-	KeepNLargestCollectionCV(size_t nTop, size_t nTests, bool bPearson, bool bSpearman, bool bKendall)
+	KeepNLargestCollectionCV(const std::vector<size_t>& samplesToBeTestOrder, size_t nTop, size_t nFolds, bool bPearson, bool bSpearman, bool bKendall) :
+		samplesToBeTestOrder(&samplesToBeTestOrder)
 	{
 		if (nTop == 0)
 			return;
 
 		if (bPearson)
 		{
-			pearson.resize(nTests);
+			pearson.resize(nFolds);
 			for (auto& it : pearson)
 				it = std::make_unique<KeepTopNLargestABS_T>(nTop);
 		}
 
 		if (bSpearman)
 		{
-			spearman.resize(nTests);
+			spearman.resize(nFolds);
 			for (auto& it : spearman)
 				it = std::make_unique<KeepTopNLargestABS_T>(nTop);
 		}
 
 		if (bKendall)
 		{
-			kendall.resize(nTests);
+			kendall.resize(nFolds);
 			for (auto& it : kendall)
 				it = std::make_unique<KeepTopNLargestABS_T>(nTop);
 		}
@@ -574,15 +567,30 @@ public:
 		const std::vector<Statistics_T>& keys,
 		const std::vector<VALUE_T>& allCounts) const
 	{
-		const size_t p = allCounts.size() / keys.size();
+		assert(statisticResults.size() == keys.size());
+		const size_t nSamples = allCounts.size();
+		const size_t nFolds = statisticResults.size();
+		const size_t nTestSamples = nSamples / nFolds;
+		const size_t nTrainSamples = nSamples - nTestSamples;
 
-		std::vector<VALUE_T> counts(allCounts.begin() + p, allCounts.end());
-		for (size_t iTest = 0; iTest < statisticResults.size(); ++iTest)
+		std::vector<VALUE_T> counts(nTrainSamples);
+
+		size_t iTestSamples = 0;
+		for (size_t iFold = 0; iFold < nFolds; ++iFold)
 		{
-			statisticResults[iTest]->Add(Elem{ kmerSeq, kmer, keys[iTest], counts });
-			if (iTest != statisticResults.size() - 1)
-				for (size_t iP = 0; iP < p; ++iP)
-					counts[iTest * p + iP] = allCounts[iTest * p + iP];
+			size_t iCurrentFoldTestSamples = 0;
+			for (size_t iSamples = 0; iSamples < nSamples; ++iSamples)
+			{
+				if (iCurrentFoldTestSamples < nTestSamples && iSamples == (*samplesToBeTestOrder)[iTestSamples])
+				{
+					++iTestSamples;
+					++iCurrentFoldTestSamples;
+					continue;
+				}
+				counts[iSamples - iCurrentFoldTestSamples] = allCounts[iSamples];
+			}
+
+			statisticResults[iFold]->Add(Elem{ kmerSeq, kmer, keys[iFold], counts });
 		}
 	}
 

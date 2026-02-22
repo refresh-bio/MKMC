@@ -79,7 +79,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	app.get_formatter()->column_width(33);
 	app.get_formatter()->label("REQUIRED", "REQD");
 
-	CLI::Option* p = nullptr, * n = nullptr, * cor = nullptr, * differentialAnalysis = nullptr, *pvalCorr, * c = nullptr;
+	CLI::Option* nTestSamples = nullptr, * n = nullptr, * cor = nullptr, * differentialAnalysis = nullptr, *pvalCorr, * c = nullptr;
 
 	app.add_option("input_samples", mkmcParams.inputFileName, "file with a list of samples and input files in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
 	app.add_option("output_files_prefix", mkmcParams.outputFilesTemplate, "template (prefix) of output files names")->required();
@@ -123,7 +123,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	{
 		phenotypes.correlationPhenotype.setFileName(fileName);
 	};
-	p = correlationGroup->add_option_function("-p", pCallback, "set a phenotype file (a sequence of integers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
+	nTestSamples = correlationGroup->add_option_function("-p", pCallback, "set a phenotype file (a sequence of numbers, one in each line)")->check(CLI::ExistingFile)->needs(cor);
 
 	CLI::Option_group* diffGroup = app.add_option_group("differential k-mers analysis");
 	typedef StatisticsParams::DifferentialAnalysisMethod DAMethod;
@@ -159,7 +159,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	CLI::Option_group* cvGroup = app.add_option_group("cross-validation");
 	auto cv = cvGroup->add_flag("--cv", statisticsParams.cvParams.cv, "perform cross-validation for correlation")->needs(cor);
-	cvGroup->add_option("--leave", statisticsParams.cvParams.p, "number of samples to leave in every test")->needs(cv)->default_val(statisticsParams.cvParams.p);
+	cvGroup->add_option("--leave", statisticsParams.cvParams.nTestSamples, "number of samples to leave in every test")->needs(cv)->default_val(statisticsParams.cvParams.nTestSamples);
 	std::function<void(const decltype(statisticsParams.cvParams.seed)&)> nCVSeed = [&](const decltype(statisticsParams.cvParams.seed)& seed)
 	{
 		statisticsParams.cvParams.seed = seed;
@@ -281,7 +281,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	debugGroup->add_flag("--generate_snr_for_unnormalized_data", mkmcParams.generateForNonNormalized, "generate Signal to Noise ratio also for unnormalized counts");
 
-	cor->needs(n)->needs(p);
+	cor->needs(n)->needs(nTestSamples);
 	differentialAnalysis->needs(c);
 
 	app.footer("Warning: k-mers order in output files is not specified and may vary between runnings.\n\n"
@@ -372,7 +372,7 @@ bool checkAndPrintDataFromFilesVsParamsErrors(const Params& params)
 	}
 
 	if (params.statisticsParams.cvParams.cv)
-		if (params.statisticsParams.cvParams.p == 0 || params.statisticsParams.cvParams.p >= params.mkmcParams.samples.size() || params.mkmcParams.samples.size() % params.statisticsParams.cvParams.p != 0)
+		if (params.statisticsParams.cvParams.nTestSamples == 0 || params.statisticsParams.cvParams.nTestSamples >= params.mkmcParams.samples.size() || params.mkmcParams.samples.size() % params.statisticsParams.cvParams.nTestSamples != 0)
 		{
 			Logger::Inst().Log("Error: number of samples to leave in cross-validation (--leave) has to be positive and be a factor of a number of samples.");
 			return true;
@@ -407,7 +407,7 @@ bool checkAndPrintArgumentsWarnings(const Params& params)
 		result = true;
 	}
 
-	if (params.statisticsParams.cvParams.seedUserDefined && params.statisticsParams.cvParams.p == 1)
+	if (params.statisticsParams.cvParams.seedUserDefined && params.statisticsParams.cvParams.nTestSamples == 1)
 	{
 		Logger::Inst().Log("Warning: as --leave parameter is set to 1, LOOCV will be performed, which does not need randomness (--cv-seed parameter will be ignored).", 1);
 		result = true;

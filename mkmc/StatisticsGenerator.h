@@ -21,12 +21,12 @@ class CVGenerator
 	const bool cv;
 	const std::vector<out_kmcdb_value_type>& wholeCorrelationPhenotype;
 
-	const size_t numSamples;
-	const std::vector<size_t> samplesToExcludeOrder;
+	const size_t nSamples;
+	const std::vector<size_t> samplesToBeTestOrder;
 
-	const size_t p;
-	const size_t nTests;
-	const size_t nInputsPerTest;
+	const size_t nTestSamples;
+	const size_t nFolds;
+	const size_t nTrainingSamples;
 
 	std::vector<out_kmcdb_value_type> entry;
 	std::vector<out_kmcdb_value_type> correlationPhenotype; // Actually we can pregenerate all the possible sequences and store them, but updating this vector for every iteration shouldn't be a huge cost
@@ -50,15 +50,16 @@ public:
 		refresh::correlation& correlation) :
 		cv(params.statisticsParams.cvParams.cv),
 		wholeCorrelationPhenotype(wholeCorrelationPhenotype),
-		numSamples(numSamples),
-		samplesToExcludeOrder(params.statisticsParams.cvParams.samplesToExcludeOrder),
-		p(params.statisticsParams.cvParams.p),
-		nTests(numSamples / p),
-		nInputsPerTest(numSamples - p),
-		entry(nInputsPerTest),
-		correlationPhenotype(nInputsPerTest),
-		keepNLargestCollection(params.statisticsParams.nTop,
-			nTests,
+		nSamples(numSamples),
+		samplesToBeTestOrder(params.statisticsParams.cvParams.samplesToBeTestOrder),
+		nTestSamples(params.statisticsParams.cvParams.nTestSamples),
+		nFolds(numSamples / nTestSamples),
+		nTrainingSamples(numSamples - nTestSamples),
+		entry(nTrainingSamples),
+		correlationPhenotype(nTrainingSamples),
+		keepNLargestCollection(samplesToBeTestOrder,
+			params.statisticsParams.nTop,
+			nFolds,
 			pearson,
 			spearman,
 			kendall),
@@ -71,11 +72,11 @@ public:
 			assert(params.statisticsParams.generateNormalization);
 
 			if (pearson)
-				outPearsonStatsEntry.resize(nTests);
+				outPearsonStatsEntry.resize(nFolds);
 			if (spearman)
-				outSpearmanStatsEntry.resize(nTests);
+				outSpearmanStatsEntry.resize(nFolds);
 			if (kendall)
-				outKendallStatsEntry.resize(nTests);
+				outKendallStatsEntry.resize(nFolds);
 		}
 	}
 
@@ -182,36 +183,47 @@ void CVGenerator<SIZE, out_kmcdb_value_type, cnt_value_type>::correlationCV(cons
 	if (!cv)
 		return;
 
-	// For wholeEntry = ABCDEFGH, p = 2, and samplesToExcludeOrder = 01234567
-	// exclude samples 0 and 1, then 2 and 3...
-	// Entry will contain subsequences of wholeEntry after exclusion subsets of samples counts of size p:
+	// For wholeEntry = ABCDEFGH, nTestSamples = 2, and samplesToBeTestOrder = 01234567
+	// treat as test samples 0 and 1, then 2 and 3...
+	// Entry will contain training subsequences of wholeEntry samples counts of size nTestSamples:
 	// CDEFGH
 	// ABEFGH
 	// ABCDGH
 	// ABCDEF
-	// For wholeEntry = ABCDEFGH, p = 2, and samplesToExcludeOrder = 57041326:
+	// For wholeEntry = ABCDEFGH, nTestSamples = 2, and samplesToBeTestOrder = 57041326:
 	// AEBDCG
 	// FHBDCG
 	// FHAECG
 	// FHAEBD
-
-	// First, test for all samples except p ones of indices on first p positions of samplesToExcludeOrder
-	for (size_t i = 0; i < nInputsPerTest; ++i)
-	{
-		entry[i] = wholeEntry[samplesToExcludeOrder[i + p]];
-		correlationPhenotype[i] = wholeCorrelationPhenotype[samplesToExcludeOrder[i + p]];
-	}
-
+	// It is required that samplesToBeTestOrder contains permutation of values 0...samples-1, but providing that
+	// every subsequence 0...nTestSamples-1, nTestSamples...2*nTestSamples-1, ..., nSamples-nTestSamples...nSamples-1 is sorted.
+	// E.g. 57041326 is OK, but 75041326 is wrong for nTestSamples.
+	
 	size_t outStatsEntryIdx = 0;
-
-	for (size_t iTest = 0; iTest < nTests; ++iTest)
+	size_t iTestSamples = 0;
+	for (size_t iFold = 0; iFold < nFolds; ++iFold)
 	{
+		size_t iCurrentFoldTestSamples = 0;
+		for (size_t iSamples = 0; iSamples < nSamples; ++iSamples)
+		{
+			// Include to training set all samples, except the ones present in a proper subsequence of samplesToBeTestOrder
+			assert(iTestSamples < nTestSamples * (iFold + 1) == iCurrentFoldTestSamples < nTestSamples);
+			if (iCurrentFoldTestSamples < nTestSamples && iSamples == samplesToBeTestOrder[iTestSamples])
+			{
+				++iTestSamples;
+				++iCurrentFoldTestSamples;
+				continue;
+			}
+			entry[iSamples - iCurrentFoldTestSamples] = wholeEntry[iSamples];
+			correlationPhenotype[iSamples - iCurrentFoldTestSamples] = wholeCorrelationPhenotype[iSamples];
+		}
+
 		if (!outPearsonStatsEntry.empty())
 		{
 			const double pearson = refresh::correlation::pearson_n(
 				entry.begin(),
 				correlationPhenotype.begin(),
-				nInputsPerTest);
+				nTrainingSamples);
 
 			outPearsonStatsEntry[outStatsEntryIdx] = pearson;
 		}
@@ -220,7 +232,7 @@ void CVGenerator<SIZE, out_kmcdb_value_type, cnt_value_type>::correlationCV(cons
 			const double spearman = correlation.spearman_n(
 				entry.begin(),
 				correlationPhenotype.begin(),
-				nInputsPerTest);
+				nTrainingSamples);
 
 			outSpearmanStatsEntry[outStatsEntryIdx] = spearman;
 		}
@@ -229,21 +241,12 @@ void CVGenerator<SIZE, out_kmcdb_value_type, cnt_value_type>::correlationCV(cons
 			const double kendall = refresh::correlation::kendall_tau_n(
 				entry.begin(),
 				correlationPhenotype.begin(),
-				nInputsPerTest);
+				nTrainingSamples);
 
 			outKendallStatsEntry[outStatsEntryIdx] = kendall;
 		}
 
 		++outStatsEntryIdx;
-
-		// Take indicies of next p samples counts to exclude and replace counts at the first p positions of entry, which wasn't changed:
-		// for p = 2 replace at positions 2 and 3, then 4 and 5...
-		if (iTest != nTests - 1)
-			for (size_t i = 0; i < p; ++i)
-			{
-				entry[iTest * p + i] = wholeEntry[samplesToExcludeOrder[iTest * p + i]];
-				correlationPhenotype[iTest * p + i] = wholeCorrelationPhenotype[samplesToExcludeOrder[iTest * p + i]];
-			}
 	}
 
 	keepNLargestCollection.addPearson(kmerSeq, kmer, outPearsonStatsEntry, wholeInputMatrixEntry);
@@ -714,7 +717,7 @@ void StatisticsGenerator::processEntriesWhenCorrection(KeepNLargestCollectionGlo
 template<unsigned SIZE>
 void StatisticsGenerator::safeCorrectedPValuesEntries()
 {
-	assert(statisticsToGeneration.differentialAnalysis); // Currently, p-values are generated for DA statistics only
+	assert(statisticsToGeneration.differentialAnalysis); // Currently, nTestSamples-values are generated for DA statistics only
 	const std::size_t num_samples = params.mkmcParams.samples.size();
 
 	std::vector<cnt_value_type> inMatrixEntry;
