@@ -459,33 +459,37 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 		using enum StatisticsParams::CorrelationMethod;
 		const std::vector<size_t>& samplesToBeTestOrder = params.statisticsParams.cvParams.samplesToBeTestOrder;
 
-		std::vector<std::string> matrixHeader(nTrainSamples); // method of matrixHeader content generation is similar as in CVGenerator
+		std::vector<std::string> matrixHeader(nSamples); // method of matrixHeader content generation is similar as in CVGenerator
 
 		size_t iTestSamples = 0;
 		for (size_t iFold = 0; iFold < nFolds; ++iFold)
 		{
-			std::string trainingSamplesText;
+			std::string trainSamplesText, testSamplesText;
 			size_t iCurrentFoldTestSamples = 0;
 			for (size_t iSamples = 0; iSamples < nSamples; ++iSamples)
 			{
 				if (iCurrentFoldTestSamples < nTestSamples && iSamples == samplesToBeTestOrder[iTestSamples])
 				{
+					matrixHeader[nTrainSamples + iCurrentFoldTestSamples] = "[TEST]_" + whole_cnt_matrix_output_header[iTestSamples];
+
+					testSamplesText += whole_cnt_matrix_output_header[iSamples];
+					if (iCurrentFoldTestSamples != nTestSamples - 1)
+						testSamplesText += ", ";
+
 					++iTestSamples;
 					++iCurrentFoldTestSamples;
-
-					trainingSamplesText += whole_cnt_matrix_output_header[iSamples];
-					if (iTestSamples != nTestSamples - 1)
-						trainingSamplesText += ", ";
-
 					continue;
 				}
-				matrixHeader[iSamples - iCurrentFoldTestSamples] = whole_cnt_matrix_output_header[iSamples];
+				matrixHeader[iSamples - iCurrentFoldTestSamples] = "[TRAIN]_" + whole_cnt_matrix_output_header[iSamples];
+				trainSamplesText += whole_cnt_matrix_output_header[iSamples];
+				if (iSamples != nSamples - 1)
+					trainSamplesText += ", ";
 			}
 
-			auto logText = [&trainingSamplesText](const std::string& alg, auto& top, auto& topCntMatrix, auto& topFasta)
+			auto logText = [&trainSamplesText, &testSamplesText](const std::string& alg, auto& top, auto& topCntMatrix, auto& topFasta)
 			{
 				Logger::Inst().Log("Info: generating " + alg + " cross-validation results to " + top + ".", 2);
-				Logger::Inst().Log("Info: the file contains top k-mers with correlation values for " + trainingSamplesText + " training samples.", 2);
+				Logger::Inst().Log("Info: the file contains top k-mers with correlation values for " + trainSamplesText + " training, and " + testSamplesText + " testing sample(s).", 2);
 				Logger::Inst().Log("Info: generating " + alg + " cross-validation results to " + topCntMatrix + ".", 2);
 				Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
 				Logger::Inst().Log("Info: generating " + alg + " cross-validation results to " + topFasta + ".", 2);
@@ -573,7 +577,7 @@ public:
 		const size_t nTestSamples = nSamples / nFolds;
 		const size_t nTrainSamples = nSamples - nTestSamples;
 
-		std::vector<VALUE_T> counts(nTrainSamples);
+		std::vector<VALUE_T> counts(nSamples);
 
 		size_t iTestSamples = 0;
 		for (size_t iFold = 0; iFold < nFolds; ++iFold)
@@ -583,6 +587,8 @@ public:
 			{
 				if (iCurrentFoldTestSamples < nTestSamples && iSamples == (*samplesToBeTestOrder)[iTestSamples])
 				{
+					counts[nTrainSamples + iCurrentFoldTestSamples] = allCounts[iTestSamples];
+
 					++iTestSamples;
 					++iCurrentFoldTestSamples;
 					continue;
