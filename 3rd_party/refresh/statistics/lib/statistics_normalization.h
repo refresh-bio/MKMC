@@ -104,7 +104,7 @@ namespace refresh
 		}
 		 
 		// *************************************************************************************
-		bool serialize(const typename normalization_base<ENTRY_T, VALUE_T>::method_t m, std::vector<uint8_t>& data)
+		bool serialize(const typename normalization_base<ENTRY_T, VALUE_T>::method_t m, std::vector<uint8_t>& data, const size_t n_threads = 1)
 		{
 			if (!base::method_included(m) && base::no_entries == 0)
 				return false;
@@ -114,7 +114,7 @@ namespace refresh
 			if (m == base::method_t::frequency_count)
 				return base::meth_frequency_count.serialize(data);
 			if (m == base::method_t::quantile)
-				return base::meth_quantile.serialize(data);
+				return base::meth_quantile.serialize(data, n_threads);
 			if (m == base::method_t::deseq2 || m == base::method_t::deseq2_fc)
 				return base::meth_deseq2.serialize(data);
 //			if (m == base::method_t::deseq2_streaming)

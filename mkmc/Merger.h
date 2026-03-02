@@ -355,7 +355,7 @@ void Merger<SIZE>::serializeNormalizationAndSave()
 	if (params.statisticsParams.normalizationMethod == NormalizationMethod::deseq2 || params.statisticsParams.learnDeseq2)
 		normalizationLearning.serialize(NormalizationMethod::deseq2, deseq2NormalizationData);
 	normalizationLearning.serialize(NormalizationMethod::frequency_count, frequencyNormalizationData);
-	normalizationLearning.serialize(NormalizationMethod::quantile, quantileNormalizationData);
+	normalizationLearning.serialize(NormalizationMethod::quantile, quantileNormalizationData, params.mkmcParams.nThreads);
 
 	MatrixStatsWriter stats_writer(params.mkmcParams.normLearningBinFile);
 	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2 || params.statisticsParams.learnDeseq2)
