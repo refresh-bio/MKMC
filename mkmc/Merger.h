@@ -286,8 +286,9 @@ void Merger<SIZE>::openReadersAndVerifySamples(/* out */uint64_t& totKmersAllSam
 
 	uint64_t maxRamBytes = (uint64_t)params.mkmcParams.maxRamGB * 1000ull * 1000ull * 1000ull;
 	uint64_t binReaderBuffSize = maxRamBytes / (params.mkmcParams.kmcOutputFiles.size() * (uint64_t)params.mkmcParams.nThreads);
-	uint64_t minBinReaderBuffSize = 1ull << 16; //at least 64KiB
-	uint64_t maxBinReaderBuffSize = 1ull << 24; //at most 16MiB
+	//these min and max are just guesses, would be worth to verify
+	uint64_t minBinReaderBuffSize = 1ull << 18; //at least 256KiB
+	uint64_t maxBinReaderBuffSize = 1ull << 22; //at most 4MiB,
 	if (binReaderBuffSize < minBinReaderBuffSize)
 	{
 		std::ostringstream msg;
@@ -301,6 +302,8 @@ void Merger<SIZE>::openReadersAndVerifySamples(/* out */uint64_t& totKmersAllSam
 	}
 	if (binReaderBuffSize > maxBinReaderBuffSize)
 		binReaderBuffSize = maxBinReaderBuffSize;
+
+	Logger::Inst().Log("Info: memory for single bin adjusted to " + std::to_string((double)(binReaderBuffSize/2*2)/1000.0) + " kB", 2);
 
 	for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i) // iterate on samples
 	{

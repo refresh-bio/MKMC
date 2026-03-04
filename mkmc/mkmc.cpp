@@ -262,7 +262,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 		mkmcParams.maxRamGB = maxRamGB;
 		mkmcParams.maxRamGBUserDefined = true;
 	};
-	optionalGroup->add_option_function("-m", mCallback, "max amount of RAM in GB; practically works only if -r is not set")->check(CLI::Range(2, 1024))->default_val(mkmcParams.maxRamGB);
+	optionalGroup->add_option_function("-m", mCallback, "max amount of RAM in GB for k-mer counting and merging; practically works only if -r is not set")->check(CLI::Range(2, 1024))->default_val(mkmcParams.maxRamGB);
 
 	std::function<void()> rCallback = [&]()
 	{
