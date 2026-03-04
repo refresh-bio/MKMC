@@ -2,12 +2,14 @@
 
 #include "FileGenerators.h"
 #include <vector>
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <numeric>
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <mutex>
@@ -282,13 +284,31 @@ void Merger<SIZE>::openReadersAndVerifySamples(/* out */uint64_t& totKmersAllSam
 
 	std::vector<size_t> emptySamplesIndices;
 
+	uint64_t maxRamBytes = (uint64_t)params.mkmcParams.maxRamGB * 1000ull * 1000ull * 1000ull;
+	uint64_t binReaderBuffSize = maxRamBytes / (params.mkmcParams.kmcOutputFiles.size() * (uint64_t)params.mkmcParams.nThreads);
+	uint64_t minBinReaderBuffSize = 1ull << 16; //at least 64KiB
+	uint64_t maxBinReaderBuffSize = 1ull << 24; //at most 16MiB
+	if (binReaderBuffSize < minBinReaderBuffSize)
+	{
+		std::ostringstream msg;
+		msg << "Warning: requested RAM (" << params.mkmcParams.maxRamGB
+			<< "GB) is insufficient to merge " << params.mkmcParams.kmcOutputFiles.size()
+			<< " samples using " << params.mkmcParams.nThreads
+			<< " threads. MKMC may exceed the requested RAM to limit performance degradation.";
+		Logger::Inst().Log(msg.str(), 1);
+
+		binReaderBuffSize = minBinReaderBuffSize;
+	}
+	if (binReaderBuffSize > maxBinReaderBuffSize)
+		binReaderBuffSize = maxBinReaderBuffSize;
+
 	for (size_t i = 0; i < params.mkmcParams.kmcOutputFiles.size(); ++i) // iterate on samples
 	{
 		try
 		{
 			samplesMetadata.emplace_back(std::make_unique<kmcdb::MetadataReader>(params.mkmcParams.kmcOutputFiles[i], true));
 			kmcdb::MetadataReader& metadata_reader = *samplesMetadata.back();
-			samplesReaders.emplace_back(std::make_unique<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>(metadata_reader));
+			samplesReaders.emplace_back(std::make_unique<kmcdb::ReaderSortedWithLUTForListing<uint64_t>>(metadata_reader, binReaderBuffSize / 2)); // "/ 2" because ReaderSortedWithLUTForListing will allocate twice that (LUT + suff)
 			kmcdb::ReaderSortedWithLUTForListing<uint64_t>& reader = *samplesReaders.back();
 
 			uint64_t totSampleKmers = 0;
