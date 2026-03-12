@@ -512,42 +512,25 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 				Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 			};
 
-			if (!pearson.empty())
+			auto flush = [nSamples, iFold, matrixHeader, nCols, params, logText](StatisticsParams::CorrelationMethod correlationMethod, const std::string& header, const std::string& algorithmName, const auto& dataToFlush)
 			{
-				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Pearson, nSamples, iFold, pearson.size());
-				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Pearson, nSamples, iFold, pearson.size());
-				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Pearson, nSamples, iFold, pearson.size());
-				flush_for(*pearson[iFold],
+				if (dataToFlush.empty())
+					return;
+
+				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(correlationMethod, nSamples, iFold, dataToFlush.size());
+				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(correlationMethod, nSamples, iFold, dataToFlush.size());
+				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(correlationMethod, nSamples, iFold, dataToFlush.size());
+				flush_for(*dataToFlush[iFold],
 					params.stage1Params.GetKmerLen(), nCols,
-					top, { "pearson" },
+					top, { header },
 					topCntMatrix, matrixHeader,
 					topFasta);
-				logText("Pearson", top, topCntMatrix, topFasta);
-			}
-			if (!spearman.empty())
-			{
-				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Spearman, nSamples, iFold, pearson.size());
-				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Spearman, nSamples, iFold, pearson.size());
-				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Spearman, nSamples, iFold, pearson.size());
-				flush_for(*spearman[iFold],
-					params.stage1Params.GetKmerLen(), nCols,
-					top, { "spearman" },
-					topCntMatrix, matrixHeader,
-					topFasta);
-				logText("Spearman", top, topCntMatrix, topFasta);
-			}
-			if (!kendall.empty())
-			{
-				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(Kendall, nSamples, iFold, pearson.size());
-				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(Kendall, nSamples, iFold, pearson.size());
-				const std::string topFasta = params.statisticsParams.cvParams.getOuputFileNameTopFasta(Kendall, nSamples, iFold, pearson.size());
-				flush_for(*kendall[iFold],
-					params.stage1Params.GetKmerLen(), nCols,
-					top, { "kendall" },
-					topCntMatrix, matrixHeader,
-					topFasta);
-				logText("Kendall Tau", top, topCntMatrix, topFasta);
-			}
+				logText(algorithmName, top, topCntMatrix, topFasta);
+			};
+
+			flush(Pearson, "pearson", "Pearson", pearson);
+			flush(Spearman, "spearman", "Spearman", spearman);
+			flush(Kendall, "kendall", "Kendall Tau", kendall);
 		}
 	}
 
