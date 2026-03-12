@@ -82,7 +82,15 @@ struct KeepTopElem
 	{
 		bool operator()(const KeepTopElem& lhs, const KeepTopElem& rhs)
 		{
-			return std::make_pair(std::abs(lhs.key), rhs.kmer) > std::make_pair(std::abs(rhs.key), lhs.kmer);
+			if (std::isnan(lhs.key))
+			{
+				if (std::isnan(rhs.key))
+					return lhs.kmer.seeded_murmur64() < rhs.kmer.seeded_murmur64();
+				return false;
+			}
+			if (std::isnan(rhs.key))
+				return true;
+			return std::make_pair(std::abs(lhs.key), rhs.kmer.seeded_murmur64()) > std::make_pair(std::abs(rhs.key), lhs.kmer.seeded_murmur64());
 		}
 	};
 
@@ -90,7 +98,15 @@ struct KeepTopElem
 	{
 		bool operator()(const KeepTopElem& lhs, const KeepTopElem& rhs)
 		{
-			return std::make_pair(lhs.key, rhs.kmer) > std::make_pair(rhs.key, lhs.kmer);
+			if (std::isnan(lhs.key))
+			{
+				if (std::isnan(rhs.key))
+					return lhs.kmer.seeded_murmur64() < rhs.kmer.seeded_murmur64();
+				return false;
+			}
+			if (std::isnan(rhs.key))
+				return true;
+			return std::make_pair(lhs.key, rhs.kmer.seeded_murmur64()) > std::make_pair(rhs.key, lhs.kmer.seeded_murmur64());
 		}
 	};
 };
