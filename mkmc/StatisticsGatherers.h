@@ -94,7 +94,7 @@ class WritingGathererBin
 public:
 	template<unsigned SIZE>
 	void writeKmer(
-		const std::vector<Statistics_T>& outEntry, // outEntry - normalized values (if any) followed by statistics
+		const std::vector<Statistics_T>& outEntry, // outEntry - consecutive statistics values in a proper order
 		const kmcdb::CKmer<SIZE>& kmer,
 		const std::string& kmerSeq,
 		const std::vector<VALUE_T>& original_counts,

@@ -634,7 +634,7 @@ int main(int argc, char** argv)
 				// any warning printed; insert distance before start stages
 				if (!filterMsgPrinted && warningPrinted)
 					Logger::Inst().Log("", 1);
-				Logger::Inst().Log("Samples databases does not exist or are not possible to reuse. Starting k-mer counting...");
+				Logger::Inst().Log("Samples databases do not exist or are not possible to reuse. Starting k-mer counting...");
 				Logger::Inst().Log("Info: generating temporary KMC databases to " + params.mkmcParams.tmpPath + " directory.", 2);
 				if (params.filterParams.filterKmersSequences)
 					Logger::Inst().Log("Info: generating temporary KMC database " + params.filterParams.kmersSequencesToFilterOutDB + " of k-mers to be filtered out.", 2);

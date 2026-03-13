@@ -63,6 +63,7 @@ public:
 template<unsigned SIZE, typename Statistics_T, typename VALUE_T>
 struct KeepTopElem
 {
+	// kmerSeq and counts are stored in the heap, however they are not necessary to determine proper order, but are useful for storing to files in the future
 	std::string kmerSeq;
 	kmcdb::CKmer<SIZE> kmer;
 	Statistics_T key;

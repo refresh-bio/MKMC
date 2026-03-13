@@ -72,7 +72,7 @@ bool DifferentialAnalysisPhenotypeReader::mapPhenotypeToInts()
 
 	if (mapToInt.size() == 1)
 	{
-		Logger::Inst().Log("Error: a number of distinct classes in a file " + getFileName() + " must be greater than 1.");
+		Logger::Inst().Log("Error: number of distinct classes in a file " + getFileName() + " must be greater than 1.");
 		return false;
 	}
 
