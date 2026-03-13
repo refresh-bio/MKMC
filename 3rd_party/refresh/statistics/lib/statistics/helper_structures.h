@@ -49,6 +49,7 @@ namespace refresh
 		template<typename T>
 		concept U64OrSizeT = std::same_as<T, uint64_t> || std::same_as<T, size_t>;
 
+#if 0		// Old version
 		template<U64OrSizeT ENTRY_T>
 		class compact_histogram<ENTRY_T>
 		{
@@ -113,8 +114,173 @@ namespace refresh
 					add(p.first, p.second);
 			}
 		};
+#else
+		template<U64OrSizeT ENTRY_T>
+		class compact_histogram<ENTRY_T>
+		{
+			static constexpr size_t init_plain_size = 32;
+			static constexpr size_t init_buffer_size = 32;
+			//	static constexpr size_t init_buffer_size = 1024;
 
-		// *************************************************************************************
+			std::vector<size_t> plain;
+			std::vector<std::pair<ENTRY_T, size_t>> data;
+			std::vector<std::pair<ENTRY_T, size_t>> buffer;
+
+			void compact_buffer()
+			{
+				if(buffer.size() <= 1)
+					return;
+
+				std::sort(buffer.begin(), buffer.end(), [](const auto& a, const auto& b) {return a.first < b.first; });
+				size_t i = 0, j = 1;
+
+				while(j < buffer.size())
+				{
+					if (buffer[i].first == buffer[j].first)
+						buffer[i].second += buffer[j].second;
+					else
+						buffer[++i] = buffer[j];
+					++j;
+				}
+
+				buffer.resize(i + 1);
+			}
+
+			void merge_buffer()
+			{
+				if (buffer.empty())
+					return;
+
+				compact_buffer();
+
+				int64_t i = int64_t(data.size()) - 1;
+				int64_t j = int64_t(buffer.size()) - 1;
+				int64_t k = int64_t(data.size() + buffer.size()) - 1;
+
+				data.resize(data.size() + buffer.size());
+
+				while (i >= 0 && j >= 0)
+				{
+					if (data[i].first > buffer[j].first)
+						data[k--] = data[i--];
+					else
+						data[k--] = buffer[j--];
+				}
+
+				while (i >= 0)
+					data[k--] = data[i--];
+				while (j >= 0)
+					data[k--] = buffer[j--];
+
+				buffer.clear();
+				buffer.reserve(std::max<size_t>(init_buffer_size, (data.size() + plain.size()) / 4));
+			}
+
+			void update_plain()
+			{
+				size_t new_plain_size = plain.size();
+				size_t i_data;
+
+				for (i_data = 0; i_data < data.size(); ++i_data)
+				{
+					auto current_space = plain.size() * 8 + (i_data + 1) * 16;
+					auto new_space = (data[i_data].first + 1) * 8;
+
+					if (new_space <= current_space)
+						new_plain_size = data[i_data].first + 1;
+					else
+						break;
+				}
+
+				if(new_plain_size == plain.size())
+					return;
+
+				plain.resize(new_plain_size, 0);
+
+				for (size_t i = 0; i < i_data; ++i)
+					plain[data[i].first] = data[i].second;
+
+				data.erase(data.begin(), data.begin() + i_data);
+			}
+
+			void _add(ENTRY_T x, const size_t cnt)
+			{
+				if (x < plain.size())
+				{
+					plain[x] += cnt;
+
+					return;
+				}
+
+				auto p = std::lower_bound(data.begin(), data.end(), x, [](const auto& entry, ENTRY_T x) {return entry.first < x; });
+
+				if (p != data.end() && p->first == x)
+					p->second += cnt;
+				else
+				{
+					buffer.emplace_back(x, cnt);
+					if (buffer.size() == buffer.capacity())
+					{
+						merge_buffer();
+						update_plain();
+					}
+				}
+			}
+
+		public:
+			compact_histogram()
+			{
+				plain.resize(init_plain_size);
+				buffer.reserve(init_buffer_size);
+			}
+
+			void add(ENTRY_T x)
+			{
+				_add(x, 1);
+			}
+
+			void get_histogram(std::vector<std::pair<ENTRY_T, size_t>>& hist)
+			{
+				merge_buffer();
+
+				hist.clear();
+
+				for(size_t i = 0; i < plain.size(); ++i)
+					if (plain[i])
+						hist.emplace_back(i, plain[i]);
+
+				hist.reserve(hist.size() + data.size());
+				hist.insert(hist.end(), data.begin(), data.end());
+			}
+
+			void clear()
+			{
+				plain.clear();
+				plain.resize(init_plain_size);
+				data.clear();
+				buffer.clear();
+				buffer.reserve(init_buffer_size);
+			}
+
+			void merge(const compact_histogram<ENTRY_T>& ch)
+			{
+				for(size_t i = 0; i < ch.plain.size(); ++i)
+					if (ch.plain[i] != 0)
+						_add(i, ch.plain[i]);
+
+				for (const auto& p : ch.data)
+					_add(p.first, p.second);
+
+				for(const auto &p : ch.buffer)
+					_add(p.first, p.second);
+
+				merge_buffer();
+				update_plain();
+			}
+		};
+#endif
+
+// *************************************************************************************
 		// 
 		// *************************************************************************************
 		class interval_histogram
