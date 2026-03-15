@@ -106,7 +106,10 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	CLI::Option_group* correlationGroup = app.add_option_group("correlation and normalization");
 
-	std::map<std::string, StatisticsParams::NormalizationMethod> valuesMap{ {"deseq", StatisticsParams::NormalizationMethod::deseq2}, {"freq", StatisticsParams::NormalizationMethod::frequency_count }, {"q", StatisticsParams::NormalizationMethod::quantile } };
+	std::map<std::string, StatisticsParams::NormalizationMethod> valuesMap;
+	auto allNormalizationMethods = StatisticsParams::getAllSupportedNormalizationMethods();
+	for (auto method : allNormalizationMethods)
+		valuesMap[StatisticsParams::getNormalizationMethodMKMCParamName(method)] = method;
 	std::function<void(const decltype(statisticsParams.normalizationMethod)&)> nCallback = [&](const decltype(statisticsParams.normalizationMethod)& normalizationMethod)
 	{
 		statisticsParams.normalizationMethod = normalizationMethod;
@@ -276,6 +279,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	auto keep = debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
 	debugGroup->add_flag("--reuse-db", mkmcParams.reuseDBFiles, "reuse samples and filtering databases (if possible)");
 	debugGroup->add_flag("--learn-deseq", statisticsParams.learnDeseq2, "collect data for DESeq2 normalization (not necessary for -n deseq, but useful for further --reuse-db)")->needs(keep);
+	debugGroup->add_flag("--learn-q", statisticsParams.learnQuantile, "collect data for quantile normalization (not necessary for -n q, but useful for further --reuse-db)")->needs(keep);
 
 	debugGroup->add_option("--on", mkmcParams.nKMCBins, "suggested number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 
@@ -430,6 +434,11 @@ bool checkAndPrintArgumentsWarnings(const Params& params)
 		Logger::Inst().Log("Warning: --learn-deseq is not necessary, when DESeq2 normalization is performed (-n deseq is set).", 1);
 		result = true;
 	}
+	if (params.statisticsParams.learnQuantile && params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile)
+	{
+		Logger::Inst().Log("Warning: --learn-q is not necessary, when quantile normalization is performed (-n q is set).", 1);
+		result = true;
+	}
 
 	return result;
 }
@@ -484,26 +493,30 @@ bool verifyDBsReusability(const Params& params)
 
 	if (params.statisticsParams.generateNormalization)
 	{
+		auto alwaysLearnedNormalizationMethods = StatisticsParams::getAlwaysLearnedNormalizationMethods();
+
 		bool result = true;
-		try
+		// For another methods normalization learning data mey be supplemented.
+		if (std::find(alwaysLearnedNormalizationMethods.begin(), alwaysLearnedNormalizationMethods.end(), params.statisticsParams.normalizationMethod) != alwaysLearnedNormalizationMethods.end())
 		{
-			MatrixStatsReader statsReader(params.mkmcParams.normLearningBinFile);
-			std::vector<uint8_t> tmp;
-			// For DESeq2 there is possibility to supplement required learning data later, but here we verify reusability, thus data should be consistent (the more, --learn-deseq is available).
-			// For another methods the learning data should always be present, if file exists.
-			if (!statsReader.Get(StatisticsParams::getNormalizationMethodStreamName(params.statisticsParams.normalizationMethod), tmp))
+			try
+			{
+				MatrixStatsReader statsReader(params.mkmcParams.normLearningBinFile);
+				std::vector<uint8_t> tmp;
+				if (!statsReader.Get(StatisticsParams::getNormalizationMethodStreamName(params.statisticsParams.normalizationMethod), tmp))
+					result = false;
+			}
+			catch (const std::runtime_error&)
+			{
 				result = false;
-		}
-		catch (const std::runtime_error&)
-		{
-			result = false;
-		}
-		if (result)
-			Logger::Inst().Log("Info: file with data for normalization " + params.mkmcParams.normLearningBinFile + " exists.", 2);
-		else
-		{
-			Logger::Inst().Log("Info: file with data for normalization " + params.mkmcParams.normLearningBinFile + " does not exist or does not contain data for the specified normalization.", 2);
-			return false;
+			}
+			if (result)
+				Logger::Inst().Log("Info: file with data for normalization " + params.mkmcParams.normLearningBinFile + " exists.", 2);
+			else
+			{
+				Logger::Inst().Log("Info: file with data for normalization " + params.mkmcParams.normLearningBinFile + " does not exist or does not contain data for the specified normalization.", 2);
+				return false;
+			}
 		}
 	}
 

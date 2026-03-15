@@ -2,7 +2,7 @@
 #include "MatrixStats.h"
 #include "TextFileWritingUtilities.h"
 #include "DimensionalityReduction.h"
-#include "Deseq2Learner.h"
+#include "NormalizationSupplementingLearner.h"
 #include <algorithm>
 
 
@@ -59,34 +59,40 @@ void StatisticsGenerator::fillTaskData()
 bool StatisticsGenerator::readNormalizationData()
 {
 	typedef StatisticsParams::NormalizationMethod NormalizationMethod;
+	const NormalizationMethod normalizationMethod = params.statisticsParams.normalizationMethod;
 
 	MatrixStatsReader stats_reader(params.mkmcParams.normLearningBinFile);
 	bool success = false;
-	if (params.statisticsParams.normalizationMethod == NormalizationMethod::deseq2) {
-		success = stats_reader.Get(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::deseq2), normalizationData);
+	if (normalizationMethod == NormalizationMethod::quantile || normalizationMethod == NormalizationMethod::deseq2) {
+		success = stats_reader.Get(StatisticsParams::getNormalizationMethodStreamName(normalizationMethod), normalizationData);
 		if (!success) {
 			// try to open file supplemented with DESeq2
 			try { // will be useful after modularization
 				MatrixStatsReader stats_reader_supplemented(params.mkmcParams.normLearningBinFileSupplemented);
-				success = stats_reader_supplemented.Get(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::deseq2), normalizationData);
+				success = stats_reader_supplemented.Get(StatisticsParams::getNormalizationMethodStreamName(normalizationMethod), normalizationData);
 			}
 			catch (...) {
 				// do nothing, because missing file is not a problem symptom
 			}
 			if (success) {
-				Logger::Inst().Log("Info: previously supplemented learning data for DESeq2 opened properly.", 1);
+				Logger::Inst().Log("Info: previously supplemented learning data opened properly.", 1);
 			}
-			else { // learn also for DESeq2, if not learned eariler; will be useful after modularization
-				Logger::Inst().Log("Info: DESeq2 learning data is missing; it will be supplemented.", 1);
+			else { // learn also for all other, if not learned eariler; will be useful after modularization
+				Logger::Inst().Log("Info: Learning data is missing; it will be supplemented.", 1);
 				params.statisticsParams.normalizationLearningWasSupplemented = true;
 
-				Deseq2LearnerRunner deseq2LearnerRunner(params);
+				std::vector<NormalizationMethod> normalizationMethods = StatisticsParams::getAllSupportedNormalizationMethods();
+				auto alwaysLearnedNormalizationMethods = StatisticsParams::getAlwaysLearnedNormalizationMethods();
+				for (auto method : alwaysLearnedNormalizationMethods)
+					normalizationMethods.erase(std::find(normalizationMethods.begin(), normalizationMethods.end(), method));
+
+				NormalizationSupplementingLearnerRunner deseq2LearnerRunner(params, normalizationMethods);
 				DispatchKmerSize(params.stage1Params.GetKmerLen(), deseq2LearnerRunner);
 
 				// try to open file lately supplemented with DESeq2
 				try {
 					MatrixStatsReader stats_reader_currently_supplemented(params.mkmcParams.normLearningBinFileSupplemented);
-					success = stats_reader_currently_supplemented.Get(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::deseq2), normalizationData);
+					success = stats_reader_currently_supplemented.Get(StatisticsParams::getNormalizationMethodStreamName(normalizationMethod), normalizationData);
 				}
 				catch (...) {
 					// do nothing, because success == false cause following error message
@@ -95,7 +101,7 @@ bool StatisticsGenerator::readNormalizationData()
 		}
 	}
 	else
-		success = stats_reader.Get(StatisticsParams::getNormalizationMethodStreamName(params.statisticsParams.normalizationMethod), normalizationData);
+		success = stats_reader.Get(StatisticsParams::getNormalizationMethodStreamName(normalizationMethod), normalizationData);
 
 	return success;
 }

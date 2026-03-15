@@ -173,7 +173,7 @@
     <ClCompile Include="TasksPool.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Deseq2Learner.h" />
+    <ClInclude Include="NormalizationSupplementing.h" />
     <ClInclude Include="DimensionalityReduction.h" />
     <ClInclude Include="Merger.h" />
     <ClInclude Include="TextFileWritingUtilities.h" />

@@ -140,7 +140,7 @@ struct StatisticsParams
 	using NormalizationMethod = refresh::normalization_base<uint64_t, double>::method_t;
 	using NormalizationLearning = refresh::normalization_learn<uint64_t, double>;
 
-	static std::string getNormalizationMethodStreamName(const NormalizationMethod& normalizationMethod)
+	static std::string getNormalizationMethodStreamName(const NormalizationMethod normalizationMethod)
 	{
 		switch (normalizationMethod) {
 		case NormalizationMethod::frequency_count: return "norm_frequency";
@@ -151,10 +151,32 @@ struct StatisticsParams
 		return "";
 	}
 
+	static std::vector<NormalizationMethod> getAllSupportedNormalizationMethods()
+	{
+		return { NormalizationMethod::frequency_count, NormalizationMethod::quantile, NormalizationMethod::deseq2 };
+	}
+
+	static std::vector<NormalizationMethod> getAlwaysLearnedNormalizationMethods()
+	{
+		return { NormalizationMethod::frequency_count };
+	}
+
+	static std::string getNormalizationMethodMKMCParamName(const NormalizationMethod normalizationMethod)
+	{
+		switch (normalizationMethod) {
+		case NormalizationMethod::frequency_count: return "freq";
+		case NormalizationMethod::quantile: return "q";
+		case NormalizationMethod::deseq2: return "deseq";
+		default: assert(false);
+		}
+		return "";
+	}
+
 	bool generateNormalization = false;
 	NormalizationMethod normalizationMethod = NormalizationMethod::frequency_count; // initialization due to compiler warnings
 	bool saveNormalization = false;
 	bool learnDeseq2 = false;
+	bool learnQuantile = false;
 	bool normalizationLearningWasSupplemented = false;
 
 	bool runUMAP = false;

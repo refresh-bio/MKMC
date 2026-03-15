@@ -135,7 +135,7 @@
     <ClInclude Include="DimensionalityReduction.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Deseq2Learner.h">
+    <ClInclude Include="NormalizationSupplementing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

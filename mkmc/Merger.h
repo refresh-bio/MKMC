@@ -124,8 +124,9 @@ public:
 	{
 		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2 || params.statisticsParams.learnDeseq2)
 			normalizationLearning.register_method(StatisticsParams::NormalizationMethod::deseq2);
+		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile || params.statisticsParams.learnQuantile)
+			normalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
 		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::frequency_count);
-		normalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
 		normalizationLearning.set_no_series(params.mkmcParams.samples.size());
 		normalizationLearning.initialize();
 	}
@@ -377,14 +378,16 @@ void Merger<SIZE>::serializeNormalizationAndSave()
 
 	if (params.statisticsParams.normalizationMethod == NormalizationMethod::deseq2 || params.statisticsParams.learnDeseq2)
 		normalizationLearning.serialize(NormalizationMethod::deseq2, deseq2NormalizationData);
+	if (params.statisticsParams.normalizationMethod == NormalizationMethod::quantile || params.statisticsParams.learnQuantile)
+		normalizationLearning.serialize(NormalizationMethod::quantile, quantileNormalizationData, params.mkmcParams.nThreads);
 	normalizationLearning.serialize(NormalizationMethod::frequency_count, frequencyNormalizationData);
-	normalizationLearning.serialize(NormalizationMethod::quantile, quantileNormalizationData, params.mkmcParams.nThreads);
 
 	MatrixStatsWriter stats_writer(params.mkmcParams.normLearningBinFile);
 	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2 || params.statisticsParams.learnDeseq2)
 		stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::deseq2), deseq2NormalizationData);
+	if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile || params.statisticsParams.learnQuantile)
+		stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::quantile), quantileNormalizationData);
 	stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::frequency_count), frequencyNormalizationData);
-	stats_writer.Add(StatisticsParams::getNormalizationMethodStreamName(NormalizationMethod::quantile), quantileNormalizationData);
 }
 
 template<unsigned SIZE>
@@ -488,8 +491,9 @@ void Merger<SIZE>::operator()(std::vector<uint64_t>& tot_cnts)
 		StatisticsParams::NormalizationLearning currentBinNormalizationLearning;
 		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::deseq2 || params.statisticsParams.learnDeseq2)
 			currentBinNormalizationLearning.register_method(StatisticsParams::NormalizationMethod::deseq2);
+		if (params.statisticsParams.normalizationMethod == StatisticsParams::NormalizationMethod::quantile || params.statisticsParams.learnQuantile)
+			currentBinNormalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
 		currentBinNormalizationLearning.register_method(StatisticsParams::NormalizationMethod::frequency_count);
-		currentBinNormalizationLearning.register_method(StatisticsParams::NormalizationMethod::quantile);
 		currentBinNormalizationLearning.set_no_series(params.mkmcParams.samples.size());
 		currentBinNormalizationLearning.initialize();
 
