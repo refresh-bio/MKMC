@@ -251,24 +251,24 @@ void StatisticsGenerator::generateStatisticsParallel()
 		std::cerr,
 		params.mkmcParams.verbosity_level == 0);
 
+	DimensionalityReduction dimensionalityReduction(params,
+		samples_names,
+		binsOffsets.back() //number of k-mers
+	);
+	std::vector<std::thread> threads(params.mkmcParams.nThreads);
+
 	if (params.statisticsParams.correctPvalues)
 	{
 		pValuesToCorrect.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
 		additionalValuesOfCorrectedStats.resize(statisticsToGeneration.nAdditionalValuesOfCorrectedStats, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
 
-		std::vector<std::thread> threads(params.mkmcParams.nThreads);
-
 		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
-			DimensionalityReduction dimensionalityReduction(params,
-				samples_names,
-				binsOffsets.back() //number of k-mers
-			);
 			KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>> keepNLargestCollectionGlobal;
 			KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollectionCV<SIZE, out_kmcdb_value_type, cnt_value_type>> keepNLargestCollectionCVGlobal;
 
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
-				threads[i_thred] = std::thread([this, &keepNLargestCollectionGlobal, &keepNLargestCollectionCVGlobal , &dimensionalityReduction]
+				threads[i_thred] = std::thread([this, &keepNLargestCollectionGlobal, &keepNLargestCollectionCVGlobal, &dimensionalityReduction]
 					{ this->processEntriesWhenCorrection<decltype(SIZE)::value>(keepNLargestCollectionGlobal, keepNLargestCollectionCVGlobal, dimensionalityReduction); });
 			}
 			for (std::thread& thread : threads)
@@ -276,24 +276,22 @@ void StatisticsGenerator::generateStatisticsParallel()
 				thread.join();
 			}
 
-			dimensionalityReduction.runAndStore();
 			keepNLargestCollectionGlobal.Flush(params, samples_names); // samples names as matrix header
 			keepNLargestCollectionCVGlobal.Flush(params, samples_names); // samples names to generate matrix header
-		});
 
-		pValuesCorrected.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
-		for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred) // probably some threads will be idle
-		{
-			threads[i_thred] = std::thread([this] { this->correctPValuesEntries(); });
-		}
-		for (std::thread& thread : threads)
-		{
-			thread.join();
-		}
+			pValuesCorrected.resize(statisticsToGeneration.nStatisticsWithPValues, std::vector<out_kmcdb_value_type>(binsOffsets.back()));
+			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred) // probably some threads will be idle
+			{
+				threads[i_thred] = std::thread([this] { this->correctPValuesEntries(); });
+			}
+			for (std::thread& thread : threads)
+			{
+				thread.join();
+			}
 
-		tasksPool.reset();
-		openReaders(); // reopen
-		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
+			tasksPool.reset();
+			openReaders(); // reopen
+
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
 				threads[i_thred] = std::thread([this]
@@ -308,14 +306,9 @@ void StatisticsGenerator::generateStatisticsParallel()
 	else
 	{
 		kmcdb::DispatchKmerSize<MAX_K>(params.stage1Params.GetKmerLen(), [&](auto SIZE) {
-			DimensionalityReduction dimensionalityReduction(params,
-				samples_names,
-				binsOffsets.back() //number of k-mers
-				);
 			KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollection<SIZE, out_kmcdb_value_type, cnt_value_type>> keepNLargestCollectionGlobal;
 			KeepNLargestCollectionGlobal<SIZE, out_kmcdb_value_type, cnt_value_type, KeepNLargestCollectionCV<SIZE, out_kmcdb_value_type, cnt_value_type>> keepNLargestCollectionCVGlobal;
 
-			std::vector<std::thread> threads(params.mkmcParams.nThreads);
 			for (uint32_t i_thred = 0; i_thred < params.mkmcParams.nThreads; ++i_thred)
 			{
 				threads[i_thred] = std::thread([this, &keepNLargestCollectionGlobal, &keepNLargestCollectionCVGlobal, &dimensionalityReduction]
@@ -326,9 +319,10 @@ void StatisticsGenerator::generateStatisticsParallel()
 				thread.join();
 			}
 
-			dimensionalityReduction.runAndStore();
 			keepNLargestCollectionGlobal.Flush(params, samples_names); // samples names as matrix header
 			keepNLargestCollectionCVGlobal.Flush(params, samples_names); // samples names to generate matrix header
 		});
 	}
+
+	dimensionalityReduction.runAndStore();
 }
