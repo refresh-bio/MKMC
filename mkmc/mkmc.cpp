@@ -276,10 +276,16 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	optionalGroup->add_flag("-v", mkmcParams.verbosity_level, "verbose mode, shows progress and minor warnings, may be given up to 2 times");
 
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
-	auto keep = debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
-	debugGroup->add_flag("--reuse-db", mkmcParams.reuseDBFiles, "reuse samples and filtering databases (if possible)");
-	debugGroup->add_flag("--learn-deseq", statisticsParams.learnDeseq2, "collect data for DESeq2 normalization (not necessary for -n deseq, but useful for further --reuse-db)")->needs(keep);
-	debugGroup->add_flag("--learn-q", statisticsParams.learnQuantile, "collect data for quantile normalization (not necessary for -n q, but useful for further --reuse-db)")->needs(keep);
+	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
+
+	std::function<void()> reuseCallback = [&]()
+	{
+		mkmcParams.keepTmpFiles = true;
+		mkmcParams.reuseDBFiles = true;
+	};
+	debugGroup->add_flag_callback("--reuse-db", reuseCallback, "reuse samples and filtering databases (if possible); enables also --keep");
+	debugGroup->add_flag("--learn-deseq", statisticsParams.learnDeseq2, "collect data for DESeq2 normalization (not necessary for -n deseq, but useful for further --reuse-db); needs --keep (or --reuse-db)");
+	debugGroup->add_flag("--learn-q", statisticsParams.learnQuantile, "collect data for quantile normalization (not necessary for -n q, but useful for further --reuse-db); needs --keep (or --reuse-db)");
 
 	debugGroup->add_option("--on", mkmcParams.nKMCBins, "suggested number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 
@@ -358,6 +364,17 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 		statisticsParams.nTop < 1)
 	{
 		Logger::Inst().Log("Error: --n_top has to be at least 1.");
+		return true;
+	}
+	
+	if (statisticsParams.learnDeseq2 && !params.mkmcParams.keepTmpFiles)
+	{
+		Logger::Inst().Log("Error: --learn-deseq requires --keep (or --reuse-db).");
+		return true;
+	}
+	if (statisticsParams.learnQuantile && !params.mkmcParams.keepTmpFiles)
+	{
+		Logger::Inst().Log("Error: --learn-q requires --keep (or --reuse-db).");
 		return true;
 	}
 
