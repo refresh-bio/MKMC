@@ -288,6 +288,7 @@ void StatisticsGenerator::generateStatisticsParallel()
 			{
 				thread.join();
 			}
+			std::vector<std::vector<out_kmcdb_value_type>>().swap(pValuesToCorrect);
 
 			tasksPool.reset();
 			openReaders(); // reopen
@@ -301,6 +302,8 @@ void StatisticsGenerator::generateStatisticsParallel()
 			{
 				thread.join();
 			}
+			std::vector<std::vector<out_kmcdb_value_type>>().swap(pValuesCorrected);
+			std::vector<std::vector<out_kmcdb_value_type>>().swap(additionalValuesOfCorrectedStats);
 		});
 	}
 	else
