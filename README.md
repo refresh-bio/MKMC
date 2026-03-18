@@ -4,9 +4,9 @@ Then it combines multiple KMC databases into one single matrix, which optionally
 The latter file contains k-mers as rows and samples as columns. The values are counts of k-mers in samples.
 FASTA output files, containg k-mers sequences only, are also supported.
 
-The matrix may be utilized to compute many of statistics (normalization, correlation, differential k-mers analysis, cross-validation, entropy, UMAP, PCA).
+The matrix may be utilized to compute many of statistics (normalization, correlation, differential k-mers analysis, cross-validation, entropy, dimensionality reduction).
 
-This software distributed under GNU GPL 3 licence.
+This software is distributed under GNU GPL 3 licence.
 
 ## Building
 The easiest way to get the program is to download the most recent version from the [**release page**](https://github.com/refresh-bio/MKMC/releases).
@@ -43,7 +43,7 @@ Options:
  - `-n ENUM:value in {deseq,freq,q}` - normalize counts (DESeq2/frequency count/quantile normalization) before use
  - `--save_n` - save matrix with normalized counts to file
  - `--cor ENUM:value in {kendall,pearson,spearman}` ... Needs: `-n` `-p` - compute correlation coefficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
- - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a sequence of integers, one in each line)
+ - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a sequence of numbers, one in each line)
  
 [Option Group: differential k-mers analysis]
   Options:

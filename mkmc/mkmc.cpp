@@ -436,7 +436,7 @@ bool checkAndPrintArgumentsWarnings(const Params& params)
 
 	if (params.mkmcParams.reuseDBFiles && !params.mkmcParams.outputFileTypes.empty())
 	{
-		Logger::Inst().Log("Warning: when database reuse is possible (--reuse--db) FASTA or matrix with unnormalized counts (-o) will not be generated.", 1);
+		Logger::Inst().Log("Warning: when database reuse is possible (--reuse--db), FASTA or matrix with unnormalized counts (-o) will not be generated.", 1);
 		result = true;
 	}
 
