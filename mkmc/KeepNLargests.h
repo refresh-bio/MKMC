@@ -196,110 +196,51 @@ class KeepNLargestCollection : KeepNLargestCollectionBase<SIZE, Statistics_T, VA
 
 	void flush(const Params& params, const std::vector<std::string>& cnt_matrix_output_header)
 	{
-		if (pearson)
+		const size_t nSamples = params.mkmcParams.samples.size();
+		const size_t kmerLen = params.stage1Params.GetKmerLen();
+
+		bool tooLittleKmers = false;
+		size_t nTopKmers = 0, nKmersExists = 0;
+
+		auto logText = [](const std::string& alg, auto& top, auto& topCntMatrix, auto& topFasta)
 		{
-			flush_for(*pearson,
-				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-				params.mkmcParams.outputFilePearsonTop, { "pearson" },
-				params.mkmcParams.outputFilePearsonTopCntMatrix, cnt_matrix_output_header,
-				params.mkmcParams.outputFilePearsonTopFasta);
-			Logger::Inst().Log("Info: generating Pearson top results to " + params.mkmcParams.outputFilePearsonTop + ".", 2);
+			Logger::Inst().Log("Info: generating " + alg + " top results to " + top + ".", 2);
 			Logger::Inst().Log("Info: the file contains top k-mers with correlation values.", 2);
-			Logger::Inst().Log("Info: generating Pearson top results to " + params.mkmcParams.outputFilePearsonTopCntMatrix + ".", 2);
+			Logger::Inst().Log("Info: generating " + alg + " top results to " + topCntMatrix + ".", 2);
 			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
-			Logger::Inst().Log("Info: generating Pearson top results to " + params.mkmcParams.outputFilePearsonTopFasta + ".", 2);
+			Logger::Inst().Log("Info: generating " + alg + " top results to " + topFasta + ".", 2);
 			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
-		}
+		};
 
-		if (spearman)
+		auto flush = [nSamples, kmerLen, cnt_matrix_output_header, &tooLittleKmers, &nTopKmers, &nKmersExists, logText](const std::string& algHeader, const std::string& algorithmName, const auto& dataToFlush, auto& top, auto& topCntMatrix, auto& topFasta)
 		{
-			flush_for(*spearman,
-				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-				params.mkmcParams.outputFileSpearmanTop, { "spearman" },
-				params.mkmcParams.outputFileSpearmanTopCntMatrix, cnt_matrix_output_header,
-				params.mkmcParams.outputFileSpearmanTopFasta);
-			Logger::Inst().Log("Info: generating Spearman top results to " + params.mkmcParams.outputFileSpearmanTop + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers with correlation values.", 2);
-			Logger::Inst().Log("Info: generating Spearman top results to " + params.mkmcParams.outputFileSpearmanTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
-			Logger::Inst().Log("Info: generating Spearman top results to " + params.mkmcParams.outputFileSpearmanTopFasta + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
-		}
+			if (!dataToFlush)
+				return;
 
-		if (kendall)
-		{
-			flush_for(*kendall,
-				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-				params.mkmcParams.outputFileKendallTop, { "kendall" },
-				params.mkmcParams.outputFileKendallTopCntMatrix, cnt_matrix_output_header,
-				params.mkmcParams.outputFileKendallTopFasta);
-			Logger::Inst().Log("Info: generating Kendall Tau top results to " + params.mkmcParams.outputFileKendallTop + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers with correlation values.", 2);
-			Logger::Inst().Log("Info: generating Kendall Tau top results to " + params.mkmcParams.outputFileKendallTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
-			Logger::Inst().Log("Info: generating Kendall Tau top results to " + params.mkmcParams.outputFileKendallTopFasta + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
-		}
+			if (dataToFlush->GetN() > dataToFlush->Get().size())
+			{
+				assert((!tooLittleKmers && nKmersExists == 0) || nTopKmers == dataToFlush->GetN());
+				assert((!tooLittleKmers && nTopKmers == 0) || nKmersExists == dataToFlush->Get().size());
+				tooLittleKmers = true;
+				
+				nTopKmers = dataToFlush->GetN();
+				nKmersExists = dataToFlush->Get().size();
+			}
 
-		if (entropy)
-		{
-			flush_for(*entropy,
-				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-				params.mkmcParams.outputFileEntropyTop, { "entropy" },
-				params.mkmcParams.outputFileEntropyTopCntMatrix, cnt_matrix_output_header,
-				params.mkmcParams.outputFileEntropyTopFasta);
-			Logger::Inst().Log("Info: generating entropy top results to " + params.mkmcParams.outputFileEntropyTop + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers with entropy values.", 2);
-			Logger::Inst().Log("Info: generating entropy top results to " + params.mkmcParams.outputFileEntropyTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
-			Logger::Inst().Log("Info: generating entropy top results to " + params.mkmcParams.outputFileEntropyTopFasta + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
-		}
+			flush_for(*dataToFlush, kmerLen, nSamples, top, { algHeader }, topCntMatrix, cnt_matrix_output_header, topFasta);
+			logText(algorithmName, top, topCntMatrix, topFasta);
+		};
 
-		if (snr)
-		{
-			flush_for(*snr,
-				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-				params.mkmcParams.outputFileSNRTop, { "snr" },
-				params.mkmcParams.outputFileSNRTopCntMatrix, cnt_matrix_output_header,
-				params.mkmcParams.outputFileSNRTopFasta);
-			Logger::Inst().Log("Info: generating signal to noise ratio top results to " + params.mkmcParams.outputFileSNRTop + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers with SNR results.", 2);
-			Logger::Inst().Log("Info: generating signal to noise ratio top results to " + params.mkmcParams.outputFileSNRTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
-			Logger::Inst().Log("Info: generating signal to noise ratio top results to " + params.mkmcParams.outputFileSNRTopFasta + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
-		}
+		flush("pearson", "Pearson", pearson, params.mkmcParams.outputFilePearsonTop, params.mkmcParams.outputFilePearsonTopCntMatrix, params.mkmcParams.outputFilePearsonTopFasta);
+		flush("spearman", "Spearman", spearman, params.mkmcParams.outputFileSpearmanTop, params.mkmcParams.outputFileSpearmanTopCntMatrix, params.mkmcParams.outputFileSpearmanTopFasta);
+		flush("kendall", "Kendall Tau", kendall, params.mkmcParams.outputFileKendallTop, params.mkmcParams.outputFileKendallTopCntMatrix, params.mkmcParams.outputFileKendallTopFasta);
+		flush("entropy", "entropy", entropy, params.mkmcParams.outputFileEntropyTop, params.mkmcParams.outputFileEntropyTopCntMatrix, params.mkmcParams.outputFileEntropyTopFasta);
+		flush("snr", "signal to noise ratio", snr, params.mkmcParams.outputFileSNRTop, params.mkmcParams.outputFileSNRTopCntMatrix, params.mkmcParams.outputFileSNRTopFasta);
+		flush("snr_for_unnormalized", "unnormalized signal to noise ratio", unnormalizedSnr, params.mkmcParams.outputFileUnnormalizedSNRTop, params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, params.mkmcParams.outputFileUnnormalizedSNRTopFasta);
+		flush("dids", "DIDS", dids, params.mkmcParams.outputFileDIDSTop, params.mkmcParams.outputFileDIDSTopCntMatrix, params.mkmcParams.outputFileDIDSTopFasta);
 
-		if (unnormalizedSnr)
-		{
-			flush_for(*unnormalizedSnr,
-				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-				params.mkmcParams.outputFileUnnormalizedSNRTop, { "snr_for_unnormalized" },
-				params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix, cnt_matrix_output_header,
-				params.mkmcParams.outputFileUnnormalizedSNRTopFasta);
-			Logger::Inst().Log("Info: generating unnormalized signal to noise ratio top results to " + params.mkmcParams.outputFileUnnormalizedSNRTop + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers with SNR results.", 2);
-			Logger::Inst().Log("Info: generating unnormalized signal to noise ratio top results to " + params.mkmcParams.outputFileUnnormalizedSNRTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
-			Logger::Inst().Log("Info: generating unnormalized signal to noise ratio top results to " + params.mkmcParams.outputFileUnnormalizedSNRTopFasta + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
-		}
-
-		if (dids)
-		{
-			flush_for(*dids,
-				params.stage1Params.GetKmerLen(), params.mkmcParams.samples.size(),
-				params.mkmcParams.outputFileDIDSTop, { "dids" },
-				params.mkmcParams.outputFileDIDSTopCntMatrix, cnt_matrix_output_header,
-				params.mkmcParams.outputFileDIDSTopFasta);
-			Logger::Inst().Log("Info: generating DIDS top results to " + params.mkmcParams.outputFileDIDSTop + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers with DIDS results.", 2);
-			Logger::Inst().Log("Info: generating DIDS top results to " + params.mkmcParams.outputFileDIDSTopCntMatrix + ".", 2);
-			Logger::Inst().Log("Info: the file contains counts matrix of top k-mers.", 2);
-			Logger::Inst().Log("Info: generating DIDS top results to " + params.mkmcParams.outputFileDIDSTopFasta + ".", 2);
-			Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
-		}
+		if (tooLittleKmers)
+			Logger::Inst().Log("Warning: requested to store " + std::to_string(nTopKmers) + " k-mers with top p-values, but only " + std::to_string(nKmersExists) + " k-mers exist.");
 	}
 
 public:
@@ -473,6 +414,9 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 			nFolds = kendall.size();
 		}
 
+		bool tooLittleKmers = false;
+		size_t nTopKmers = 0, nKmersExists = 0;
+
 		using enum StatisticsParams::CorrelationMethod;
 		const std::vector<size_t>& samplesToBeTestOrder = params.statisticsParams.cvParams.samplesToBeTestOrder;
 
@@ -513,10 +457,20 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 				Logger::Inst().Log("Info: the file contains top k-mers in FASTA format.", 2);
 			};
 
-			auto flush = [nSamples, iFold, matrixHeader, nCols, params, logText](StatisticsParams::CorrelationMethod correlationMethod, const std::string& header, const std::string& algorithmName, const auto& dataToFlush)
+			auto flush = [nSamples, iFold, matrixHeader, nCols, params, &tooLittleKmers, &nTopKmers, &nKmersExists, logText](StatisticsParams::CorrelationMethod correlationMethod, const std::string& header, const std::string& algorithmName, const auto& dataToFlush)
 			{
 				if (dataToFlush.empty())
 					return;
+
+				if (iFold == 0 && dataToFlush[iFold]->GetN() > dataToFlush[iFold]->Get().size())
+				{
+					assert((!tooLittleKmers && nKmersExists == 0) || nTopKmers == dataToFlush[iFold]->GetN());
+					assert((!tooLittleKmers && nTopKmers == 0) || nKmersExists == dataToFlush[iFold]->Get().size());
+					tooLittleKmers = true;
+
+					nTopKmers = dataToFlush[iFold]->GetN();
+					nKmersExists = dataToFlush[iFold]->Get().size();
+				}
 
 				const std::string top = params.statisticsParams.cvParams.getOuputFileNameTop(correlationMethod, nSamples, iFold, dataToFlush.size());
 				const std::string topCntMatrix = params.statisticsParams.cvParams.getOuputFileNameTopCntMatrix(correlationMethod, nSamples, iFold, dataToFlush.size());
@@ -533,6 +487,8 @@ class KeepNLargestCollectionCV : KeepNLargestCollectionBase<SIZE, Statistics_T, 
 			flush(Spearman, "spearman", "Spearman", spearman);
 			flush(Kendall, "kendall", "Kendall Tau", kendall);
 		}
+		if (tooLittleKmers)
+			Logger::Inst().Log("Warning: requested to store " + std::to_string(nTopKmers) + " CV k-mers with top p-values, but only " + std::to_string(nKmersExists) + " k-mers exist.");
 	}
 
 public:
@@ -693,11 +649,19 @@ void KeepNLargestCollectionBase<SIZE, Statistics_T, VALUE_T>::flush_for(
 	std::vector<Elem> data;
 	to_flush.StealSorted(data, PRED{}); //could actually be Steal (no sorted), but lets keep it deterministic
 	uint64_t outputKmerId = 0;
+	bool containsNaNs = false;
+
 	for (auto& elem : data)
 	{
+		if (std::isnan(elem.key))
+			containsNaNs = true;
+
 		buff_top.StoreKmer(elem.kmerSeq, elem.key);
 		buff_top_matrix.StoreKmer(elem.kmerSeq, elem.counts);
 		buff_top_fasta.StoreKmer(elem.kmerSeq, outputKmerId);
 		++outputKmerId;
 	}
+
+	if (containsNaNs)
+		Logger::Inst().Log("Warning: a file " + fname_top + " contains at least one NaN (not a number) value, thus results in " + fname_top_matrix + " and " + fname_top_fasta + " files may not be fully informative.");
 }
