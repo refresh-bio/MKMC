@@ -115,8 +115,8 @@ struct MKMCParams
 
 	bool nKMCWorkersUserSet = false;
 
-	bool keepTmpFiles = false;
 	bool reuseDBFiles = false;
+	bool keepKMCdbs = false;
 
 	bool generateForNonNormalized = false;
 
@@ -247,6 +247,8 @@ struct MutableParams
 {
 	bool tmpDirCreated = false;
 
+	bool kmcDbsCreated = false;
+
 	mutable bool createdFastaFile = false;
 	mutable std::string kmersSequencesToFilterOut; // file containing k-mers to count (input or generated)
 };
@@ -294,5 +296,5 @@ struct Params
 class MessagesUtilities
 {
 public:
-	static std::string generateSentence(const std::vector<std::string>& tasks, bool capitalize = false);
+	static bool generateSentence(const std::vector<std::string>& tasks, std::string& result, bool capitalize = false);
 };

@@ -44,7 +44,9 @@ public:
 		if (std::find(outputFileTypes.begin(), outputFileTypes.end(), OutputFileType::FASTA) != outputFileTypes.end())
 			tasks.push_back(params.mkmcParams.outputFASTAFile);
 
-		Logger::Inst().Log(std::string("\nStarting merging samples and dumping to ") + (tasks.size() > 1 ? "files " : "file ") + MessagesUtilities::generateSentence(tasks) + "...");
+		std::string msg;
+		MessagesUtilities::generateSentence(tasks, msg);
+		Logger::Inst().Log(std::string("\nStarting merging samples and dumping to ") + (tasks.size() > 1 ? "files " : "file ") + msg + "...");
 
 		if (params.statisticsParams.generateNormalization)
 			Logger::Inst().Log("Info: creating temporary " + params.mkmcParams.normLearningBinFile + " file for perform further normalization.", 2);
@@ -92,6 +94,8 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	app.add_option_function("-k", kCallback, "k-mer length")->check(CLI::Range(KMC::CfgConsts::min_k, KMC::CfgConsts::max_k))->default_val(defaultKMCParams.k);
 
 	app.add_flag("--tot_cnt", mkmcParams.totCntGeneration, "generate samples counts sums file");
+
+	app.add_flag("--reuse-db", mkmcParams.reuseDBFiles, "keep binary matrix database; if possible, do not count and merge k-mers, but use the previously kept database");
 
 	CLI::Option_group* filteringGroup = app.add_option_group("k-mers filtering");
 	filteringGroup->add_option("--thr", filterParams.minCountThreshold, "filter out k-mers occuring less than specified number of times...")->check(CLI::PositiveNumber)->default_val(filterParams.minCountThreshold);
@@ -276,18 +280,12 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	optionalGroup->add_flag("-v", mkmcParams.verbosity_level, "verbose mode, shows progress and minor warnings, may be given up to 2 times");
 
 	CLI::Option_group* debugGroup = app.add_option_group("debug parameters");
-	debugGroup->add_flag("--keep", mkmcParams.keepTmpFiles, "keep temporary files and binary results file");
 
-	std::function<void()> reuseCallback = [&]()
-	{
-		mkmcParams.keepTmpFiles = true;
-		mkmcParams.reuseDBFiles = true;
-	};
-	debugGroup->add_flag_callback("--reuse-db", reuseCallback, "reuse samples and filtering databases (if possible); enables also --keep");
-	debugGroup->add_flag("--learn-deseq", statisticsParams.learnDeseq2, "collect data for DESeq2 normalization (not necessary for -n deseq, but useful for further --reuse-db); needs --keep (or --reuse-db)");
-	debugGroup->add_flag("--learn-q", statisticsParams.learnQuantile, "collect data for quantile normalization (not necessary for -n q, but useful for further --reuse-db); needs --keep (or --reuse-db)");
+	debugGroup->add_flag("--learn-deseq", statisticsParams.learnDeseq2, "collect data for DESeq2 normalization (not necessary for -n deseq, but useful for further matrix reuse); needs --reuse-db");
+	debugGroup->add_flag("--learn-q", statisticsParams.learnQuantile, "collect data for quantile normalization (not necessary for -n q, but useful for further matrix reuse); needs --reuse-db");
 
 	debugGroup->add_option("--on", mkmcParams.nKMCBins, "suggested number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
+	debugGroup->add_flag("--keep-kmc-temporary-databases", mkmcParams.keepKMCdbs, "keep temporary per-sample KMC databases and possibly filtering temporary file");
 
 	debugGroup->add_flag("--generate_snr_for_unnormalized_data", mkmcParams.generateForNonNormalized, "generate Signal to Noise ratio also for unnormalized counts");
 
@@ -367,14 +365,14 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 		return true;
 	}
 	
-	if (statisticsParams.learnDeseq2 && !params.mkmcParams.keepTmpFiles)
+	if (statisticsParams.learnDeseq2 && !params.mkmcParams.reuseDBFiles)
 	{
-		Logger::Inst().Log("Error: --learn-deseq requires --keep (or --reuse-db).");
+		Logger::Inst().Log("Error: --learn-deseq requires --reuse-db.");
 		return true;
 	}
-	if (statisticsParams.learnQuantile && !params.mkmcParams.keepTmpFiles)
+	if (statisticsParams.learnQuantile && !params.mkmcParams.reuseDBFiles)
 	{
-		Logger::Inst().Log("Error: --learn-q requires --keep (or --reuse-db).");
+		Logger::Inst().Log("Error: --learn-q requires --reuse-db.");
 		return true;
 	}
 
@@ -413,12 +411,12 @@ bool checkAndPrintArgumentsWarnings(const Params& params)
 	}
 
 	if (params.statisticsParams.generateNormalization &&
-		!params.mkmcParams.keepTmpFiles &&
+		!params.mkmcParams.reuseDBFiles &&
 		(params.statisticsParams.correlationMethods.empty() &&
 			(params.statisticsParams.classificationMethods.empty() || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() == StatisticsParams::DifferentialAnalysisMethod::TTest) &&
 			!params.statisticsParams.saveNormalization))
 	{
-		Logger::Inst().Log("Warning: the specified parameters will cause counts normalization (-n), but will not use them; use --save_n, --diff (for something other than T-Test), --cor, or --keep.", 1);
+		Logger::Inst().Log("Warning: the specified parameters will cause counts normalization (-n), but will not use them; use --save_n, --diff (for something other than T-Test), --cor, or --reuse-db.", 1);
 		result = true;
 	}
 
@@ -431,12 +429,6 @@ bool checkAndPrintArgumentsWarnings(const Params& params)
 	if (params.statisticsParams.cvParams.seedUserDefined && params.statisticsParams.cvParams.nTestSamples == 1)
 	{
 		Logger::Inst().Log("Warning: as --leave parameter is set to 1, LOOCV will be performed, which does not need randomness (--cv-seed parameter will be ignored).", 1);
-		result = true;
-	}
-
-	if (params.mkmcParams.reuseDBFiles && !params.mkmcParams.outputFileTypes.empty())
-	{
-		Logger::Inst().Log("Warning: when database reuse is possible (--reuse--db), FASTA or matrix with unnormalized counts (-o) will not be generated.", 1);
 		result = true;
 	}
 
@@ -652,6 +644,8 @@ int main(int argc, char** argv)
 			
 			Logger::Inst().Log("Starting k-mer counting...");
 			Logger::Inst().Log("Info: generating temporary KMC databases to " + params.mkmcParams.tmpPath + " directory.", 2);
+			
+			params.mutableParams.kmcDbsCreated = true;
 		}
 		else {
 			Logger::Inst().Log("Info: --reuse-db flag given, verifying, if previously created k-mers databases exist.", 2);
@@ -668,9 +662,25 @@ int main(int argc, char** argv)
 				Logger::Inst().Log("Info: generating temporary KMC databases to " + params.mkmcParams.tmpPath + " directory.", 2);
 				if (params.filterParams.filterKmersSequences)
 					Logger::Inst().Log("Info: generating temporary KMC database " + params.filterParams.kmersSequencesToFilterOutDB + " of k-mers to be filtered out.", 2);
+
+				params.mutableParams.kmcDbsCreated = true;
 			}
 			else
-				Logger::Inst().Log("Info: samples databases exist and outwardly seem to be possible to reuse.");
+			{
+				Logger::Inst().Log("Info: samples database exists and outwardly seem to be possible to reuse.");
+
+				std::vector<std::string> tasksToBeOmitted;
+				if (params.mkmcParams.totCntGeneration)
+					tasksToBeOmitted.push_back("total samples counts will not be computed (--tot_cnt)");
+				if (!params.mkmcParams.outputFileTypes.empty())
+					tasksToBeOmitted.push_back("FASTA or matrix with unnormalized counts (-o) will not be generated");
+				if (params.mkmcParams.keepKMCdbs)
+					tasksToBeOmitted.push_back("KMC databases will not be kept (--keep-kmc-temporary-databases) until they already exist");
+
+				std::string msg;
+				if (MessagesUtilities::generateSentence(tasksToBeOmitted, msg))
+					Logger::Inst().Log("Warning: as the database exists (--reuse-db caused reading it), " + msg + ".");
+			}
 		}
 
 		bool matrixNotEmpty = true;
@@ -707,7 +717,9 @@ int main(int argc, char** argv)
 				if (params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
 					tasks.push_back("reducing number of dimensions");
 
-				Logger::Inst().Log("\nStarting " + MessagesUtilities::generateSentence(tasks) + "...");
+				std::string msg;
+				MessagesUtilities::generateSentence(tasks, msg);
+				Logger::Inst().Log("\nStarting " + msg + "...");
 
 				StatisticsGenerator statisticsGenerator(params);
 				statistics_timer.startTimer();
@@ -745,7 +757,10 @@ int main(int argc, char** argv)
 					tasks.push_back("normalizing");
 				if (!params.statisticsParams.correlationMethods.empty() || !params.statisticsParams.classificationMethods.empty() || params.statisticsParams.generateEntropy || params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
 					tasks.push_back("computing statistics");
-				Logger::Inst().Log(MessagesUtilities::generateSentence(tasks) + ":");
+
+				std::string msg;
+				MessagesUtilities::generateSentence(tasks, msg);
+				Logger::Inst().Log(msg + ":");
 			}
 			else
 			{
@@ -754,7 +769,10 @@ int main(int argc, char** argv)
 					tasks.push_back("normalizing");
 				if (!params.statisticsParams.correlationMethods.empty() || !params.statisticsParams.classificationMethods.empty() || params.statisticsParams.generateEntropy || params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
 					tasks.push_back("computing statistics");
-				Logger::Inst().Log(MessagesUtilities::generateSentence(tasks, true) + ":");
+
+				std::string msg;
+				MessagesUtilities::generateSentence(tasks, msg, true);
+				Logger::Inst().Log(msg + ":");
 			}
 			Logger::Inst().Log("\tStart: " + statistics_timer.getStartTime());
 			Logger::Inst().Log("\tEnd:   " + statistics_timer.getStopTime());

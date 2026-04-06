@@ -41,8 +41,8 @@ bool Start::verifyFiles(bool& warningPrinted)
 		else
 		{
 			Logger::Inst().Log("Warning: the specified directory " + params.mkmcParams.tmpPath + " does not exist. It will be temporarily created.", 1);
-			if (params.mkmcParams.keepTmpFiles)
-				Logger::Inst().Log("Warning: as " + params.mkmcParams.tmpPath + " directory was created by MKMC, some of the temporary files will not be kept (--keep parameter).", 1);
+			if (params.mkmcParams.keepKMCdbs)
+				Logger::Inst().Log("Warning: as " + params.mkmcParams.tmpPath + " directory was created by MKMC, KMC per-sample databases will not be kept (--keep-kmc-temporary-databases parameter).", 1);
 			warningPrinted = true;
 			params.mutableParams.tmpDirCreated = true;
 		}

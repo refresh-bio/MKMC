@@ -31,6 +31,7 @@ Options:
  - `-h,--help` - Print this help message and exit
  - `-k UINT:UINT in [1 - 256] [25]` - k-mer length
  - `--tot_cnt` - generate samples counts sums file
+ - `--reuse-db` - keep binary matrix database; if possible, do not count and merge k-mers, but use the previously kept database
  
 [Option Group: k-mers filtering]
   Options:
@@ -102,11 +103,10 @@ Options:
 
 [Option Group: debug parameters]
   Options:
- - `--keep` - keep temporary files and binary results file
- - `--reuse-db` - reuse samples and filtering databases (if possible)
- - `--learn-deseq` Needs: `--keep` - collect data for DESeq2 normalization (not necessary for `-n deseq`, but useful for further `--reuse-db`)
- - `--learn-q` Needs: `--keep` - collect data for quantile normalization (not necessary for `-n q`, but useful for further `--reuse-db`)
+ - `--learn-deseq` Needs: `--reuse-db` - collect data for DESeq2 normalization (not necessary for `-n deseq`, but useful for further `--reuse-db`)
+ - `--learn-q` Needs: `--reuse-db` - collect data for quantile normalization (not necessary for `-n q`, but useful for further `--reuse-db`)
  - `--on UINT:POSITIVE [512]` - suggested number of internal bins, modify carefully
+ - `--keep-kmc-temporary-databases` - keep temporary per-sample KMC databases and possibly filtering temporary file
  - `--generate_snr_for_unnormalized_data` - generate Signal to Noise ratio also for unnormalized counts
 K-mers order in output files is not specified and may vary between runnings.
 > [!warning]  
@@ -119,7 +119,7 @@ To obtain the statistics use i.a. one or many of the parameters: `-n`, `--cor`, 
 ```
 ./mkmc -k 20 --thr_rat 0.5 -- input_files_list.txt output tmp
 ```
-It will generate a matrix (if `--keep` given, stored in a binary file `output.kmcdb`) of 20-mers occurring in at least a half of the input files.
+It will generate a matrix (if `--reuse-db` given, stored in a binary file `output.kmcdb`) of 20-mers occurring in at least a half of the input files.
 
 ```
 ./mkmc -k 20 --thr 2 --thr_rat 0.5 -- input_files_list.txt output tmp

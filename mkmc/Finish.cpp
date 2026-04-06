@@ -5,29 +5,35 @@
 
 void Finish::finishProcessing()
 {
-	if (!params.mkmcParams.keepTmpFiles)
+	if (!params.mutableParams.kmcDbsCreated)
 	{
-		Logger::Inst().Log("Info: --keep switch not given, removing temporary files.", 2);
+		// Do nothing.
+	}
+	else if (!params.mkmcParams.keepKMCdbs)
+	{
+		Logger::Inst().Log("Info: --keep-kmc-temporary-databases switch not given, removing KMC databases.", 2);
 		for (const auto& kmcOutputFile : params.mkmcParams.kmcOutputFiles)
-		{
-			std::filesystem::remove(kmcOutputFile);
-		}
+			std::filesystem::remove(kmcOutputFile); // sometimes not necessary
 		if (params.filterParams.filterKmersSequences)
 		{
-			if (params.mutableParams.createdFastaFile)
-			{
+			if (params.mutableParams.createdFastaFile) // We treat a temporary FASTA as KMC DB
 				std::filesystem::remove(params.mutableParams.kmersSequencesToFilterOut);
-			}
 			std::filesystem::remove(params.filterParams.kmersSequencesToFilterOutDB);
 		}
-
-		// currently MKMC runs in bulk mode, thus user rather won't need binary files
-		std::filesystem::remove(params.mkmcParams.outputMatrixBinFile);
-		std::filesystem::remove(params.mkmcParams.normLearningBinFile); // sometimes not necessary
-		std::filesystem::remove(params.mkmcParams.normLearningBinFileSupplemented); // sometimes not necessary; will be useful after modularization
 	}
 	else
-		Logger::Inst().Log("Info: --keep switch given, keeping temporary files.", 2);
+		Logger::Inst().Log("Info: --keep-kmc-temporary-databases switch given, keeping KMC databases.", 2);
+
+	if (!params.mkmcParams.reuseDBFiles)
+	{
+		Logger::Inst().Log("Info: --reuse-db switch not given, removing binary database files.", 2);
+		std::filesystem::remove(params.mkmcParams.outputMatrixBinFile);
+		std::filesystem::remove(params.mkmcParams.normLearningBinFile); // sometimes not necessary
+		std::filesystem::remove(params.mkmcParams.normLearningBinFileSupplemented); // sometimes not necessary
+	}
+	else
+		Logger::Inst().Log("Info: --reuse-db switch given, keeping binary database files.", 2);
+
 	if (params.mutableParams.tmpDirCreated)
 	{
 		std::filesystem::remove_all(params.mkmcParams.tmpPath);
