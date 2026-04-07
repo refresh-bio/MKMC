@@ -242,12 +242,22 @@ void StatisticsGenerator::generateStatisticsParallel()
 		}
 	}
 
+	std::string progressBarLabel;
+	if (params.statisticsParams.generateNormalization && params.statisticsParams.anyStatisticsToCount())
+		progressBarLabel = "Norm/postprocessing";
+	else if (params.statisticsParams.generateNormalization)
+		progressBarLabel = "Normalizing";
+	else if (params.statisticsParams.anyStatisticsToCount())
+		progressBarLabel = "Postprocessing";
+	else
+		assert(false);
+
 	uint64_t progressBarTicks = params.mkmcParams.verbosity_level == 0 ? 0 : std::accumulate(nOutputKmersPerBin.begin(), nOutputKmersPerBin.end(), 0ull);
 	if (params.statisticsParams.correctPvalues)
 		progressBarTicks *= 2;
 	progress_bar = std::make_unique<ProgressBar>(
 		progressBarTicks,
-		"Computing statistics",
+		progressBarLabel,
 		std::cerr,
 		params.mkmcParams.verbosity_level == 0);
 

@@ -25,7 +25,7 @@ void DimensionalityReduction::store(const std::string& fileName, const std::stri
 void DimensionalityReduction::store(const std::string& fileName, const std::vector<std::string>& firstCol, const std::vector<std::string>& header, const std::vector<std::vector<out_kmcdb_value_type>>& results)
 {
 	TextFileWriter writer(fileName, false);
-	writer.StoreHeader(header, "Statistic");
+	writer.StoreHeader(header, "Property");
 
 	size_t firstColLen = 0;
 	for (const auto& s : firstCol)

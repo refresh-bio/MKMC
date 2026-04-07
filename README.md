@@ -4,7 +4,7 @@ Then it combines multiple KMC databases into one single matrix, which optionally
 The latter file contains k-mers as rows and samples as columns. The values are counts of k-mers in samples.
 FASTA output files, containg k-mers sequences only, are also supported.
 
-The matrix may be utilized to compute many of statistics (normalization, correlation, differential k-mers analysis, cross-validation, entropy, dimensionality reduction).
+The matrix may be utilized to perform postprocessing (normalization, correlation, differential k-mers analysis, cross-validation, entropy, dimensionality reduction).
 
 This software is distributed under GNU GPL 3 licence.
 
@@ -23,7 +23,7 @@ To build on Linux type `make -j` (make and G++ 11 or newer are required). To bui
 ```
 
 Positionals:
-  - `input_samples TEXT:FILE REQD` - file with a list of samples and input files in specified (`-f` parameter) format (gzipped or not)
+  - `input_samples TEXT:FILE REQD` - file with a list of samples and input files in specified (`-f`) format (gzipped or not)
   - `output_files_prefix TEXT REQD` - template (prefix) of output files names
   - `temp_dir TEXT:DIR REQD` - directory for temporary files
 
@@ -37,7 +37,7 @@ Options:
   Options:
  - `--thr UINT:POSITIVE [1]` - filter out k-mers occuring less than specified number of times...
  - `--thr_rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
- - `--flt TEXT:FILE` - keep k-mers present in a specified file (FASTA or a set of the k-mers, one per line) only; `-b` is used accordingly
+ - `--flt TEXT:FILE` - keep k-mers present in a specified file only (FASTA or a set of the k-mers, one per line) only; `-b` is used accordingly
  
 [Option Group: correlation and normalization]
   Options:
@@ -60,10 +60,10 @@ Options:
  - `--leave UINT [2]` Needs: `--cv` - number of samples to leave in every test
  - `--cv-seed UINT [1234567890]` Needs: `--cv` - random seed
  
-[Option Group: other statistical parameters]
+[Option Group: other postprocessing parameters]
   Options:
  - `--entropy` - generate k-mers counts entropy; counts are increased by 1
- - `--n_top UINT [10000]` - select a maximal number of top k-mers by statistics with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs `--cor` or `--diff`
+ - `--n_top UINT [10000]` - select a maximal number of top k-mers by results with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs `--cor` or `--diff`
 
 [Option Group: dimentionality reduction]
   Options:
@@ -113,7 +113,7 @@ K-mers order in output files is not specified and may vary between runnings.
 **K-mers order in output files is not specified and may vary between runnings.**
 
 ## Examples
-To obtain the statistics use i.a. one or many of the parameters: `-n`, `--cor`, `--diff`, `--cv`, `--entropy`, `--umap`, `--pca`. Statistics will be computed basing on counts matrix, which may be generated as follows.
+To obtain the postprocessing results use i.a. one or many of the parameters: `-n`, `--cor`, `--diff`, `--cv`, `--entropy`, `--umap`, `--pca`. Results will be computed basing on counts matrix, which may be generated as follows.
 
 ### Generating matrix examples
 ```

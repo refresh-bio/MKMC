@@ -69,7 +69,7 @@ public:
 
 
 
-void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
+void configureCLIArguments(int argc, char** argv, Params& params, CLI::App& app)
 {
 	DefaultKMCParams& defaultKMCParams = params.defaultKMCParams;
 	KMC::Stage1Params& stage1Params = params.stage1Params;
@@ -83,7 +83,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 	CLI::Option* nTestSamples = nullptr, * n = nullptr, * cor = nullptr, * differentialAnalysis = nullptr, *pvalCorr, * c = nullptr;
 
-	app.add_option("input_samples", mkmcParams.inputFileName, "file with a list of samples and input files in specified (-f parameter) format (gzipped or not)")->required()->check(CLI::ExistingFile);
+	app.add_option("input_samples", mkmcParams.inputFileName, "file with a list of samples and input files in specified (-f) format (gzipped or not)")->required()->check(CLI::ExistingFile);
 	app.add_option("output_files_prefix", mkmcParams.outputFilesTemplate, "template (prefix) of output files names")->required();
 	app.add_option("temp_dir", mkmcParams.tmpPath, "directory for temporary files")->required();
 
@@ -106,7 +106,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 		filterParams.inputKmersSequencesToFilterOut = fileName;
 		filterParams.filterKmersSequences = true;
 	};
-	filteringGroup->add_option_function("--flt", fltCallback, "keep k-mers present in a specified file (FASTA or a set of the k-mers, one per line) only; -b is used accordingly")->check(CLI::ExistingFile);
+	filteringGroup->add_option_function("--flt", fltCallback, "keep k-mers present in a specified file only (FASTA or a set of the k-mers, one per line) only; -b is used accordingly")->check(CLI::ExistingFile);
 
 	CLI::Option_group* correlationGroup = app.add_option_group("correlation and normalization");
 
@@ -175,7 +175,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	cvGroup->add_option_function("--cv-seed", nCVSeed, "random seed")->needs(cv)->default_val(statisticsParams.cvParams.seed);
 
 
-	CLI::Option_group* otherStatsGroup = app.add_option_group("other statistical parameters");
+	CLI::Option_group* otherStatsGroup = app.add_option_group("other postprocessing parameters");
 
 	otherStatsGroup->add_flag("--entropy", statisticsParams.generateEntropy, "generate k-mers counts entropy; counts are increased by 1");
 
@@ -184,7 +184,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 		statisticsParams.nTop = nTop;
 		statisticsParams.nTopUserDefined = true;
 	};
-	otherStatsGroup->add_option_function("--n_top", nTopCallback, "select a maximal number of top k-mers by statistics with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs --cor or --diff")->default_val(statisticsParams.nTop);
+	otherStatsGroup->add_option_function("--n_top", nTopCallback, "select a maximal number of top k-mers by results with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs --cor or --diff")->default_val(statisticsParams.nTop);
 	
 	CLI::Option_group* dimReductionGroup = app.add_option_group("dimentionality reduction");
 
@@ -293,8 +293,8 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 	differentialAnalysis->needs(c);
 
 	app.footer("Warning: k-mers order in output files is not specified and may vary between runnings.\n\n"
-		"Example: to obtain statistics use i.a. one or many of the parameters: -n, --cor, --diff, --cv, --entropy, --umap, --pca. "
-		"Statistics will be computed basing on counts matrix, which may be generated as follows:\n"
+		"Example: to obtain postprocessing results use i.a. one or many of the parameters: -n, --cor, --diff, --cv, --entropy, --umap, --pca. "
+		"Results will be computed basing on counts matrix, which may be generated as follows:\n"
 		"    ./mkmc -k 20 --thr_rat 0.5 input_files_list.txt output tmp\n"
 		"It will generate a matrix of 20-mers occurring in at least a half of the input files.\n"
 		"    ./mkmc -k 20 --thr 2 --thr_rat 0.5 input_files_list.txt output tmp\n"
@@ -308,7 +308,7 @@ void configureArguments(int argc, char** argv, Params& params, CLI::App& app)
 
 
 
-bool checkAndPrintArgumentsErrors(const Params& params)
+bool checkAndPrintCLIArgsErrors(const Params& params)
 {
 	const StatisticsParams statisticsParams = params.statisticsParams;
 
@@ -381,7 +381,7 @@ bool checkAndPrintArgumentsErrors(const Params& params)
 
 
 
-bool checkAndPrintDataFromFilesVsParamsErrors(const Params& params)
+bool checkAndPrintDataFromFilesVsCLIArgsErrors(const Params& params)
 {
 	if ((params.statisticsParams.runPCA || params.statisticsParams.runUMAP) &&
 		(params.statisticsParams.nDimensionReduction < 1 || params.statisticsParams.nDimensionReduction >= params.mkmcParams.samples.size()))
@@ -400,7 +400,7 @@ bool checkAndPrintDataFromFilesVsParamsErrors(const Params& params)
 }
 
 
-bool checkAndPrintArgumentsWarnings(const Params& params)
+bool checkAndPrintCLIArgsWarnings(const Params& params)
 {
 	bool result = false;
 
@@ -470,10 +470,10 @@ bool verifyDBsReusability(const Params& params)
 			result = false;
 		}
 		if (result)
-			Logger::Inst().Log("Info: database with k-mers to be filtered out " + params.filterParams.kmersSequencesToFilterOutDB + " exists.", 2);
+			Logger::Inst().Log("Info: database with k-mers to be kept " + params.filterParams.kmersSequencesToFilterOutDB + " exists.", 2);
 		else
 		{
-			Logger::Inst().Log("Info: database with k-mers to be filtered out " + params.filterParams.kmersSequencesToFilterOutDB + " does not exist or is created for different k-mer length.", 2);
+			Logger::Inst().Log("Info: database with k-mers to be kept " + params.filterParams.kmersSequencesToFilterOutDB + " does not exist or is created for different k-mer length.", 2);
 			return false;
 		}
 	}
@@ -548,7 +548,7 @@ int main(int argc, char** argv)
 	{
 		CLI::App app{ "Multi - KMC (MKMC) ver. " MKMC_VER };
 
-		configureArguments(argc, argv, params, app);
+		configureCLIArguments(argc, argv, params, app);
 
 		// Add -- separator before positionals
 		try {
@@ -581,7 +581,7 @@ int main(int argc, char** argv)
 
 	// CLI arguments handling
 	{
-		const bool CLIErrors = checkAndPrintArgumentsErrors(params);
+		const bool CLIErrors = checkAndPrintCLIArgsErrors(params);
 		if (CLIErrors)
 			std::exit(1);
 	}
@@ -592,11 +592,11 @@ int main(int argc, char** argv)
 	if (!params.readAdditionalDataFromFiles(warningPrinted))
 		std::exit(1);
 
-	const bool CLIAndParamsFromFilesErrors = checkAndPrintDataFromFilesVsParamsErrors(params);
+	const bool CLIAndParamsFromFilesErrors = checkAndPrintDataFromFilesVsCLIArgsErrors(params);
 	if (CLIAndParamsFromFilesErrors)
 		std::exit(1);
 
-	warningPrinted |= checkAndPrintArgumentsWarnings(params);
+	warningPrinted |= checkAndPrintCLIArgsWarnings(params);
 
 	params.generateTempAndOutputFilesNames();
 	warningPrinted |= params.adjustKMCPerformanceParams();
@@ -661,7 +661,7 @@ int main(int argc, char** argv)
 				Logger::Inst().Log("Samples databases do not exist or are not possible to reuse. Starting k-mer counting...");
 				Logger::Inst().Log("Info: generating temporary KMC databases to " + params.mkmcParams.tmpPath + " directory.", 2);
 				if (params.filterParams.filterKmersSequences)
-					Logger::Inst().Log("Info: generating temporary KMC database " + params.filterParams.kmersSequencesToFilterOutDB + " of k-mers to be filtered out.", 2);
+					Logger::Inst().Log("Info: generating temporary KMC database " + params.filterParams.kmersSequencesToFilterOutDB + " of k-mers to be kept.", 2);
 
 				params.mutableParams.kmcDbsCreated = true;
 			}
@@ -699,7 +699,7 @@ int main(int argc, char** argv)
 		bool computeStatistics = false;
 
 		if (matrixNotEmpty)
-			if (params.statisticsParams.generateNormalization || params.statisticsParams.generateEntropy || !params.statisticsParams.classificationMethods.empty())
+			if (params.statisticsParams.generateNormalization || params.statisticsParams.anyStatisticsToCount())
 			{
 				computeStatistics = true;
 
@@ -755,8 +755,8 @@ int main(int argc, char** argv)
 				std::vector<std::string> tasks{ "DESeq2 learning" };
 				if (params.statisticsParams.generateNormalization)
 					tasks.push_back("normalizing");
-				if (!params.statisticsParams.correlationMethods.empty() || !params.statisticsParams.classificationMethods.empty() || params.statisticsParams.generateEntropy || params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
-					tasks.push_back("computing statistics");
+				if (params.statisticsParams.anyStatisticsToCount())
+					tasks.push_back("postprocessing");
 
 				std::string msg;
 				MessagesUtilities::generateSentence(tasks, msg);
@@ -767,8 +767,8 @@ int main(int argc, char** argv)
 				std::vector<std::string> tasks;
 				if (params.statisticsParams.generateNormalization)
 					tasks.push_back("normalizing");
-				if (!params.statisticsParams.correlationMethods.empty() || !params.statisticsParams.classificationMethods.empty() || params.statisticsParams.generateEntropy || params.statisticsParams.runUMAP || params.statisticsParams.runPCA)
-					tasks.push_back("computing statistics");
+				if (params.statisticsParams.anyStatisticsToCount())
+					tasks.push_back("postprocessing");
 
 				std::string msg;
 				MessagesUtilities::generateSentence(tasks, msg, true);

@@ -53,7 +53,7 @@ bool SequenceFilterInit::isFastaOrMultiFasta()
 		sstream >> kmer;
 		if (kmer.length() != params.stage1Params.GetKmerLen())
 		{
-			Logger::Inst().Log("Error: k-mers to be filtered out have inproper length, it must equal " + std::to_string(params.stage1Params.GetKmerLen()) + ".");
+			Logger::Inst().Log("Error: k-mers to be kept (--flt) have inproper length, it must equal " + std::to_string(params.stage1Params.GetKmerLen()) + ".");
 			exit(1);
 		}
 		return false;
@@ -88,7 +88,7 @@ void SequenceFilterInit::convertTxtToFasta()
 
 		if (kmer.length() != params.stage1Params.GetKmerLen())
 		{
-			Logger::Inst().Log("Error: k-mers to be filtered out have inproper length, it must equal " + std::to_string(params.stage1Params.GetKmerLen()) + ".");
+			Logger::Inst().Log("Error: k-mers to be kept (--flt) have inproper length, it must equal " + std::to_string(params.stage1Params.GetKmerLen()) + ".");
 			exit(1);
 		}
 		filterFasta << ">\n" << kmer << '\n';
@@ -102,7 +102,6 @@ bool SequenceFilterInit::prepareKmersSequencesToFilter()
 {
 	if (!isFastaOrMultiFasta())
 	{
-		Logger::Inst().Log("Starting preparing k-mers for filtering...");
 		Logger::Inst().Log("Info: raw k-mers from " + params.filterParams.inputKmersSequencesToFilterOut + " file will be converted to a temporary FASTA file " + params.mutableParams.kmersSequencesToFilterOut + ".", 2);
 
 		sequence_filter_init.startTimer();

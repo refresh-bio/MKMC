@@ -240,6 +240,15 @@ struct StatisticsParams
 
 	bool generateEntropy = false;
 
+	bool anyStatisticsToCount() const
+	{
+		return !correlationMethods.empty() ||
+			!classificationMethods.empty() ||
+			generateEntropy ||
+			runUMAP ||
+			runPCA;
+	}
+
 	StatisticsParams(const std::string& outputFilesTemplate) : cvParams(outputFilesTemplate) {}
 };
 
