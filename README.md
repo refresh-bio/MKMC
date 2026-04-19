@@ -30,27 +30,27 @@ Positionals:
 Options:
  - `-h,--help` - Print this help message and exit
  - `-k UINT:UINT in [1 - 256] [25]` - k-mer length
- - `--tot_cnt` - generate samples counts sums file
+ - `--tot-cnt` - generate samples counts sums file
  - `--reuse-db` - keep binary matrix database; if possible, do not count and merge k-mers, but use the previously kept database
  
 [Option Group: k-mers filtering]
   Options:
  - `--thr UINT:POSITIVE [1]` - filter out k-mers occuring less than specified number of times...
- - `--thr_rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
+ - `--thr-rat FLOAT:FLOAT in [0 - 1] [0]` ... in a specified ratio of the input files (see example)
  - `--flt TEXT:FILE` - keep k-mers present in a specified file only (FASTA or a set of the k-mers, one per line) only; `-b` is used accordingly
  
 [Option Group: correlation and normalization]
   Options:
  - `-n ENUM:value in {deseq,freq,q}` - normalize counts (DESeq2/frequency count/quantile normalization) before use
- - `--save_n` - save matrix with normalized counts to file
+ - `--save-n` - save matrix with normalized counts to file
  - `--cor ENUM:value in {kendall,pearson,spearman}` ... Needs: `-n` `-p` - compute correlation coefficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)
  - `-p TEXT:FILE` Needs: `--cor` - set a phenotype file (a sequence of numbers, one in each line)
  
 [Option Group: differential k-mers analysis]
   Options:
  - `--diff ENUM:value in {anova,dids,snr,ttest,wrs}` ... Needs: `-c` - perform differential k-mers analysis (ANOVA, DIDS, Signal to Noise ratio, T-Test, Wilcoxon-rank sum (Mann-Whitney U test)); all except T-Test need `-n`; counts for T-Test are always unnormalized, increased by 1, and logarithmized
- - `--pval_corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis (Bonferroni/Benjamini-Hochberg/Benjamini-Yekutieli/Holm-Bonferroni); store statistically significant k-mers also in separated files; useful for ANOVA, T-Test, Wilcoxon-rank sum
- - `--max_corrected_pval FLOAT:FLOAT in [0 - 1] [0.05]` Needs: `--pval_corr` - statistical significance for `--pval_corr` parameter
+ - `--pval-corr ENUM:value in {b,bh,by,hb}` Needs: `--diff` - correct p-values of differential k-mers analysis (Bonferroni/Benjamini-Hochberg/Benjamini-Yekutieli/Holm-Bonferroni); store statistically significant k-mers also in separated files; useful for ANOVA, T-Test, Wilcoxon-rank sum
+ - `--max-corrected-pval FLOAT:FLOAT in [0 - 1] [0.05]` Needs: `--pval-corr` - statistical significance for `--pval-corr` parameter
  - `-c TEXT:FILE` Needs: `--diff` - set a phenotype file for differential k-mers analysis (a sequence of natural numbers or text labels, one in each line)
  - `--dids-mode ENUM:value in {quadratic,sqrt,tanh} [sqrt]` - DIDS mode (x*x, square root, 1 + tanh(3x - 3))
 
@@ -63,28 +63,28 @@ Options:
 [Option Group: other postprocessing parameters]
   Options:
  - `--entropy` - generate k-mers counts entropy; counts are increased by 1
- - `--n_top UINT [10000]` - select a maximal number of top k-mers by results with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs `--cor` or `--diff`
+ - `--n-top UINT [10000]` - select a maximal number of top k-mers by results with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs `--cor` or `--diff`
 
 [Option Group: dimentionality reduction]
   Options:
  - `--umap` Needs: `-n` - reduce dimensionality of normalized matrix with UMAP
  - `--pca` Needs: `-n` - reduce dimensionality of normalized matrix with PCA
  - `--dimensions UINT [2]` Needs: `--umap` or `--pca` - number of output dimensions
- - `--umap-local_connectivity FLOAT [1]` Needs: `--umap` - local_connectivity parameter
+ - `--umap-local-connectivity FLOAT [1]` Needs: `--umap` - local-connectivity parameter
  - `--umap-bandwidth FLOAT [1]` Needs: `--umap` - `bandwidth` parameter
- - `--umap-mix_ratio FLOAT [1]` Needs: `--umap` - `mix_ratio` parameter
+ - `--umap-mix-ratio FLOAT [1]` Needs: `--umap` - `mix-ratio` parameter
  - `--umap-spread FLOAT [1]` Needs: `--umap` - `spread` parameter
- - `--umap-min_dist FLOAT [0.01]` Needs: `--umap` - `min_dist` parameter
+ - `--umap-min-dist FLOAT [0.01]` Needs: `--umap` - `min-dist` parameter
  - `--umap-a FLOAT [0]` Needs: `--umap` - `a` parameter
  - `--umap-b FLOAT [0]` Needs: `--umap` - `b` parameter
- - `--umap-repulsion_strength FLOAT [1]` Needs: `--umap` - `repulsion_strength` parameter
- - `--umap-initialize ENUM:value in {none,random,spectral,spectral_only} [spectral]` Needs: `--umap` - `initialize` parameter
- - `--umap-num_neighbors INT [15]` Needs: `--umap` - `num_neighbors` parameter
- - `--umap-num_epochs INT [-1]` Needs: `--umap` - `num_epochs` parameter
- - `--umap-learning_rate FLOAT [1]` Needs: `--umap` - `learning_rate` parameter
- - `--umap-negative_sample_rate FLOAT [5]` Needs: `--umap` - `negative_sample_rate` parameter
+ - `--umap-repulsion-strength FLOAT [1]` Needs: `--umap` - `repulsion-strength` parameter
+ - `--umap-initialize ENUM:value in {none,random,spectral,spectral-only} [spectral]` Needs: `--umap` - `initialize` parameter
+ - `--umap-num-neighbors INT [15]` Needs: `--umap` - `num-neighbors` parameter
+ - `--umap-num-epochs INT [-1]` Needs: `--umap` - `num-epochs` parameter
+ - `--umap-learning-rate FLOAT [1]` Needs: `--umap` - `learning-rate` parameter
+ - `--umap-negative-sample-rate FLOAT [5]` Needs: `--umap` - `negative-sample-rate` parameter
  - `--umap-seed UINT [1234567890]` Needs: `--umap` - `seed` parameter
- - `--umap-parallel_optimization INT [0]` Needs: `--umap` - `parallel_optimization` parameter
+ - `--umap-parallel-optimization INT [0]` Needs: `--umap` - `parallel-optimization` parameter
  - `--pca-mode ENUM:value in {covariance,svd} [svd]` Needs: `--pca` - PCA mode
 
 [Option Group: additional parameters]
@@ -107,7 +107,7 @@ Options:
  - `--learn-q` Needs: `--reuse-db` - collect data for quantile normalization (not necessary for `-n q`, but useful for further `--reuse-db`)
  - `--on UINT:POSITIVE [512]` - suggested number of internal bins, modify carefully
  - `--keep-kmc-temporary-databases` - keep temporary per-sample KMC databases and possibly filtering temporary file
- - `--generate_snr_for_unnormalized_data` - generate Signal to Noise ratio also for unnormalized counts
+ - `--generate-snr-for-unnormalized-data` - generate Signal to Noise ratio also for unnormalized counts
 K-mers order in output files is not specified and may vary between runnings.
 > [!warning]  
 **K-mers order in output files is not specified and may vary between runnings.**
@@ -117,18 +117,18 @@ To obtain the postprocessing results use i.a. one or many of the parameters: `-n
 
 ### Generating matrix examples
 ```
-./mkmc -k 20 --thr_rat 0.5 -- input_files_list.txt output tmp
+./mkmc -k 20 --thr-rat 0.5 -- input_files_list.txt output tmp
 ```
 It will generate a matrix (if `--reuse-db` given, stored in a binary file `output.kmcdb`) of 20-mers occurring in at least a half of the input files.
 
 ```
-./mkmc -k 20 --thr 2 --thr_rat 0.5 -- input_files_list.txt output tmp
+./mkmc -k 20 --thr 2 --thr-rat 0.5 -- input_files_list.txt output tmp
 ```
 It will generate a matrix of 20-mers occurring at least twice in at least a half of the input files.
 
 To save the matrix to a text file use `-o matrix`:
 ```
-./mkmc -k 20 --thr_rat 0.5 -o matrix -- input_files_list.txt output tmp
+./mkmc -k 20 --thr-rat 0.5 -o matrix -- input_files_list.txt output tmp
 ```
 It will generate a file `output_matrix`.
 
@@ -191,7 +191,7 @@ sample3 3_1.fq 3_2.fq
 ```
 To have k-mers that were present in each input sample one may use:
 ```
-./mkmc -k25 -f fq --thr_rat 1 -- files.txt present-in-all tmp
+./mkmc -k25 -f fq --thr-rat 1 -- files.txt present-in-all tmp
 ```
 The output matrix (in a text form if also `-o matrix` parameter given, refer `Generating matrix examples` section) is then:
 ```
@@ -201,7 +201,7 @@ ACGTACGTGGGTTAAAACCCAGGGG	1	1	1
 ```
 To have k-mers that were present in at least half of the samples one may use the following:
 ```
-./mkmc -k 25 -f fq --thr_rat 0.5 -- files.txt present-in-at-least-half-files tmp
+./mkmc -k 25 -f fq --thr-rat 0.5 -- files.txt present-in-at-least-half-files tmp
 ```
 The output matrix is then:
 ```
@@ -214,7 +214,7 @@ TAAAACACACAAACAGATAAACAGA	1	1	0
 
 To have k-mers that were present in any of the samples one may use the following:
 ```
-./mkmc -k 25 -f fq --thr_rat 0 -- files.txt present-in-any tmp
+./mkmc -k 25 -f fq --thr-rat 0 -- files.txt present-in-any tmp
 ```
 The output matrix is then:
 ```

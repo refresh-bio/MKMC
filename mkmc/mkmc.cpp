@@ -93,13 +93,13 @@ void configureCLIArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	app.add_option_function("-k", kCallback, "k-mer length")->check(CLI::Range(KMC::CfgConsts::min_k, KMC::CfgConsts::max_k))->default_val(defaultKMCParams.k);
 
-	app.add_flag("--tot_cnt", mkmcParams.totCntGeneration, "generate samples counts sums file");
+	app.add_flag("--tot-cnt", mkmcParams.totCntGeneration, "generate samples counts sums file");
 
 	app.add_flag("--reuse-db", mkmcParams.reuseDBFiles, "keep binary matrix database; if possible, do not count and merge k-mers, but use the previously kept database");
 
 	CLI::Option_group* filteringGroup = app.add_option_group("k-mers filtering");
 	filteringGroup->add_option("--thr", filterParams.minCountThreshold, "filter out k-mers occuring less than specified number of times...")->check(CLI::PositiveNumber)->default_val(filterParams.minCountThreshold);
-	filteringGroup->add_option("--thr_rat", filterParams.minKmersAboveThresholdRatio, "... in a specified ratio of the input files (see example)")->check(CLI::Range(0.0, 1.0))->default_val(filterParams.minKmersAboveThresholdRatio);
+	filteringGroup->add_option("--thr-rat", filterParams.minKmersAboveThresholdRatio, "... in a specified ratio of the input files (see example)")->check(CLI::Range(0.0, 1.0))->default_val(filterParams.minKmersAboveThresholdRatio);
 
 	std::function<void(const decltype(filterParams.inputKmersSequencesToFilterOut)&)> fltCallback = [&](const decltype(filterParams.inputKmersSequencesToFilterOut)& fileName)
 	{
@@ -121,7 +121,7 @@ void configureCLIArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	n = correlationGroup->add_option_function("-n", nCallback, "normalize counts (DESeq2/frequency count/quantile normalization) before use")->transform(CLI::CheckedTransformer(valuesMap, CLI::ignore_case));
 
-	correlationGroup->add_flag("--save_n", statisticsParams.saveNormalization, "save matrix with normalized counts to file")->needs(n);
+	correlationGroup->add_flag("--save-n", statisticsParams.saveNormalization, "save matrix with normalized counts to file")->needs(n);
 
 	std::map<std::string, StatisticsParams::CorrelationMethod> correlationValuesMap{ {"pearson", StatisticsParams::CorrelationMethod::Pearson }, { "spearman", StatisticsParams::CorrelationMethod::Spearman }, {"kendall", StatisticsParams::CorrelationMethod::Kendall } };
 	cor = correlationGroup->add_option("--cor", statisticsParams.correlationMethods, "compute correlation coefficients, basing on a phenotype file (Kendall Tau/Pearson/Spearman correlation)")->transform(CLI::CheckedTransformer(correlationValuesMap));
@@ -144,9 +144,9 @@ void configureCLIArguments(int argc, char** argv, Params& params, CLI::App& app)
 		statisticsParams.classificationPValueCorrection = classificationPValueCorrection;
 		statisticsParams.correctPvalues = true;
 	};
-	pvalCorr = diffGroup->add_option_function("--pval_corr", pcorrCallback, "correct p-values of differential k-mers analysis (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files; useful for ANOVA, T-Test, Wilcoxon-rank sum")->transform(CLI::CheckedTransformer(differentialAnalysisCorrectionValuesMap))->needs(differentialAnalysis);
+	pvalCorr = diffGroup->add_option_function("--pval-corr", pcorrCallback, "correct p-values of differential k-mers analysis (Bonferroni, Benjamini-Hochberg, Benjamini-Yekutieli, Holm-Bonferroni); store statistically significant k-mers also in separated files; useful for ANOVA, T-Test, Wilcoxon-rank sum")->transform(CLI::CheckedTransformer(differentialAnalysisCorrectionValuesMap))->needs(differentialAnalysis);
 
-	diffGroup->add_option("--max_corrected_pval", statisticsParams.maxCorrectedPval, "statistical significance for --pval_corr parameter")->check(CLI::Range(0.0, 1.0))->default_val(statisticsParams.maxCorrectedPval)->needs(pvalCorr);
+	diffGroup->add_option("--max-corrected-pval", statisticsParams.maxCorrectedPval, "statistical significance for --pval-corr parameter")->check(CLI::Range(0.0, 1.0))->default_val(statisticsParams.maxCorrectedPval)->needs(pvalCorr);
 
 	std::function<void(const std::string&)> cCallback = [&](const std::string& fileName)
 	{
@@ -184,7 +184,7 @@ void configureCLIArguments(int argc, char** argv, Params& params, CLI::App& app)
 		statisticsParams.nTop = nTop;
 		statisticsParams.nTopUserDefined = true;
 	};
-	otherStatsGroup->add_option_function("--n_top", nTopCallback, "select a maximal number of top k-mers by results with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs --cor or --diff")->default_val(statisticsParams.nTop);
+	otherStatsGroup->add_option_function("--n-top", nTopCallback, "select a maximal number of top k-mers by results with no p-values (for correlations in terms of an absolute value) and store them in separate files; needs --cor or --diff")->default_val(statisticsParams.nTop);
 	
 	CLI::Option_group* dimReductionGroup = app.add_option_group("dimentionality reduction");
 
@@ -198,30 +198,30 @@ void configureCLIArguments(int argc, char** argv, Params& params, CLI::App& app)
 	};
 	dimReductionGroup->add_option_function("--dimensions", dimensionsCallback, "number of output dimensions; needs --umap or --pca")->default_val(statisticsParams.nDimensionReduction);
 
-	dimReductionGroup->add_option("--umap-local_connectivity", statisticsParams.umap_params.local_connectivity, "local_connectivity parameter")->needs(umap)->default_val(statisticsParams.umap_params.local_connectivity);
+	dimReductionGroup->add_option("--umap-local-connectivity", statisticsParams.umap_params.local_connectivity, "local-connectivity parameter")->needs(umap)->default_val(statisticsParams.umap_params.local_connectivity);
 	dimReductionGroup->add_option("--umap-bandwidth", statisticsParams.umap_params.bandwidth, "bandwidth parameter")->needs(umap)->default_val(statisticsParams.umap_params.bandwidth);
 
-	dimReductionGroup->add_option("--umap-mix_ratio", statisticsParams.umap_params.mix_ratio, "mix_ratio parameter")->needs(umap)->default_val(statisticsParams.umap_params.mix_ratio);
+	dimReductionGroup->add_option("--umap-mix-ratio", statisticsParams.umap_params.mix_ratio, "mix-ratio parameter")->needs(umap)->default_val(statisticsParams.umap_params.mix_ratio);
 	dimReductionGroup->add_option("--umap-spread", statisticsParams.umap_params.spread, "spread parameter")->needs(umap)->default_val(statisticsParams.umap_params.spread);
-	dimReductionGroup->add_option("--umap-min_dist", statisticsParams.umap_params.min_dist, "min_dist parameter")->needs(umap)->default_val(statisticsParams.umap_params.min_dist);
+	dimReductionGroup->add_option("--umap-min-dist", statisticsParams.umap_params.min_dist, "min-dist parameter")->needs(umap)->default_val(statisticsParams.umap_params.min_dist);
 	dimReductionGroup->add_option("--umap-a", statisticsParams.umap_params.a, "a parameter")->needs(umap)->default_val(statisticsParams.umap_params.a);
 	dimReductionGroup->add_option("--umap-b", statisticsParams.umap_params.b, "b parameter")->needs(umap)->default_val(statisticsParams.umap_params.b);
-	dimReductionGroup->add_option("--umap-repulsion_strength", statisticsParams.umap_params.repulsion_strength, "repulsion_strength parameter")->needs(umap)->default_val(statisticsParams.umap_params.repulsion_strength);
+	dimReductionGroup->add_option("--umap-repulsion-strength", statisticsParams.umap_params.repulsion_strength, "repulsion-strength parameter")->needs(umap)->default_val(statisticsParams.umap_params.repulsion_strength);
 
-	std::map<std::string, umappp::InitMethod> umapInitMethodValuesMap{ { "spectral", umappp::InitMethod::SPECTRAL }, { "spectral_only", umappp::InitMethod::SPECTRAL_ONLY }, { "random", umappp::InitMethod::RANDOM }, { "none", umappp::InitMethod::NONE } };
+	std::map<std::string, umappp::InitMethod> umapInitMethodValuesMap{ { "spectral", umappp::InitMethod::SPECTRAL }, { "spectral-only", umappp::InitMethod::SPECTRAL_ONLY }, { "random", umappp::InitMethod::RANDOM }, { "none", umappp::InitMethod::NONE } };
 	dimReductionGroup->add_option("--umap-initialize", statisticsParams.umap_params.initialize, "initialize parameter")->transform(CLI::CheckedTransformer(umapInitMethodValuesMap))->needs(umap)->default_val(statisticsParams.umap_params.initialize)->default_str("spectral");
 
-	dimReductionGroup->add_option("--umap-num_neighbors", statisticsParams.umap_params.num_neighbors, "num_neighbors parameter")->needs(umap)->default_val(statisticsParams.umap_params.num_neighbors);
-	dimReductionGroup->add_option("--umap-num_epochs", statisticsParams.umap_params.num_epochs, "num_epochs parameter")->needs(umap)->default_val(statisticsParams.umap_params.num_epochs); // default -1
-	dimReductionGroup->add_option("--umap-learning_rate", statisticsParams.umap_params.learning_rate, "learning_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.learning_rate);
+	dimReductionGroup->add_option("--umap-num-neighbors", statisticsParams.umap_params.num_neighbors, "num-neighbors parameter")->needs(umap)->default_val(statisticsParams.umap_params.num_neighbors);
+	dimReductionGroup->add_option("--umap-num-epochs", statisticsParams.umap_params.num_epochs, "num-epochs parameter")->needs(umap)->default_val(statisticsParams.umap_params.num_epochs); // default -1
+	dimReductionGroup->add_option("--umap-learning-rate", statisticsParams.umap_params.learning_rate, "learning-rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.learning_rate);
 
-	dimReductionGroup->add_option("--umap-negative_sample_rate", statisticsParams.umap_params.negative_sample_rate, "negative_sample_rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.negative_sample_rate);
+	dimReductionGroup->add_option("--umap-negative-sample-rate", statisticsParams.umap_params.negative_sample_rate, "negative-sample-rate parameter")->needs(umap)->default_val(statisticsParams.umap_params.negative_sample_rate);
 	dimReductionGroup->add_option("--umap-seed", statisticsParams.umap_params.seed, "seed parameter")->needs(umap)->default_val(statisticsParams.umap_params.seed);
 
 	//this will be set with the "main" or "global" number of threads
 	//umapGroup->add_option("--umap-num_threads", statisticsParams.umap_params.num_threads, "num_threads parameter of umap")->needs(umap)->default_val(statisticsParams.umap_params.num_threads);
 
-	dimReductionGroup->add_option("--umap-parallel_optimization", statisticsParams.umap_params.parallel_optimization, "parallel_optimization parameter")->needs(umap)->default_val(statisticsParams.umap_params.parallel_optimization);
+	dimReductionGroup->add_option("--umap-parallel-optimization", statisticsParams.umap_params.parallel_optimization, "parallel-optimization parameter")->needs(umap)->default_val(statisticsParams.umap_params.parallel_optimization);
 
 	std::map<std::string, refresh::pca<double>::computation_mode_t> pcaModeValuesMap{ { "svd", refresh::pca<double>::computation_mode_t::svd }, { "covariance", refresh::pca<double>::computation_mode_t::covariance } };
 	dimReductionGroup->add_option("--pca-mode", statisticsParams.pca_mod, "PCA mode")->transform(CLI::CheckedTransformer(pcaModeValuesMap))->needs(pca)->default_val(statisticsParams.pca_mod)->default_str("svd");
@@ -287,7 +287,7 @@ void configureCLIArguments(int argc, char** argv, Params& params, CLI::App& app)
 	debugGroup->add_option("--on", mkmcParams.nKMCBins, "suggested number of internal bins, modify carefully")->check(CLI::PositiveNumber)->default_val(mkmcParams.nKMCBins);
 	debugGroup->add_flag("--keep-kmc-temporary-databases", mkmcParams.keepKMCdbs, "keep temporary per-sample KMC databases and possibly filtering temporary file");
 
-	debugGroup->add_flag("--generate_snr_for_unnormalized_data", mkmcParams.generateForNonNormalized, "generate Signal to Noise ratio also for unnormalized counts");
+	debugGroup->add_flag("--generate-snr-for-unnormalized-data", mkmcParams.generateForNonNormalized, "generate Signal to Noise ratio also for unnormalized counts");
 
 	cor->needs(n)->needs(nTestSamples);
 	differentialAnalysis->needs(c);
@@ -295,9 +295,9 @@ void configureCLIArguments(int argc, char** argv, Params& params, CLI::App& app)
 	app.footer("Warning: k-mers order in output files is not specified and may vary between runnings.\n\n"
 		"Example: to obtain postprocessing results use i.a. one or many of the parameters: -n, --cor, --diff, --cv, --entropy, --umap, --pca. "
 		"Results will be computed basing on counts matrix, which may be generated as follows:\n"
-		"    ./mkmc -k 20 --thr_rat 0.5 input_files_list.txt output tmp\n"
+		"    ./mkmc -k 20 --thr-rat 0.5 input_files_list.txt output tmp\n"
 		"It will generate a matrix of 20-mers occurring in at least a half of the input files.\n"
-		"    ./mkmc -k 20 --thr 2 --thr_rat 0.5 input_files_list.txt output tmp\n"
+		"    ./mkmc -k 20 --thr 2 --thr-rat 0.5 input_files_list.txt output tmp\n"
 		"It will generate a matrix of 20-mers occurring at least twice in at least a half of the input files.\n"
 		"To save the matrix to a text file use -o matrix.\n\n"
 		"input_files_list.txt example:\n"
@@ -338,7 +338,7 @@ bool checkAndPrintCLIArgsErrors(const Params& params)
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::TTest) &&
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::WilcoxonRankSum))
 	{
-		Logger::Inst().Log("Error: --pval_corr requires differential k-mers analysis with ANOVA, T-Test, or Wilcoxon-rank sum (Mann-Whitney U test) (--diff).");
+		Logger::Inst().Log("Error: --pval-corr requires differential k-mers analysis with ANOVA, T-Test, or Wilcoxon-rank sum (Mann-Whitney U test) (--diff).");
 		return true;
 	}
 
@@ -354,14 +354,14 @@ bool checkAndPrintCLIArgsErrors(const Params& params)
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::SNR) &&
 		!isDAMethod(StatisticsParams::DifferentialAnalysisMethod::DIDS))
 	{
-		Logger::Inst().Log("Error: --n_top requires correlation (--cor) or entropy (--entropy) or differential k-mers analysis with SNR or DIDS (--diff).");
+		Logger::Inst().Log("Error: --n-top requires correlation (--cor) or entropy (--entropy) or differential k-mers analysis with SNR or DIDS (--diff).");
 		return true;
 	}
 
 	if (statisticsParams.nTopUserDefined &&
 		statisticsParams.nTop < 1)
 	{
-		Logger::Inst().Log("Error: --n_top has to be at least 1.");
+		Logger::Inst().Log("Error: --n-top has to be at least 1.");
 		return true;
 	}
 	
@@ -406,7 +406,7 @@ bool checkAndPrintCLIArgsWarnings(const Params& params)
 
 	if (params.filterParams.minCountThreshold > 1 && params.filterParams.minKmersAboveThresholdRatio == 0.0)
 	{
-		Logger::Inst().Log("Warning: filtering out k-mers occuring less than --thr times will not be performed if the ratio --thr_rat equals 0.", 1);
+		Logger::Inst().Log("Warning: filtering out k-mers occuring less than --thr times will not be performed if the ratio --thr-rat equals 0.", 1);
 		result = true;
 	}
 
@@ -416,7 +416,7 @@ bool checkAndPrintCLIArgsWarnings(const Params& params)
 			(params.statisticsParams.classificationMethods.empty() || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() == StatisticsParams::DifferentialAnalysisMethod::TTest) &&
 			!params.statisticsParams.saveNormalization))
 	{
-		Logger::Inst().Log("Warning: the specified parameters will cause counts normalization (-n), but will not use them; use --save_n, --diff (for something other than T-Test), --cor, or --reuse-db.", 1);
+		Logger::Inst().Log("Warning: the specified parameters will cause counts normalization (-n), but will not use them; use --save-n, --diff (for something other than T-Test), --cor, or --reuse-db.", 1);
 		result = true;
 	}
 
@@ -529,9 +529,9 @@ bool verifyDBsReusability(const Params& params)
 		}
 	}
 
-	Logger::Inst().Log("Info: MKMC is not able to verify --thr and --thr_rat consistency, thus we assume it.", 2);
+	Logger::Inst().Log("Info: MKMC is not able to verify --thr and --thr-rat consistency, thus we assume it.", 2);
 
-	// Actually, values of old --thr and --thr_rat parameters should be equal to current,
+	// Actually, values of old --thr and --thr-rat parameters should be equal to current,
 	// however currently it is impossible to compare them.
 
 	return true;
@@ -671,7 +671,7 @@ int main(int argc, char** argv)
 
 				std::vector<std::string> tasksToBeOmitted;
 				if (params.mkmcParams.totCntGeneration)
-					tasksToBeOmitted.push_back("total samples counts will not be computed (--tot_cnt)");
+					tasksToBeOmitted.push_back("total samples counts will not be computed (--tot-cnt)");
 				if (!params.mkmcParams.outputFileTypes.empty())
 					tasksToBeOmitted.push_back("FASTA or matrix with unnormalized counts (-o) will not be generated");
 				if (params.mkmcParams.keepKMCdbs)

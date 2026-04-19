@@ -459,9 +459,9 @@ bool Merger<SIZE>::mergeParallel()
 	if (!matrixNotEmpty)
 	{
 		if (params.filterParams.filterKmersSequences)
-			Logger::Inst().Log("Error: output matrix is empty; try to relax --ci, --cx, --thr, or --thr_rat parameters, --flt file contains too few k-mers, or some samples are too small.");
+			Logger::Inst().Log("Error: output matrix is empty; try to relax --ci, --cx, --thr, or --thr-rat parameters, --flt file contains too few k-mers, or some samples are too small.");
 		else
-			Logger::Inst().Log("Error: output matrix is empty; try to relax --ci, --cx, --thr, or --thr_rat parameters, or some samples are too small.");
+			Logger::Inst().Log("Error: output matrix is empty; try to relax --ci, --cx, --thr, or --thr-rat parameters, or some samples are too small.");
 
 		Logger::Inst().Log("Info: removing unnecessary output files.", 2);
 		// keep params.mkmcParams.outputFileTotCnt, as its contents are reasonable
