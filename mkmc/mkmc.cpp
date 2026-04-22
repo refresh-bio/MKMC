@@ -386,7 +386,7 @@ bool checkAndPrintDataFromFilesVsCLIArgsErrors(const Params& params)
 	if ((params.statisticsParams.runPCA || params.statisticsParams.runUMAP) &&
 		(params.statisticsParams.nDimensionReduction < 1 || params.statisticsParams.nDimensionReduction >= params.mkmcParams.samples.size()))
 	{
-		Logger::Inst().Log("Error: number of dimensions (--dimensions) must be at least 1 and lower than number of samples.");
+		Logger::Inst().Log("Error: number of dimensions (--dimensions) must be at least 1 and lower than a number of samples.");
 		return true;
 	}
 
@@ -410,6 +410,7 @@ bool checkAndPrintCLIArgsWarnings(const Params& params)
 		result = true;
 	}
 
+	// Warning also in checking reusability
 	if (params.statisticsParams.generateNormalization &&
 		!params.mkmcParams.reuseDBFiles &&
 		(params.statisticsParams.correlationMethods.empty() &&
@@ -680,6 +681,16 @@ int main(int argc, char** argv)
 				std::string msg;
 				if (MessagesUtilities::generateSentence(tasksToBeOmitted, msg))
 					Logger::Inst().Log("Warning: as the database exists (--reuse-db caused reading it), " + msg + ".");
+
+				// Warning also in checkAndPrintCLIArgsWarnings
+					if (params.statisticsParams.generateNormalization &&
+						(params.statisticsParams.correlationMethods.empty() &&
+							(params.statisticsParams.classificationMethods.empty() || params.statisticsParams.classificationMethods.size() == 1 && params.statisticsParams.classificationMethods.front() == StatisticsParams::DifferentialAnalysisMethod::TTest) &&
+							!params.statisticsParams.saveNormalization))
+					{
+						assert(params.mkmcParams.reuseDBFiles);
+						Logger::Inst().Log("Warning: the specified parameters will cause counts normalization (-n), but will not use them; use --save-n, --diff (for something other than T-Test), --cor, or --reuse-db.", 1);
+					}
 			}
 		}
 
