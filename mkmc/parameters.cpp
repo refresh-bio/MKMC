@@ -130,7 +130,7 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputFileEntropyTopFasta = mkmcParams.outputFilesTemplate + "_entropy_top.fa";
 
 	mkmcParams.outputFileTTest = mkmcParams.outputFilesTemplate + "_ttest";
-	mkmcParams.outputFileTTestCor = mkmcParams.outputFilesTemplate + "_ttest_cor_all";
+	mkmcParams.outputFileTTestCor = mkmcParams.outputFilesTemplate + "_ttest_cor";
 	mkmcParams.outputFileTTestCorSignificant = mkmcParams.outputFilesTemplate + "_ttest_cor_significant";
 	mkmcParams.outputFileTTestCorSignificantCntMatrix = mkmcParams.outputFilesTemplate + "_ttest_cor_significant_matrix";
 	mkmcParams.outputFileTTestCorSignificantFasta = mkmcParams.outputFilesTemplate + "_ttest_cor_significant.fa";
@@ -146,7 +146,7 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputFileUnnormalizedSNRTopFasta = mkmcParams.outputFilesTemplate + "_snr_top_for_unnornalized.fa";
 
 	mkmcParams.outputFileWilcoxonRankSum = mkmcParams.outputFilesTemplate + "_wrs";
-	mkmcParams.outputFileWilcoxonRankSumCor = mkmcParams.outputFilesTemplate + "_wrs_cor_all";
+	mkmcParams.outputFileWilcoxonRankSumCor = mkmcParams.outputFilesTemplate + "_wrs_cor";
 	mkmcParams.outputFileWilcoxonRankSumCorSignificant = mkmcParams.outputFilesTemplate + "_wrs_cor_significant";
 	mkmcParams.outputFileWilcoxonRankSumCorSignificantCntMatrix = mkmcParams.outputFilesTemplate + "_wrs_cor_significant_matrix";
 	mkmcParams.outputFileWilcoxonRankSumCorSignificantFasta = mkmcParams.outputFilesTemplate + "_wrs_cor_significant.fa";
@@ -157,7 +157,7 @@ void Params::generateTempAndOutputFilesNames()
 	mkmcParams.outputFileDIDSTopFasta = mkmcParams.outputFilesTemplate + "_dids_top.fa";
 
 	mkmcParams.outputFileANOVA = mkmcParams.outputFilesTemplate + "_anova";
-	mkmcParams.outputFileANOVACor = mkmcParams.outputFilesTemplate + "_anova_cor_all";
+	mkmcParams.outputFileANOVACor = mkmcParams.outputFilesTemplate + "_anova_cor";
 	mkmcParams.outputFileANOVACorSignificant = mkmcParams.outputFilesTemplate + "_anova_cor_significant";
 	mkmcParams.outputFileANOVACorSignificantCntMatrix = mkmcParams.outputFilesTemplate + "_anova_cor_significant_matrix";
 	mkmcParams.outputFileANOVACorSignificantFasta = mkmcParams.outputFilesTemplate + "_anova_cor_significant.fa";
