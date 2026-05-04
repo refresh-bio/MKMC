@@ -54,7 +54,6 @@ $(OUT_BIN_DIR)/mkmc: zlib-ng libkmc mimalloc_obj \
 	$(OBJ_MAIN) $(OBJ_KMC_API)
 	-mkdir -p $(OUT_BIN_DIR)	
 	$(CXX) -o $@  \
-	$(MIMALLOC_OBJ) \
 	$(OBJ_MAIN) $(OBJ_KMC_API) \
 	$(LIBRARY_FILES) $(LINKER_FLAGS) $(LINKER_DIRS)
 
