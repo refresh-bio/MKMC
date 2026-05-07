@@ -85,6 +85,14 @@ if __name__ == "__main__":
     if system == "mac":
         make_command = "gmake"
 
+    platform = "avx2"
+
+    if hardware == "arm64":
+        if system == "mac":
+            platform = "m1"
+        else:
+            platform = "arm8"
+
     if system == 'windows':
         init_vsvars()
         run_cmd("devenv mkmc.sln /Build \"Release|x64\"")
@@ -120,6 +128,6 @@ if __name__ == "__main__":
             sys.exit(1)
 
         run_cmd(f"{make_command} clean")
-        run_cmd(f"{make_command}  CXX={cxx} CC={cc} STATIC_LINK=true -j")
+        run_cmd(f"{make_command} CXX={cxx} CC={cc} PLATFORM={platform} STATIC_LINK=true -j")
 
         run_cmd(f"cd bin; tar -c * | pigz > ../mkmc-{ver}.{system}.{hardware}.tar.gz; cd ..;")
