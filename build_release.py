@@ -2,6 +2,7 @@
 import subprocess
 import fileinput
 import tarfile
+import shutil
 import os
 import sys
 
@@ -62,28 +63,63 @@ def get_hardware():
         print("Error: unknown os.name", os.name)
         sys.exit(1)
 
-def run_cmd(cmd):    
+def run_cmd(cmd):
     p = subprocess.Popen(cmd, shell=True)
     p.communicate()
 
-system = get_os()
-hardware = get_hardware()
+def run_cmd_get_stdout(cmd):
+    p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE)
+    return p.stdout.decode('utf-8')
 
-ver = get_ver()
 
-print(f"building\n\tVersion: {ver}\n\tOperating system: {system}\n\tHardware: {hardware}")
 
-run_cmd("git submodule update --init --recursive")
+if __name__ == "__main__":
+    system = get_os()
+    hardware = get_hardware()
+    ver = get_ver()
 
-if system == 'windows':
-    init_vsvars()
-    run_cmd("devenv mkmc.sln /Build \"Release|x64\"")
+    print(f"building\n\tVersion: {ver}\n\tOperating system: {system}\n\tHardware: {hardware}")
 
-    with tarfile.open(f"mkmc-{ver}.{system}.{hardware}.tar.gz", "w:gz") as tar:
-        #tar.add(source_dir, arcname=os.path.basename(source_dir))
-        tar.add("x64\Release\mkmc.exe", arcname="mkmc.exe")
+    run_cmd("git submodule update --init --recursive --jobs=8")
+    make_command = "make"
+    if system == "mac":
+        make_command = "gmake"
 
-else:
-    run_cmd("make clean")
-    run_cmd("make -j release")
-    run_cmd(f"cd bin; tar -c * | pigz > ../mkmc-{ver}.{system}.{hardware}.tar.gz; cd ..;")
+    if system == 'windows':
+        init_vsvars()
+        run_cmd("devenv mkmc.sln /Build \"Release|x64\"")
+
+        with tarfile.open(f"mkmc-{ver}.{system}.{hardware}.tar.gz", "w:gz") as tar:
+            #tar.add(source_dir, arcname=os.path.basename(source_dir))
+            tar.add("x64\Release\mkmc.exe", arcname="mkmc.exe")
+
+    else:
+        # In general use the default g++, but not on mac where the default is just clang++
+        # which is currently not supported
+        cxx = "g++"
+        cc = "gcc"
+
+        if system == "mac":
+            for version in [13, 12, 11, 10]:
+                if shutil.which(f"g++-{version}") and shutil.which(f"gcc-{version}"):
+                    out = run_cmd_get_stdout(f"g++-{version} --version")
+                    if "gcc" in out.lower():
+                        cxx = f"g++-{version}"
+                    else:
+                        continue
+
+                    # lets check if the same version works for CC and is GNU
+                    out = run_cmd_get_stdout(f"gcc-{version} --version")
+                    if "gcc" in out.lower():
+                        cc = f"gcc-{version}"
+                        break
+
+        if not "g++" in run_cmd_get_stdout(f"{cxx} --version").lower() or not "gcc" in run_cmd_get_stdout(f"{cc} --version"):
+            print(f"The selected C++ compiler ({cxx}) or C compiler ({cc}) is not GNU g++/gcc.\n"
+                "If you are using macOS, you may install it with Homebrew (https://brew.sh/)")
+            sys.exit(1)
+
+        run_cmd(f"{make_command} clean")
+        run_cmd(f"{make_command}  CXX={cxx} CC={cc} STATIC_LINK=true -j")
+
+        run_cmd(f"cd bin; tar -c * | pigz > ../mkmc-{ver}.{system}.{hardware}.tar.gz; cd ..;")
