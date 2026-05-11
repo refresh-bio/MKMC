@@ -100,6 +100,7 @@ if __name__ == "__main__":
         with tarfile.open(f"mkmc-{ver}.{system}.{hardware}.tar.gz", "w:gz") as tar:
             #tar.add(source_dir, arcname=os.path.basename(source_dir))
             tar.add("x64\Release\mkmc.exe", arcname="mkmc.exe")
+            tar.add("LICENSE", arcname="LICENSE")
 
     else:
         # In general use the default g++, but not on mac where the default is just clang++
@@ -130,4 +131,4 @@ if __name__ == "__main__":
         run_cmd(f"{make_command} clean")
         run_cmd(f"{make_command} CXX={cxx} CC={cc} PLATFORM={platform} STATIC_LINK=true -j")
 
-        run_cmd(f"cd bin; tar -c * | pigz > ../mkmc-{ver}.{system}.{hardware}.tar.gz; cd ..;")
+        run_cmd(f"cd bin; cp ../LICENSE .; tar -c * | pigz > ../mkmc-{ver}.{system}.{hardware}.tar.gz; cd ..;")
