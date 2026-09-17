@@ -1,3 +1,5 @@
+[![GitHub downloads](https://img.shields.io/github/downloads/refresh-bio/mkmc/total.svg?style=flag&label=GitHub%20downloads)](https://github.com/refresh-bio/MKMC/releases)
+
 # MKMC (multi-KMC)
 MKMC is a software utilizing KMC to count k-mers in each of the predefined input samples.
 Then it combines multiple KMC databases into one single matrix, which optionally is saved into binary .kmcdb file and a text file.
